@@ -590,3 +590,41 @@ html[data-young="1"] .choice .big { font-family: var(--font-young); }
 .acct { display: grid; grid-template-columns: auto 1fr auto; gap: 16px; align-items: center; }
 .acct-av { width: 56px; height: 56px; border-radius: 16px; display: grid; place-items: center; background: var(--grad); color: #fff; font: 800 24px var(--font-display); }
 .prose ul { padding-left: 20px; } .prose li { margin: 6px 0; }
+
+/* ── step-by-step explanations (src/app/explain.mjs) and worked examples ── */
+.explain { margin-top: 14px; padding: 14px 16px 12px; border-radius: var(--r); background: var(--surface); border: 1px solid var(--line); box-shadow: var(--sh-1); }
+.ex-title { display: flex; align-items: center; gap: 8px; margin: 0 0 10px; font-weight: 750; color: var(--ink); }
+.ex-title .ic { width: 19px; height: 19px; color: var(--sc, var(--brand)); }
+.ex-body { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 18px; align-items: start; }
+.ex-steps { margin: 0; padding-left: 24px; display: grid; gap: 8px; font-size: 1.04em; line-height: 1.5; }
+.ex-steps li { color: var(--muted); transition: color .2s; }
+.ex-steps li::marker { font-weight: 800; color: var(--muted); }
+.ex-steps li.now { color: var(--ink); font-weight: 600; animation: pop .25s ease-out; }
+.ex-steps li.now::marker { color: var(--sc, var(--brand)); }
+.ex-pic { min-width: 180px; padding: 6px 10px; border-radius: var(--r-sm); background: var(--surface-2); border: 1px solid var(--line); }
+.ex-pic .pic { margin: 4px 0; }
+.ex-pic .pic svg { max-height: 300px; }
+.ex-controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--line); }
+.ex-count { margin-left: auto; color: var(--muted); font-size: 13px; font-weight: 600; }
+.btn-sm { min-height: 34px; padding: 0 12px; font-size: 13.5px; }
+.btn-sm .ic { width: 16px; height: 16px; }
+.q-fb .explain { background: var(--surface); }
+.ex-link { margin: 4px 0 2px; }
+.example { margin: 10px 0 18px; padding: 16px 18px; border-radius: var(--r-lg); border: 1px dashed var(--line-2); background: var(--surface-2); }
+.example .kicker { margin: 0 0 4px; }
+.example .q-text { margin: 0; font-weight: 700; font-size: 1.15em; }
+.pic-eqn { display: grid; gap: 6px; font-size: 1.15em; font-variant-numeric: tabular-nums; }
+.eq-line { display: flex; gap: 14px; align-items: baseline; flex-wrap: wrap; color: var(--muted); }
+.eq-line.now { color: var(--ink); font-weight: 700; }
+.eq-note { font-size: .8em; font-weight: 600; color: #DB2777; }
+.pic-column svg, .pic-longdiv svg { max-height: 300px; }
+.pic-numberline svg { max-width: min(100%, 560px); }
+@media (max-width: 760px) {
+  .ex-body { grid-template-columns: 1fr; }
+  .ex-pic { order: -1; min-width: 0; }
+  .ex-count { width: 100%; margin-left: 0; }
+}
+.voice-item { align-items: flex-start !important; text-align: left; }
+.voice-item .vi-text { display: grid; gap: 1px; }
+.voice-item small { font-size: 12px; color: var(--muted); font-weight: 500; }
+.ex-steps.all li { color: var(--ink); }

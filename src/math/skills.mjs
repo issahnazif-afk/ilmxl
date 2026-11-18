@@ -9,6 +9,8 @@
 //   mc:   choices + a (index)
 //   expr: a plain JS expression whose value must equal the answer (the checker evaluates it independently)
 import { gcd, lcm, simplify, frac, isPrime, dec, sgn, neg } from './rng.mjs';
+import { S as St, columnAdd, columnSub, columnMul, longDivision, numberLine, fractionBars, eqnLines, areaModel, multiplesOf } from './steps.mjs';
+const par = (n) => (n < 0 ? `(${neg(n)})` : String(n));   // a negative number in brackets, for working
 
 const mc = (r, right, wrongs, extra = {}) => {
   const set = [...new Set([String(right), ...wrongs.map(String)])].filter((x) => x !== 'NaN');
@@ -65,7 +67,8 @@ skill('k-sub5', 0, 'Subtraction', 'Subtract within 5', ['Subtracting takes some 
 });
 skill('k-add10', 0, 'Addition', 'Add within 10', ['Start with the bigger number and count on.', 'For 6 + 3: start at 6, count 7, 8, 9.'], (r) => {
   const a = r.int(0, 9), b = r.int(0, 10 - a), big = Math.max(a, b), small = Math.min(a, b);
-  return num(a + b, [`Start at ${big}.`, small ? `Count on ${small}: ${Array.from({ length: small }, (_, i) => big + i + 1).join(', ')}.` : 'Adding 0 changes nothing.', `${a} + ${b} = ${a + b}.`], { q: `${a} + ${b} = ?`, expr: `${a}+${b}` });
+  const hops = Array.from({ length: small }, (_, i) => ({ from: big + i, to: big + i + 1 }));
+  return num(a + b, [St(`Start at the bigger number, ${big}.`, numberLine(0, 10, { marks: [big] })), small ? St(`Count on ${small}: ${Array.from({ length: small }, (_, i) => big + i + 1).join(', ')}.`, numberLine(0, 10, { marks: [a + b], jumps: hops })) : St('Adding 0 changes nothing.'), St(`So ${a} + ${b} = ${a + b}.`)], { q: `${a} + ${b} = ?`, expr: `${a}+${b}` });
 });
 skill('k-compare10', 0, 'Counting', 'Compare numbers to 10', ['The number that comes later when we count is greater.', '8 is greater than 5.'], (r) => {
   let a = r.int(0, 10), b = r.int(0, 10); while (a === b) b = r.int(0, 10);
@@ -75,15 +78,27 @@ skill('k-compare10', 0, 'Counting', 'Compare numbers to 10', ['The number that c
 // ───────────── Grade 1 ─────────────
 skill('1-add20', 1, 'Addition', 'Add within 20', ['Make a ten to add quickly.', 'For 8 + 5: 8 + 2 = 10, then 3 more is 13.'], (r) => {
   const a = r.int(2, 10), b = r.int(2, 10); const need = 10 - Math.max(a, b);
-  return num(a + b, a + b > 10 && need > 0 ? [`Make a ten: ${Math.max(a, b)} + ${need} = 10.`, `${Math.min(a, b)} − ${need} = ${Math.min(a, b) - need} left over.`, `10 + ${Math.min(a, b) - need} = ${a + b}.`] : [`${a} + ${b} = ${a + b}.`], { q: `${a} + ${b} = ?`, expr: `${a}+${b}` });
+  const big = Math.max(a, b), small = Math.min(a, b), rest = small - need, NL = (o) => numberLine(0, 20, o);
+  return num(a + b, a + b > 10 && need > 0 ? [
+    St(`Start at the bigger number, ${big}. It needs ${need} more to make 10.`, NL({ marks: [big] })),
+    St(`Split ${small} into ${need} and ${rest}. Jump ${need} to get to 10.`, NL({ marks: [10], jumps: [{ from: big, to: 10, label: `+${need}` }] })),
+    St(`Then jump the other ${rest}: 10 + ${rest} = ${a + b}.`, NL({ marks: [a + b], jumps: [{ from: big, to: 10, label: `+${need}` }, { from: 10, to: a + b, label: `+${rest}` }] })),
+    St(`So ${a} + ${b} = ${a + b}.`),
+  ] : [St(`Start at ${big} and count on ${small}.`, NL({ marks: [a + b], jumps: [{ from: big, to: a + b, label: `+${small}` }] })), St(`So ${a} + ${b} = ${a + b}.`)], { q: `${a} + ${b} = ?`, expr: `${a}+${b}` });
 });
 skill('1-sub20', 1, 'Subtraction', 'Subtract within 20', ['Think addition: 13 − 5 asks "5 plus what makes 13?"', 'Or take away to 10 first.'], (r) => {
   const a = r.int(10, 20), b = r.int(2, 9);
-  return num(a - b, [`Think: ${b} + ? = ${a}.`, `${b} + ${a - b} = ${a}, so ${a} − ${b} = ${a - b}.`], { q: `${a} − ${b} = ?`, expr: `${a}-${b}` });
+  const toTen = a - 10, NL = (o) => numberLine(0, 20, o);
+  return num(a - b, b > toTen && toTen > 0 ? [
+    St(`Start at ${a}. Take away ${b} in two jumps: first back to 10.`, NL({ marks: [a] })),
+    St(`${a} − ${toTen} = 10. That uses ${toTen} of the ${b}.`, NL({ marks: [10], jumps: [{ from: a, to: 10, label: `−${toTen}` }] })),
+    St(`${b} − ${toTen} = ${b - toTen} more to take away: 10 − ${b - toTen} = ${a - b}.`, NL({ marks: [a - b], jumps: [{ from: a, to: 10, label: `−${toTen}` }, { from: 10, to: a - b, label: `−${b - toTen}` }] })),
+    St(`So ${a} − ${b} = ${a - b}. Check: ${a - b} + ${b} = ${a}.`),
+  ] : [St(`Start at ${a} and jump back ${b}.`, NL({ marks: [a - b], jumps: [{ from: a, to: a - b, label: `−${b}` }] })), St(`So ${a} − ${b} = ${a - b}. Check: ${a - b} + ${b} = ${a}.`)], { q: `${a} − ${b} = ?`, expr: `${a}-${b}` });
 });
 skill('1-missing', 1, 'Addition', 'Missing number', ['A missing number is a puzzle: what makes the sides equal?', 'For 4 + ? = 9, count up from 4 to 9.'], (r) => {
   const a = r.int(1, 10), c = r.int(a + 1, 20);
-  return num(c - a, [`Count up from ${a} to ${c}.`, `That is ${c - a} more.`], { q: `${a} + ? = ${c}`, expr: `${c}-${a}` });
+  return num(c - a, [St(`Start at ${a}. How far is it to ${c}?`, numberLine(0, 20, { marks: [a, c] })), St(`Count up from ${a} to ${c}: that is a jump of ${c - a}.`, numberLine(0, 20, { marks: [c], jumps: [{ from: a, to: c, label: `+${c - a}` }] })), St(`So ${a} + ${c - a} = ${c}. The missing number is ${c - a}.`)], { q: `${a} + ? = ${c}`, expr: `${c}-${a}` });
 });
 skill('1-tens', 1, 'Place value', 'Tens and ones', ['A two-digit number is made of tens and ones.', '47 is 4 tens and 7 ones.'], (r) => {
   const t = r.int(1, 9), o = r.int(0, 9), askT = r.bool();
@@ -105,16 +120,18 @@ skill('1-time', 1, 'Time', 'Time to the hour and half hour', ['The short hand sh
 skill('2-add100', 2, 'Addition', 'Add within 100', ['Add the ones, then the tens.', 'If the ones make 10 or more, carry a ten.'], (r) => {
   const a = r.int(10, 89), b = r.int(10, 99 - a);
   const ones = (a % 10) + (b % 10);
-  return num(a + b, [`Ones: ${a % 10} + ${b % 10} = ${ones}${ones >= 10 ? ' (carry 1 ten)' : ''}.`, `Tens: ${Math.floor(a / 10)} + ${Math.floor(b / 10)}${ones >= 10 ? ' + 1' : ''} = ${Math.floor((a + b) / 10)}.`, `${a} + ${b} = ${a + b}.`], { q: `${a} + ${b} = ?`, expr: `${a}+${b}` });
+  void ones;
+  return num(a + b, columnAdd([a, b]), { q: `${a} + ${b} = ?`, expr: `${a}+${b}` });
 });
 skill('2-sub100', 2, 'Subtraction', 'Subtract within 100', ['Subtract the ones, then the tens.', 'If there are not enough ones, trade one ten for ten ones.'], (r) => {
   const a = r.int(20, 99), b = r.int(10, a - 1);
-  return num(a - b, [(a % 10) < (b % 10) ? `Not enough ones: trade a ten. ${(a % 10) + 10} − ${b % 10} = ${(a % 10) + 10 - (b % 10)}.` : `Ones: ${a % 10} − ${b % 10} = ${(a % 10) - (b % 10)}.`, `${a} − ${b} = ${a - b}.`], { q: `${a} − ${b} = ?`, expr: `${a}-${b}` });
+  return num(a - b, columnSub(a, b), { q: `${a} − ${b} = ?`, expr: `${a}-${b}` });
 });
 skill('2-skip', 2, 'Counting', 'Skip counting', ['Skip counting adds the same amount each time.', 'By 5s: 5, 10, 15, 20.'], (r) => {
   const by = r.pick([2, 5, 10, 100]), start = by * r.int(1, 8);
   const seq = [0, 1, 2].map((i) => start + i * by);
-  return num(start + 3 * by, [`Each number is ${by} more.`, `${seq.at(-1)} + ${by} = ${start + 3 * by}.`], { q: `What comes next? ${seq.join(', ')}, ?`, expr: `${start}+3*${by}` });
+  const NL = (k, mark) => numberLine(start, start + 3 * by, { step: by, marks: mark ? [mark] : [], jumps: seq.slice(0, k).map((x) => ({ from: x, to: x + by, label: `+${by}` })) });
+  return num(start + 3 * by, [St(`Look at how the numbers change: each one is ${by} more than the one before.`, NL(2)), St(`So add ${by} once more: ${seq.at(-1)} + ${by} = ${start + 3 * by}.`, NL(3, start + 3 * by)), St(`The next number is ${start + 3 * by}.`)], { q: `What comes next? ${seq.join(', ')}, ?`, expr: `${start}+3*${by}` });
 });
 skill('2-place1000', 2, 'Place value', 'Hundreds, tens and ones', ['A three-digit number has hundreds, tens and ones.', '352 = 300 + 50 + 2.'], (r) => {
   const n = r.int(100, 999), which = r.pick(['hundreds', 'tens', 'ones']);
@@ -127,7 +144,7 @@ skill('2-evenodd', 2, 'Counting', 'Even and odd', ['Even numbers can be shared i
 });
 skill('2-add1000', 2, 'Addition', 'Add within 1000', ['Line up hundreds, tens and ones.', 'Add each place, carrying when you need to.'], (r) => {
   const a = r.int(100, 800), b = r.int(10, 999 - a);
-  return num(a + b, [`Add ones, then tens, then hundreds.`, `${a} + ${b} = ${a + b}.`], { q: `${a} + ${b} = ?`, expr: `${a}+${b}` });
+  return num(a + b, columnAdd([a, b]), { q: `${a} + ${b} = ?`, expr: `${a}+${b}` });
 });
 skill('2-time5', 2, 'Time', 'Time to five minutes', ['Each number on the clock is 5 minutes for the long hand.', 'Long hand on 4 means 20 minutes.'], (r) => {
   const h = r.int(1, 12), m = 5 * r.int(1, 11);
@@ -138,11 +155,11 @@ skill('2-time5', 2, 'Time', 'Time to five minutes', ['Each number on the clock i
 // ───────────── Grade 3 ─────────────
 skill('3-mult', 3, 'Multiplication', 'Multiplication facts', ['Multiplying is adding equal groups.', '4 × 3 means 4 groups of 3.'], (r) => {
   const a = r.int(2, 10), b = r.int(2, 10);
-  return num(a * b, [`${a} groups of ${b}.`, `${a} × ${b} = ${a * b}.`], { q: `${a} × ${b} = ?`, visual: a * b <= 40 ? { type: 'array', rows: a, cols: b } : null, expr: `${a}*${b}` });
+  return num(a * b, [St(`${a} × ${b} means ${a} groups of ${b}: ${a} rows with ${b} in each row.`, a * b <= 60 ? { type: 'array', rows: a, cols: b } : null), St(`Skip count by ${b}, ${a} times: ${multiplesOf(b, a).join(', ')}.`), St(`So ${a} × ${b} = ${a * b}.`)], { q: `${a} × ${b} = ?`, visual: a * b <= 40 ? { type: 'array', rows: a, cols: b } : null, expr: `${a}*${b}` });
 });
 skill('3-div', 3, 'Division', 'Division facts', ['Dividing shares into equal groups.', 'Think multiplication: 24 ÷ 6 asks "6 times what is 24?"'], (r) => {
   const b = r.int(2, 10), c = r.int(2, 10);
-  return num(c, [`Think: ${b} × ? = ${b * c}.`, `${b} × ${c} = ${b * c}, so ${b * c} ÷ ${b} = ${c}.`], { q: `${b * c} ÷ ${b} = ?`, expr: `${b * c}/${b}` });
+  return num(c, [St(`${b * c} ÷ ${b} asks: how many groups of ${b} make ${b * c}? Think: ${b} × ? = ${b * c}.`, b * c <= 60 ? { type: 'array', rows: c, cols: b } : null), St(`Skip count by ${b} until you reach ${b * c}: ${multiplesOf(b, c).join(', ')}. That is ${c} groups.`), St(`${b} × ${c} = ${b * c}, so ${b * c} ÷ ${b} = ${c}.`)], { q: `${b * c} ÷ ${b} = ?`, expr: `${b * c}/${b}` });
 });
 skill('3-mult10', 3, 'Multiplication', 'Multiply by multiples of 10', ['To multiply by 40, multiply by 4, then by 10.', '6 × 40 = 6 × 4 × 10 = 240.'], (r) => {
   const a = r.int(2, 9), b = r.int(1, 9) * 10;
@@ -151,7 +168,8 @@ skill('3-mult10', 3, 'Multiplication', 'Multiply by multiples of 10', ['To multi
 skill('3-round', 3, 'Place value', 'Round to the nearest 10 or 100', ['Look at the digit to the right of the place you round to.', '5 or more rounds up; 4 or less rounds down.'], (r) => {
   const to = r.pick([10, 100]), n = r.int(to === 10 ? 11 : 101, 999);
   const ans = Math.round(n / to) * to;
-  return num(ans, [`Nearest ${to}: between ${Math.floor(n / to) * to} and ${Math.floor(n / to) * to + to}.`, `Look at the ${to === 10 ? 'ones' : 'tens'} digit: ${to === 10 ? n % 10 : Math.floor(n / 10) % 10}.`, `${n} rounds to ${ans}.`], { q: `Round ${n} to the nearest ${to}.`, expr: `Math.round(${n}/${to})*${to}` });
+  const lo = Math.floor(n / to) * to, hi = lo + to, d = to === 10 ? n % 10 : Math.floor(n / 10) % 10;
+  return num(ans, [St(`${n} is between ${lo} and ${hi}. The halfway point is ${lo + to / 2}.`, numberLine(lo, hi, { step: to / 10, marks: [n] })), St(`Look at the ${to === 10 ? 'ones' : 'tens'} digit: ${d}. ${d >= 5 ? `${d} is 5 or more, so round up.` : `${d} is less than 5, so round down.`}`), St(`So ${n} rounds to ${ans}.`)], { q: `Round ${n} to the nearest ${to}.`, expr: `Math.round(${n}/${to})*${to}` });
 });
 skill('3-fracid', 3, 'Fractions', 'Name the fraction', ['The bottom number says how many equal parts in all.', 'The top number says how many parts are shaded.'], (r) => {
   const d = r.int(2, 8), n = r.int(1, d - 1);
@@ -160,7 +178,7 @@ skill('3-fracid', 3, 'Fractions', 'Name the fraction', ['The bottom number says 
 skill('3-fraccmp', 3, 'Fractions', 'Compare fractions with the same bottom', ['When the bottom numbers are the same, the parts are the same size.', 'More parts is more: 5/8 > 3/8.'], (r) => {
   const d = r.int(3, 12); let a = r.int(1, d - 1), b = r.int(1, d - 1); while (a === b) b = r.int(1, d - 1);
   const s = a > b ? '>' : '<';
-  return mc(r, s, ['>', '<', '='].filter((x) => x !== s), { q: `${a}/${d} ? ${b}/${d}`, say: `Which sign goes between ${a} over ${d} and ${b} over ${d}?`, steps: ['Same size parts.', `${Math.max(a, b)} parts is more than ${Math.min(a, b)}.`, `${a}/${d} ${s} ${b}/${d}.`] });
+  return mc(r, s, ['>', '<', '='].filter((x) => x !== s), { q: `${a}/${d} ? ${b}/${d}`, say: `Which sign goes between ${a} over ${d} and ${b} over ${d}?`, steps: [St(`Both fractions have ${d} equal parts, so the parts are the same size.`, fractionBars([{ n: a, d }, { n: b, d }])), St(`${Math.max(a, b)} parts is more than ${Math.min(a, b)} parts.`), St(`So ${a}/${d} ${s} ${b}/${d}.`)] });
 });
 skill('3-area', 3, 'Measurement', 'Area of a rectangle', ['Area is how many unit squares cover a shape.', 'For a rectangle: length × width.'], (r) => {
   const l = r.int(2, 12), w = r.int(2, 10);
@@ -180,20 +198,21 @@ skill('3-elapsed', 3, 'Time', 'Elapsed time', ['Count forward from the start tim
 // ───────────── Grade 4 ─────────────
 skill('4-mult2', 4, 'Multiplication', 'Multiply 2-digit numbers', ['Split one number into tens and ones.', '23 × 14 = 23 × 10 + 23 × 4.'], (r) => {
   const a = r.int(11, 99), b = r.int(11, 49);
-  return num(a * b, [`${a} × ${Math.floor(b / 10) * 10} = ${a * Math.floor(b / 10) * 10}.`, `${a} × ${b % 10} = ${a * (b % 10)}.`, `Add: ${a * b}.`], { q: `${a} × ${b} = ?`, expr: `${a}*${b}` });
+  return num(a * b, [St(`Picture ${a} × ${b} as a rectangle. Split each number into tens and ones.`, areaModel(a, b)), ...columnMul(a, b)], { q: `${a} × ${b} = ?`, expr: `${a}*${b}` });
 });
 skill('4-divrem', 4, 'Division', 'Divide with remainders', ['Find how many whole groups fit, then what is left over.', '17 ÷ 5 = 3 R 2.'], (r) => {
   const b = r.int(3, 9), q = r.int(3, 30), rem = r.int(1, b - 1), a = b * q + rem;
-  return { kind: 'text', answer: `${q} R ${rem}`, accept: [`${q}r${rem}`, `${q} r ${rem}`, `${q}R${rem}`, `${q} remainder ${rem}`], q: `${a} ÷ ${b} = ? (write it like 7 R 2)`, steps: [`${b} × ${q} = ${b * q}.`, `${a} − ${b * q} = ${rem} left over.`, `${q} R ${rem}.`] };
+  return { kind: 'text', answer: `${q} R ${rem}`, accept: [`${q}r${rem}`, `${q} r ${rem}`, `${q}R${rem}`, `${q} remainder ${rem}`], q: `${a} ÷ ${b} = ? (write it like 7 R 2)`, steps: longDivision(a, b) };
 });
 skill('4-equivfrac', 4, 'Fractions', 'Equivalent fractions', ['Multiply the top and bottom by the same number.', '1/2 = 2/4 = 3/6.'], (r) => {
   const d = r.int(2, 6), n = r.int(1, d - 1), k = r.int(2, 5);
-  return num(n * k, [`${d} × ${k} = ${d * k}, so multiply the top by ${k} too.`, `${n} × ${k} = ${n * k}.`], { q: `${n}/${d} = ?/${d * k}`, expr: `${n}*${k}` });
+  return num(n * k, [St(`The bottom changed from ${d} to ${d * k}: it was multiplied by ${k}.`, fractionBars([{ n, d }])), St(`To keep the same amount, multiply the top by ${k} too: ${n} × ${k} = ${n * k}.`, fractionBars([{ n, d }, { n: n * k, d: d * k }])), St(`So ${n}/${d} = ${n * k}/${d * k}. The bars show the same amount.`)], { q: `${n}/${d} = ?/${d * k}`, expr: `${n}*${k}` });
 });
 skill('4-fracadd', 4, 'Fractions', 'Add and subtract like fractions', ['When the bottoms match, add or subtract the tops.', 'The bottom stays the same.'], (r) => {
   const d = r.int(3, 12), a = r.int(1, d - 1), b = r.int(1, d - 1), add = r.bool() || a <= b;
   const top = add ? a + b : a - b;
-  return num(`${top}/${d}`, [`Same bottom: ${d}.`, `${a} ${add ? '+' : '−'} ${b} = ${top}.`, `${top}/${d}${gcd(top, d) > 1 ? ` (= ${frac(top, d)})` : ''}.`], { q: `${a}/${d} ${add ? '+' : '−'} ${b}/${d} = ?`, expr: `${top}/${d}` });
+  const op = add ? '+' : '−';
+  return num(`${top}/${d}`, [St(`Both fractions have ${d} equal parts, so the parts are the same size.`, fractionBars([{ n: a, d }, { n: b, d }])), St(`${add ? 'Add' : 'Subtract'} the tops: ${a} ${op} ${b} = ${top}. The bottom stays ${d}.`, top <= d ? fractionBars([{ n: top, d }]) : null), St(`So ${a}/${d} ${op} ${b}/${d} = ${top}/${d}${gcd(top, d) > 1 ? `, which simplifies to ${frac(top, d)}` : ''}.`)], { q: `${a}/${d} ${op} ${b}/${d} = ?`, expr: `${top}/${d}` });
 });
 skill('4-decfrac', 4, 'Decimals', 'Decimals and fractions', ['Tenths: 0.7 = 7/10. Hundredths: 0.07 = 7/100.', 'The place tells the bottom number.'], (r) => {
   const hund = r.bool(), n = hund ? r.int(1, 99) : r.int(1, 9);
@@ -225,7 +244,12 @@ skill('5-fracunlike', 5, 'Fractions', 'Add fractions with unlike denominators', 
   const b = r.int(2, 8); let d = r.int(2, 8); while (d === b) d = r.int(2, 8);
   const a = r.int(1, b - 1), c = r.int(1, d - 1), L = lcm(b, d);
   const top = a * (L / b) + c * (L / d);
-  return num(frac(top, L), [`Common denominator: ${L}.`, `${a}/${b} = ${a * L / b}/${L} and ${c}/${d} = ${c * L / d}/${L}.`, `${a * L / b} + ${c * L / d} = ${top}, so ${top}/${L}${frac(top, L) !== `${top}/${L}` ? ` = ${frac(top, L)}` : ''}.`], { q: `${a}/${b} + ${c}/${d} = ?`, expr: `${a}/${b}+${c}/${d}` });
+  return num(frac(top, L), [
+    St(`The bottoms are different (${b} and ${d}), so the parts are different sizes. We need a common denominator.`, fractionBars([{ n: a, d: b }, { n: c, d }])),
+    St(`The smallest number that both ${b} and ${d} go into is ${L}.`),
+    St(`${a}/${b} = ${a * L / b}/${L} (× ${L / b} top and bottom) and ${c}/${d} = ${c * L / d}/${L} (× ${L / d} top and bottom).`, fractionBars([{ n: a * L / b, d: L }, { n: c * L / d, d: L }])),
+    St(`Now add the tops: ${a * L / b} + ${c * L / d} = ${top}, so the sum is ${top}/${L}${frac(top, L) !== `${top}/${L}` ? `, which simplifies to ${frac(top, L)}` : ''}.`),
+  ], { q: `${a}/${b} + ${c}/${d} = ?`, expr: `${a}/${b}+${c}/${d}` });
 });
 skill('5-fracmult', 5, 'Fractions', 'Multiply fractions', ['Multiply the tops, multiply the bottoms.', 'Then simplify.'], (r) => {
   const a = r.int(1, 6), b = r.int(a + 1, 9), c = r.int(1, 6), d = r.int(c + 1, 9);
@@ -234,7 +258,7 @@ skill('5-fracmult', 5, 'Fractions', 'Multiply fractions', ['Multiply the tops, m
 skill('5-decadd', 5, 'Decimals', 'Add and subtract decimals', ['Line up the decimal points.', 'Then add or subtract as with whole numbers.'], (r) => {
   const a = r.int(10, 999) / 100, b = r.int(10, 999) / 100, add = r.bool() || a < b;
   const ans = dec(add ? a + b : a - b);
-  return num(ans, ['Line up the decimal points.', `${a.toFixed(2)} ${add ? '+' : '−'} ${b.toFixed(2)} = ${ans}.`], { q: `${a.toFixed(2)} ${add ? '+' : '−'} ${b.toFixed(2)} = ?`, expr: `${a}${add ? '+' : '-'}${b}` });
+  return num(ans, add ? columnAdd([a.toFixed(2), b.toFixed(2)]) : columnSub(a.toFixed(2), b.toFixed(2)), { q: `${a.toFixed(2)} ${add ? '+' : '−'} ${b.toFixed(2)} = ?`, expr: `${a}${add ? '+' : '-'}${b}` });
 });
 skill('5-decmult', 5, 'Decimals', 'Multiply decimals', ['Multiply as whole numbers.', 'Count the decimal places in both numbers; the answer has that many.'], (r) => {
   const a = r.int(2, 99) / 10, b = r.int(2, 9);
@@ -247,12 +271,14 @@ skill('5-volume', 5, 'Measurement', 'Volume of a box', ['Volume is how many unit
 });
 skill('5-order', 5, 'Expressions', 'Order of operations', ['Brackets first, then × and ÷, then + and −.', 'Work left to right within each step.'], (r) => {
   const a = r.int(2, 9), b = r.int(2, 9), c = r.int(2, 9), form = r.int(0, 2);
-  const [q, ans, steps] = [
-    [`${a} + ${b} × ${c}`, a + b * c, [`Multiply first: ${b} × ${c} = ${b * c}.`, `${a} + ${b * c} = ${a + b * c}.`]],
-    [`(${a} + ${b}) × ${c}`, (a + b) * c, [`Brackets first: ${a} + ${b} = ${a + b}.`, `${a + b} × ${c} = ${(a + b) * c}.`]],
-    [`${a * c} ÷ ${c} + ${b}`, a + b, [`Divide first: ${a * c} ÷ ${c} = ${a}.`, `${a} + ${b} = ${a + b}.`]],
+  const [q, ans, work] = [
+    [`${a} + ${b} × ${c}`, a + b * c, [[`= ${a} + ${b * c}`, '× before +', `There are no brackets. Multiply before adding: ${b} × ${c} = ${b * c}.`], [`= ${a + b * c}`, 'then +', `Then add: ${a} + ${b * c} = ${a + b * c}.`]]],
+    [`(${a} + ${b}) × ${c}`, (a + b) * c, [[`= ${a + b} × ${c}`, 'brackets first', `Brackets come first: ${a} + ${b} = ${a + b}.`], [`= ${(a + b) * c}`, 'then ×', `Then multiply: ${a + b} × ${c} = ${(a + b) * c}.`]]],
+    [`${a * c} ÷ ${c} + ${b}`, a + b, [[`= ${a} + ${b}`, '÷ before +', `There are no brackets. Divide before adding: ${a * c} ÷ ${c} = ${a}.`], [`= ${a + b}`, 'then +', `Then add: ${a} + ${b} = ${a + b}.`]]],
   ][form];
-  return num(ans, steps, { q: `${q} = ?`, expr: q.replace(/×/g, '*').replace(/÷/g, '/') });
+  const lines = [{ eq: q }, ...work.map(([eq, note]) => ({ eq, note }))];
+  const steps = work.map(([, , text], k) => St(text, eqnLines(lines.slice(0, k + 2))));
+  return num(ans, [St('Order of operations: brackets first, then × and ÷, then + and −.', eqnLines(lines.slice(0, 1))), ...steps, St(`So ${q} = ${ans}.`)], { q: `${q} = ?`, expr: q.replace(/×/g, '*').replace(/÷/g, '/') });
 });
 skill('5-pow10', 5, 'Decimals', 'Multiply and divide by powers of 10', ['× 10 moves digits one place left; × 100 two places.', '÷ 10 moves digits one place right.'], (r) => {
   const x = r.int(11, 999) / 10, p = r.pick([10, 100, 1000]), mul = r.bool();
@@ -292,8 +318,13 @@ skill('6-fracdiv', 6, 'Fractions', 'Divide fractions', ['Keep, change, flip: kee
 });
 skill('6-onestep', 6, 'Equations', 'One-step equations', ['Do the opposite operation to both sides.', 'x + 5 = 12 → x = 12 − 5 = 7.'], (r) => {
   const x = r.int(1, 20), k = r.int(2, 12), t = r.int(0, 2);
-  const [q, step] = [[`x + ${k} = ${x + k}`, `Subtract ${k}: x = ${x + k} − ${k}.`], [`x − ${k} = ${x - k}`, `Add ${k}: x = ${x - k} + ${k}.`], [`${k}x = ${k * x}`, `Divide by ${k}: x = ${k * x} ÷ ${k}.`]][t];
-  return num(x, [step, `x = ${x}.`], { q: `Solve: ${q.replace(/−/g, '−')}`, unit: 'x =' });
+  const [q, undo, note, back, check] = [
+    [`x + ${k} = ${x + k}`, `subtract ${k} from both sides`, `− ${k} on both sides`, `x = ${x + k} − ${k}`, `${x} + ${k} = ${x + k}`],
+    [`x − ${k} = ${neg(x - k)}`, `add ${k} to both sides`, `+ ${k} on both sides`, `x = ${neg(x - k)} + ${k}`, `${x} − ${k} = ${neg(x - k)}`],
+    [`${k}x = ${k * x}`, `divide both sides by ${k}`, `÷ ${k} on both sides`, `x = ${k * x} ÷ ${k}`, `${k} × ${x} = ${k * x}`],
+  ][t];
+  const L = [{ eq: q }, { eq: back, note }, { eq: `x = ${x}` }];
+  return num(x, [St('We want x on its own. Whatever we do to one side, we do to the other, so the two sides stay equal.', eqnLines(L.slice(0, 1))), St(`To undo it, ${undo}.`, eqnLines(L.slice(0, 2))), St(`x = ${x}.`, eqnLines(L)), St(`Check: ${check}. It works, so x = ${x}.`)], { q: `Solve: ${q}`, unit: 'x =' });
 });
 skill('6-stats', 6, 'Statistics', 'Mean, median and mode', ['Mean: add them all, divide by how many.', 'Median: the middle when in order. Mode: the most common.'], (r) => {
   const which = r.pick(['mean', 'median', 'mode']);
@@ -316,15 +347,26 @@ skill('6-tri', 6, 'Geometry', 'Area of a triangle', ['A triangle is half of a re
 skill('7-int', 7, 'Integers', 'Integer operations', ['Adding a negative is subtracting.', 'Same signs multiply to positive; different signs to negative.'], (r) => {
   const a = r.nonzero(-15, 15), b = r.nonzero(-15, 15), op = r.pick(['+', '−', '×']);
   const ans = op === '+' ? a + b : op === '−' ? a - b : a * b;
-  return num(ans, [op === '×' ? `${Math.sign(a) === Math.sign(b) ? 'Same' : 'Different'} signs: ${Math.sign(a) === Math.sign(b) ? 'positive' : 'negative'}.` : op === '−' ? `Subtracting ${neg(b)} is adding ${neg(-b)}.` : `Start at ${neg(a)}, move ${b > 0 ? 'right' : 'left'} ${Math.abs(b)}.`, `= ${neg(ans)}.`], { q: `${neg(a)} ${op} ${b < 0 ? `(${neg(b)})` : b} = ?`, expr: `(${a})${op === '−' ? '-' : op === '×' ? '*' : '+'}(${b})` });
+  const move = op === '−' ? -b : b, lo = Math.min(0, a, ans) - 1, hi = Math.max(0, a, ans) + 1;
+  const NL = (o) => numberLine(lo, hi, o);
+  const steps = op === '×' ? [St(`Multiply the sizes: ${Math.abs(a)} × ${Math.abs(b)} = ${Math.abs(ans)}.`), St(`${Math.sign(a) === Math.sign(b) ? 'The signs are the same, so the answer is positive' : 'The signs are different, so the answer is negative'}.`), St(`So ${neg(a)} × ${par(b)} = ${neg(ans)}.`)]
+    : [St(`Start at ${neg(a)} on the number line.`, NL({ marks: [a] })), ...(op === '−' ? [St(`Subtracting ${neg(b)} is the same as adding ${neg(-b)}.`)] : []), St(`${move > 0 ? `Adding ${move} moves ${move} to the right` : `Adding ${neg(move)} moves ${-move} to the left`}.`, NL({ marks: [ans], jumps: [{ from: a, to: ans, label: move > 0 ? `+${move}` : `−${-move}` }] })), St(`We land on ${neg(ans)}, so ${neg(a)} ${op} ${par(b)} = ${neg(ans)}.`)];
+  return num(ans, steps, { q: `${neg(a)} ${op} ${b < 0 ? `(${neg(b)})` : b} = ?`, expr: `(${a})${op === '−' ? '-' : op === '×' ? '*' : '+'}(${b})` });
 });
 skill('7-prop', 7, 'Ratios', 'Solve proportions', ['In a proportion, cross products are equal.', '3/4 = x/12 → 4x = 36 → x = 9.'], (r) => {
   const a = r.int(1, 9), b = r.int(2, 12), k = r.int(2, 6);
-  return num(a * k, [`Cross multiply: ${b}x = ${a} × ${b * k}.`, `x = ${a * b * k} ÷ ${b} = ${a * k}.`], { q: `Solve for x: ${a}/${b} = x/${b * k}`, unit: 'x =' });
+  const L = [{ eq: `${a}/${b} = x/${b * k}` }, { eq: `${b} × x = ${a} × ${b * k}`, note: 'cross products are equal' }, { eq: `${b}x = ${a * b * k}` }, { eq: `x = ${a * k}`, note: `÷ ${b} on both sides` }];
+  return num(a * k, [St(`In a proportion the cross products are equal: ${b} times x equals ${a} times ${b * k}.`, eqnLines(L.slice(0, 2))), St(`${a} × ${b * k} = ${a * b * k}, so ${b}x = ${a * b * k}.`, eqnLines(L.slice(0, 3))), St(`Divide both sides by ${b}: x = ${a * b * k} ÷ ${b} = ${a * k}.`, eqnLines(L)), St(`Another way: ${b} × ${k} = ${b * k}, so the top is ${a} × ${k} = ${a * k}.`)], { q: `Solve for x: ${a}/${b} = x/${b * k}`, unit: 'x =' });
 });
 skill('7-twostep', 7, 'Equations', 'Two-step equations', ['Undo adding or subtracting first.', 'Then undo multiplying or dividing.'], (r) => {
   const x = r.int(-10, 15), a = r.nonzero(-9, 9) || 2, b = r.int(-20, 20);
-  return num(x, [`Subtract ${neg(b)} from both sides: ${neg(a)}x = ${neg(a * x)}.`, `Divide by ${neg(a)}: x = ${neg(x)}.`], { q: `Solve: ${neg(a)}x ${sgn(b)} = ${neg(a * x + b)}`, unit: 'x =' });
+  const L = [{ eq: `${neg(a)}x ${sgn(b)} = ${neg(a * x + b)}` }, { eq: `${neg(a)}x = ${neg(a * x)}`, note: b >= 0 ? `− ${b} on both sides` : `+ ${-b} on both sides` }, { eq: `x = ${neg(x)}`, note: `÷ ${neg(a)} on both sides` }];
+  return num(x, [
+    St(`Two things happen to x: it is multiplied by ${neg(a)}, then ${b >= 0 ? `${b} is added` : `${-b} is subtracted`}. Undo them in reverse order.`, eqnLines(L.slice(0, 1))),
+    St(`First undo the ${b >= 0 ? `+ ${b}` : `− ${-b}`}: ${b >= 0 ? `subtract ${b} from` : `add ${-b} to`} both sides. That gives ${neg(a)}x = ${neg(a * x)}.`, eqnLines(L.slice(0, 2))),
+    St(`Then undo the × ${neg(a)}: divide both sides by ${neg(a)}. x = ${neg(a * x)} ÷ ${par(a)} = ${neg(x)}.`, eqnLines(L)),
+    St(`Check: ${neg(a)} × ${par(x)} ${sgn(b)} = ${neg(a * x + b)}. It works, so x = ${neg(x)}.`),
+  ], { q: `Solve: ${neg(a)}x ${sgn(b)} = ${neg(a * x + b)}`, unit: 'x =' });
 });
 skill('7-pctchange', 7, 'Ratios', 'Percent increase and decrease', ['Change ÷ original × 100.', 'From 50 to 60 is a 10 ÷ 50 = 20% increase.'], (r) => {
   const o = r.int(2, 20) * 10, p = r.pick([10, 20, 25, 30, 40, 50, 75]), up = r.bool();
@@ -377,12 +419,20 @@ skill('8-slope', 8, 'Linear relations', 'Slope from two points', ['Slope = rise 
 });
 skill('8-linear', 8, 'Linear relations', 'Evaluate y = mx + b', ['Put the x value in, then multiply and add.'], (r) => {
   const m = r.nonzero(-6, 6), b = r.int(-10, 10), x = r.int(-5, 8);
-  return num(m * x + b, [`y = ${neg(m)}(${neg(x)}) ${sgn(b)}.`, `= ${neg(m * x)} ${sgn(b)} = ${neg(m * x + b)}.`], { q: `If y = ${neg(m)}x ${sgn(b)}, what is y when x = ${neg(x)}?`, expr: `(${m})*(${x})+(${b})` });
+  const L = [{ eq: `y = ${neg(m)}x ${sgn(b)}` }, { eq: `y = ${neg(m)} × ${par(x)} ${sgn(b)}`, note: `put in x = ${neg(x)}` }, { eq: `y = ${neg(m * x)} ${sgn(b)}`, note: 'multiply first' }, { eq: `y = ${neg(m * x + b)}` }];
+  return num(m * x + b, [St(`Put ${neg(x)} in place of x.`, eqnLines(L.slice(0, 2))), St(`Multiply first: ${neg(m)} × ${par(x)} = ${neg(m * x)}.`, eqnLines(L.slice(0, 3))), St(`Then ${b >= 0 ? 'add' : 'subtract'}: ${neg(m * x)} ${sgn(b)} = ${neg(m * x + b)}.`, eqnLines(L)), St(`So y = ${neg(m * x + b)}.`)], { q: `If y = ${neg(m)}x ${sgn(b)}, what is y when x = ${neg(x)}?`, expr: `(${m})*(${x})+(${b})` });
 });
 skill('8-system', 8, 'Linear relations', 'Systems of equations', ['Add or subtract the equations to remove one letter.', 'Then put that value back in to find the other.'], (r) => {
   const x = r.int(-5, 8), y = r.int(-5, 8), a = r.int(1, 4), b = r.int(1, 4);
   const askX = r.bool();
-  return num(askX ? x : y, [`Add the equations: ${2 * a}x = ${2 * a * x}, so x = ${x}.`, `Put x in: ${a}(${x}) + ${b}y = ${a * x + b * y}, so y = ${y}.`], { q: `${a}x + ${b}y = ${a * x + b * y} and ${a}x − ${b}y = ${a * x - b * y}. What is ${askX ? 'x' : 'y'}?`, unit: `${askX ? 'x' : 'y'} =` });
+  const e1 = `${a}x + ${b}y = ${neg(a * x + b * y)}`, e2 = `${a}x − ${b}y = ${neg(a * x - b * y)}`;
+  const L = [{ eq: e1 }, { eq: e2 }, { eq: `${2 * a}x = ${neg(2 * a * x)}`, note: 'add the equations: + y and − y cancel' }, { eq: `x = ${neg(x)}`, note: `÷ ${2 * a}` }];
+  return num(askX ? x : y, [
+    St(`One equation has + ${b}y and the other has − ${b}y. Adding the equations makes the y terms cancel.`, eqnLines(L.slice(0, 2))),
+    St(`Add them: ${2 * a}x = ${neg(2 * a * x)}, so x = ${neg(2 * a * x)} ÷ ${2 * a} = ${neg(x)}.`, eqnLines(L)),
+    St(`Put x = ${neg(x)} into the first equation: ${a} × ${par(x)} + ${b}y = ${neg(a * x + b * y)}, so ${b}y = ${neg(b * y)} and y = ${neg(y)}.`),
+    St(`So x = ${neg(x)} and y = ${neg(y)}. The question asks for ${askX ? `x: ${neg(x)}` : `y: ${neg(y)}`}.`),
+  ], { q: `${e1} and ${e2}. What is ${askX ? 'x' : 'y'}?`, unit: `${askX ? 'x' : 'y'} =` });
 });
 skill('8-cyl', 8, 'Geometry', 'Volume of a cylinder', ['V = π × r² × h.', 'Use π ≈ 3.14.'], (r) => {
   const rad = r.int(1, 8), h = r.int(2, 15);

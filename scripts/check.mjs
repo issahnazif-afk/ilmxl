@@ -8,11 +8,13 @@ import { SKILLS, makeItem, lessonOf, fromBank } from '../src/app/curriculum.mjs'
 import { mark, parseNumber, spokenToNumber } from '../src/app/answer.mjs';
 import { PUZZLES, parse, run, countBlocks } from '../src/app/coding.mjs';
 
+const VISUALS = new Set(['objects', 'groups', 'takeaway', 'tenframes', 'blocks', 'clock', 'fraction', 'shape', 'array', 'grid', 'coord', 'righttri', 'column', 'longdiv', 'numberline', 'fracbars', 'area', 'eqn']);
 const fails = [];
-const fail = (where, msg) => { if (fails.length < 60) fails.push(`${where}: ${msg}`); else fails.length === 60 && fails.push('…'); };
+const failCount = {};
+const fail = (where, msg) => { const k = where.split(/[#\[ ]/)[0]; failCount[k] = (failCount[k] ?? 0) + 1; if (fails.length < 60) fails.push(`${where}: ${msg}`); else fails.length === 60 && fails.push('…'); };
 let questions = 0;
 
-function checkItem(where, it) {
+function checkItem(where, it, generated = false) {
   if (!it || typeof it.q !== 'string' || !it.q.trim()) return fail(where, 'no question text');
   if (/undefined|NaN|\[object/.test(it.q)) fail(where, `bad text: ${it.q}`);
   if (it.kind === 'mc') {
@@ -26,6 +28,21 @@ function checkItem(where, it) {
     if (it.kind === 'num' && Number.isNaN(parseNumber(it.answer))) fail(where, `answer is not a number: ${it.answer}`);
     for (const a of it.accept ?? []) if (!mark(it, a).right) fail(where, `accepted answer marked wrong: ${a}`);
   } else fail(where, `unknown kind ${it.kind}`);
+  // worked steps: well formed, known pictures, and the working must reach the answer
+  const steps = it.steps ?? [];
+  steps.forEach((s, k) => {
+    const t = typeof s === 'string' ? s : s?.text;
+    if (!t || /undefined|NaN|\[object|Infinity/.test(t)) fail(where, `step ${k + 1} is broken: ${t}`);
+    if (s?.say != null && /undefined|NaN|\[object/.test(s.say)) fail(where, `step ${k + 1} says: ${s.say}`);
+    if (s?.visual && !VISUALS.has(s.visual.type)) fail(where, `step ${k + 1} has an unknown picture: ${s.visual.type}`);
+  });
+  if (generated && steps.length && (it.kind === 'num' || it.kind === 'text')) {
+    const tail = steps.slice(-2).map((s) => (typeof s === 'string' ? s : s.text)).join(' ');
+    const ans = String(it.answer), plain = ans.replace(/^-/, '−');
+    const shown = [ans, plain, ans.replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1,'), Number(ans).toLocaleString('en-CA')];
+    const each = it.numbers ? it.numbers.every((x) => tail.includes(String(x)) || tail.includes(String(x).replace(/^-/, '−'))) : false;
+    if (!each && !shown.some((x) => tail.includes(x))) fail(where, `the last steps never reach the answer ${ans}: "${tail.slice(0, 140)}"`);
+  }
   if (it.expr) {
     let v; try { v = Function(`"use strict"; return (${it.expr});`)(); } catch (e) { return fail(where, `expr fails: ${it.expr}`); }
     const want = parseNumber(it.answer);
@@ -40,7 +57,7 @@ for (const s of SKILLS) {
   if (ids.has(s.id)) fail(s.id, 'duplicate id'); ids.add(s.id);
   if (!s.title || !s.subject || typeof s.grade !== 'number' || s.grade < -1 || s.grade > 12) fail(s.id, 'missing title/subject/grade');
   if (s.gen) {
-    for (let seed = 1; seed <= 400; seed++) { let it; try { it = makeItem(s, seed * 104729); } catch (e) { fail(s.id, `seed ${seed}: ${e.message}`); continue; } checkItem(`${s.id}#${seed}`, it); }
+    for (let seed = 1; seed <= 400; seed++) { let it; try { it = makeItem(s, seed * 104729); } catch (e) { fail(s.id, `seed ${seed}: ${e.message}`); continue; } checkItem(`${s.id}#${seed}`, it, true); }
     // variety: a generator should not give the same question every time
     const qs = new Set(Array.from({ length: 40 }, (_, i) => makeItem(s, i * 31 + 5).q + JSON.stringify(makeItem(s, i * 31 + 5).visual ?? '')));
     if (qs.size < 4) fail(s.id, `only ${qs.size} different questions`);

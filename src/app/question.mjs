@@ -1,20 +1,29 @@
 // One question on screen: the prompt, its picture, the way to answer (tap a choice, type, or say it), then the
 // teacher's feedback with worked steps. Used by practice, the teacher's lessons, reviews and the world's gates.
-import { el, icon, visual, mathText, chime, SHAPE_SVG } from './ui.mjs';
+import { el, icon, visual, mathText, chime, button, SHAPE_SVG } from './ui.mjs';
 import { mark, spokenToNumber } from './answer.mjs';
-import { say, listen, canListen, praise, retry } from './teacher.mjs';
+import { say, listen, canListen, praise, retry, stopSpeaking } from './teacher.mjs';
 import { speakable } from './curriculum.mjs';
 import { COLOURS } from './activities.mjs';
+import { explain } from './explain.mjs';
+import { prepare, dropPrepared } from './voice.mjs';
+import { stepSay } from './curriculum.mjs';
 
 // opts: { teacher, fig, young, speak (read the question aloud), onDone(right, given) }
 export function question(item, opts = {}) {
   const { teacher = 'amina', fig = null, young = false } = opts;
+  stopSpeaking();   // the last question's explanation stops when a new question comes
+  dropPrepared();
   const box = el('div', { class: `q ${young ? 'q-young' : ''}`, 'aria-live': 'polite' });
   const spoken = item.say ?? speakable(item.q);
   const readBtn = el('button', { type: 'button', class: 'q-read', title: 'Read it to me', 'aria-label': 'Read the question aloud', onclick: () => say(spoken, { teacher, fig }) }, icon('sound'));
   box.append(el('div', { class: 'q-head' }, readBtn, el('p', { class: `q-text ${item.big ? 'q-big' : ''}` }, mathText(item.q))));
   const pic = visual(item.visual); if (pic) box.append(pic);
   const fb = el('div', { class: 'q-fb', hidden: true });
+  // what the teacher may say about this question, made by the natural voice while the learner thinks
+  const rightAnswer = item.kind === 'mc' ? item.choices[item.a] : item.answer;
+  const wrongWord = retry(), wrongLead = `${wrongWord} The answer is ${speakable(rightAnswer)}.`;
+  prepare([...(opts.speak ? [spoken] : []), wrongLead, ...(item.steps ?? []).map(stepSay)], teacher);
   let answered = false;
 
   const finish = (given) => {
@@ -24,14 +33,23 @@ export function question(item, opts = {}) {
     chime(res.right);
     const right = item.kind === 'mc' ? item.choices[item.a] : item.answer;
     fb.hidden = false;
-    const word = res.right ? praise() : res.reason === 'simplify' ? 'Right value, but write it in simplest form.' : retry();
+    const word = res.right ? praise() : res.reason === 'simplify' ? 'Right value, but write it in simplest form.' : wrongWord;
     fb.replaceChildren(
       el('p', { class: 'q-verdict' }, icon(res.right ? 'check' : 'x'), word),
       res.right ? null : el('p', { class: 'q-answer' }, 'The answer is ', el('b', {}, mathText(right)), '.'),
-      !res.right && item.steps?.length ? el('ol', { class: 'q-steps' }, ...item.steps.map((s) => el('li', {}, mathText(s)))) : null,
     );
-    const line = res.right ? word : `${word} The answer is ${speakable(right)}. ${(item.steps ?? []).map(speakable).join(' ')}`;
-    say(line, { teacher, fig });
+    const steps = item.steps ?? [];
+    if (!steps.length) say(res.right ? word : `${word} The answer is ${speakable(right)}.`, { teacher, fig });
+    else if (res.right) {
+      // right: praise, and the working is there for anyone who wants to see it
+      const see = button([icon('board'), 'See the steps'], () => { see.remove(); const ex = explain(steps, { teacher, fig, title: 'How to work it out' }); fb.append(ex); ex.start(); }, 'btn btn-sm');
+      fb.append(el('div', { class: 'row' }, see));
+      say(word, { teacher, fig });
+    } else {
+      // wrong: the teacher says the answer, then works through it step by step
+      const ex = explain(steps, { teacher, fig, lead: res.reason === 'simplify' ? `${word} The answer is ${speakable(right)}.` : wrongLead });
+      fb.append(ex); ex.start();
+    }
     box.querySelectorAll('button.choice, .q-input input, .q-input button, .keypad button').forEach((b) => (b.disabled = true));
     opts.onDone?.(res.right, given);
   };

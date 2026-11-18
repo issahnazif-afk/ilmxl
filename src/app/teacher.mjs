@@ -1,6 +1,7 @@
 // The on-screen teacher: a drawn character who speaks (the browser's voice), listens (the browser's speech
 // recognition, when it has one) and corrects. Two teachers to choose from; a learner picks one when they join.
 import { el } from './ui.mjs';
+import { naturalOn, loadNatural, clip, sentences } from './voice.mjs';
 
 export const TEACHERS = {
   amina: { id: 'amina', name: 'Ms. Amina', voice: 'female', blurb: 'Patient and cheerful. Loves stories and science.' },
@@ -36,33 +37,70 @@ export function teacherFigure(id) { return el('div', { class: `teacher t-${id}`,
 let voices = [];
 const loadVoices = () => { try { voices = speechSynthesis.getVoices(); } catch {} };
 try { loadVoices(); speechSynthesis.onvoiceschanged = loadVoices; } catch {}
-const FEMALE = /female|woman|zira|aria|jenny|samantha|karen|moira|tessa|victoria|susan|hazel|libby|sonia|clara|natasha|google us english$/i;
-const MALE = /male|man|david|guy|daniel|alex|fred|george|ryan|liam|christopher|eric|mark|thomas/i;
+const FEMALE = /female|woman|zira|aria|jenny|samantha|karen|moira|tessa|victoria|susan|hazel|libby|sonia|clara|natasha|ava|allison|emma|michelle|ana|google us english$/i;
+const MALE = /male|man|david|guy|daniel|alex|fred|george|ryan|liam|christopher|eric|mark|thomas|andrew|brian|roger|steffan|tom|evan|aaron/i;
+// the best voice this device has: the neural "Natural"/"Online" voices (Edge), Google's voices (Chrome), the Enhanced
+// and Premium voices (Apple), before the older robotic ones; Canadian English first, then the right teacher
 function pickVoice(kind) {
-  const en = voices.filter((v) => /^en[-_](CA|US|GB|AU)/i.test(v.lang));
-  const pool = en.length ? en : voices;
-  const want = kind === 'male' ? MALE : FEMALE, not = kind === 'male' ? FEMALE : MALE;
-  return pool.find((v) => /en[-_]CA/i.test(v.lang) && want.test(v.name) && !(kind === 'male' && /female/i.test(v.name)))
-    ?? pool.find((v) => want.test(v.name) && !(kind === 'male' && /female/i.test(v.name)) && !not.test(v.name.replace(want, '')))
-    ?? pool[0] ?? null;
+  const en = voices.filter((v) => /^en[-_]/i.test(v.lang));
+  if (!en.length) return voices[0] ?? null;
+  const want = kind === 'male' ? MALE : FEMALE, other = kind === 'male' ? FEMALE : MALE;
+  const score = (v) => (/natural|neural/i.test(v.name) ? 8 : /online/i.test(v.name) ? 6 : /premium|enhanced/i.test(v.name) ? 6 : /google/i.test(v.name) ? 4 : 0)
+    + (/en[-_]CA/i.test(v.lang) ? 3 : /en[-_](US|GB)/i.test(v.lang) ? 1 : 0)
+    + (want.test(v.name) && !(kind === 'male' && /female/i.test(v.name)) ? 3 : other.test(v.name) ? -4 : 0);
+  return [...en].sort((a, b) => score(b) - score(a))[0];
 }
-export const canSpeak = () => 'speechSynthesis' in globalThis;
+export const canSpeak = () => 'speechSynthesis' in globalThis || typeof Audio !== 'undefined';
 let muted = false;
 export const setMuted = (m) => { muted = m; if (m) stopSpeaking(); };
 export const isMuted = () => muted;
-export function stopSpeaking() { try { speechSynthesis.cancel(); } catch {} document.querySelectorAll('.teacher.talking').forEach((t) => t.classList.remove('talking')); }
+
+// run counts up with every new line and every stop: a line that was cut off never carries on (no two voices at once)
+let run = 0, playing = null;
+export function stopSpeaking() {
+  run++;
+  try { playing?.pause(); } catch {} playing = null;
+  try { speechSynthesis.cancel(); } catch {}
+  document.querySelectorAll('.teacher.talking').forEach((t) => t.classList.remove('talking'));
+}
 
 // speak a line; resolves when done (or at once when muted / no voice). `fig` is the teacher's figure to animate.
-export function say(text, { teacher = 'amina', fig = null, rate } = {}) {
+// The natural voice (voice.mjs) speaks when it is ready; otherwise the browser's voice, and the natural voice starts
+// getting ready in the background.
+export async function say(text, { teacher = 'amina', fig = null, rate } = {}) {
+  if (muted || !text) return;
+  stopSpeaking();
+  const mine = run;
+  if (!naturalOn()) { loadNatural(); return deviceSay(text, { teacher, fig, rate }, mine); }
+  const parts = sentences(text);
+  let next = clip(parts[0], teacher);
+  for (let i = 0; i < parts.length; i++) {
+    // a sentence not ready within 2.5 s (a slow device) is spoken by the device voice: a child never waits
+    const url = await Promise.race([next, new Promise((r) => setTimeout(() => r(null), 2500))]);
+    if (mine !== run) return;
+    if (i + 1 < parts.length) next = clip(parts[i + 1], teacher);
+    if (url) await playClip(url, fig, mine); else await deviceSay(parts[i], { teacher, fig, rate }, mine);
+    if (mine !== run) return;
+  }
+}
+function playClip(url, fig, mine) {
   return new Promise((resolve) => {
-    if (muted || !canSpeak() || !text) return resolve();
+    const a = new Audio(url); playing = a;
+    let done = false; const end = () => { if (done) return; done = true; fig?.classList.remove('talking'); if (playing === a) playing = null; resolve(); };
+    a.onplaying = () => { if (mine === run) fig?.classList.add('talking'); };
+    a.onended = end; a.onerror = end; a.onpause = end;
+    a.play().catch(end);
+  });
+}
+function deviceSay(text, { teacher, fig, rate }, mine) {
+  return new Promise((resolve) => {
+    if (!('speechSynthesis' in globalThis) || mine !== run) return resolve();
     try {
-      speechSynthesis.cancel();
       const u = new SpeechSynthesisUtterance(text);
       const v = pickVoice(TEACHERS[teacher]?.voice); if (v) { u.voice = v; u.lang = v.lang; } else u.lang = 'en-CA';
       u.rate = rate ?? 0.95; u.pitch = TEACHERS[teacher]?.voice === 'male' ? 0.95 : 1.08;
       let done = false; const end = () => { if (done) return; done = true; fig?.classList.remove('talking'); resolve(); };
-      u.onstart = () => fig?.classList.add('talking');
+      u.onstart = () => { if (mine === run) fig?.classList.add('talking'); };
       u.onend = end; u.onerror = end;
       // some browsers never fire onend: give up after a generous time
       setTimeout(end, 1500 + text.length * 110);

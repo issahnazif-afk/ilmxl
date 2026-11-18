@@ -97,6 +97,7 @@ export default function (main) {
       el('div', { class: 'faq' }, ...[
         ['Is IlmXL really free?', 'Yes. No ads, no subscriptions, nothing to buy.'],
         ['Which curriculum does it follow?', 'Maths, English and Science follow the usual North American order. Social Studies is Canadian, with Nova Scotia’s own topics first and other provinces to follow.'],
+        ['Whose voice is the teacher’s?', 'A natural voice made on your own device. The voice model (about 90 MB) downloads once and stays in the browser; nothing your child types or says is sent anywhere by it. On a slow connection you can keep the device’s own voice (account menu).'],
         ['How does the teacher listen?', 'Your browser’s speech recognition hears spoken answers and reading. In some browsers (such as Chrome) the audio is sent to the browser maker to be recognised. Typing always works instead.'],
         ['Do children need their own accounts?', 'No. A parent, guardian or teacher creates the account and adds each child as a learner, by first name and grade only.'],
         ['Can we use it on more than one device?', isDemo() ? 'Soon: saving to your account is being switched on. Until then, a parent can save a backup file and load it on another device.' : 'Yes. Sign in on any device and your learners and their progress come with you.'],

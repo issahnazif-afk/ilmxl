@@ -11,8 +11,18 @@ Activities, with an on-screen teacher. Static Vite site (no framework), publishe
 - Written banks: `src/content/{english,science,social}.mjs`, format in `src/content/FORMAT.md`.
   Social Studies is Canadian; skills with `province: 'NS'` are Nova Scotia's (the first province). Others to come.
 - Coding puzzles: `src/app/coding.mjs`, each with a known solution.
-- The teacher (`src/app/teacher.mjs`): Ms. Amina / Mr. Yusuf, our own SVG drawings; browser speech synthesis and
-  recognition (typing always works instead).
+- Worked steps (`src/math/steps.mjs`): a step is a string or `{ text, say?, visual? }`, one idea per step. Use the
+  builders (columnAdd/columnSub with decimals and regrouping, columnMul/columnMul1, longDivision, numberLine,
+  fractionBars, eqnLines, areaModel) so the working is drawn as a teacher writes it; `visual()` in `src/app/ui.mjs`
+  draws every picture type. `npm run check` fails if a generator's last two steps never reach its answer.
+- Explanations (`src/app/explain.mjs`): the step-by-step player, used after a wrong answer, on "See the steps",
+  in "Learn with an example" (practice) and in lessons. Spoken text: `stepSay()`/`speakable()` in curriculum.mjs
+  (fractions as "3 quarters", "negative 7", "plus").
+- The teacher (`src/app/teacher.mjs`): Ms. Amina / Mr. Yusuf, our own SVG drawings. Voice (`src/app/voice.mjs`):
+  Kokoro (open, Apache-2.0) made in the browser (model ~90 MB from Hugging Face, once, cached); af_heart / am_michael.
+  A question's lines are prepared while the learner thinks; a sentence not ready in 2.5 s uses the best device voice
+  (Edge Natural, Google, Apple Enhanced first). One voice at a time: every say() cuts off the last. Listening:
+  browser speech recognition (typing always works instead).
 
 ## Checks
 
@@ -41,7 +51,8 @@ Icons are our own SVGs in `src/app/ui.mjs`; no emoji icons. Honour prefers-reduc
 
 ## Privacy
 
-Say accurately that the browser's speech recognition may send audio to the browser maker.
+Say accurately that the browser's speech recognition may send audio to the browser maker, and that the natural
+voice is made on the device (its model is downloaded from Hugging Face).
 
 ## Commits
 

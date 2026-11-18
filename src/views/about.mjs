@@ -2,6 +2,7 @@
 import { el, icon } from '../app/ui.mjs';
 import { SKILLS } from '../app/curriculum.mjs';
 import { PUZZLES } from '../app/coding.mjs';
+import { isDemo } from '../app/account.mjs';
 
 export default function (main) {
   const n = (s) => SKILLS.filter((x) => x.subject === s).length;
@@ -19,7 +20,11 @@ export default function (main) {
       el('h2', { class: 'h3' }, 'How it works'),
       el('p', {}, 'Each skill has an XL score from 0 to 100. It rises quickly at first and slowly near the top, and the last stretch needs answers right in a row. At 100 a skill is proficient; a few days later it comes back for review, and a right answer then makes it mastered.'),
       el('h2', { class: 'h3' }, 'Privacy'),
-      el('p', {}, 'There are no accounts and no server. Learners and progress are kept in this browser only. The teacher’s voice and listening use your browser’s own speech features; on some browsers (such as Chrome) spoken answers are sent to the browser maker to be recognised. Typing always works instead.'),
+      el('p', {}, isDemo()
+        ? 'Accounts are kept on this device only for now: the username, a hashed password, and each learner’s first name, grade and progress stay in this browser.'
+        : 'An account keeps the username, a hashed password, and each learner’s first name, grade and progress in IlmXL’s account store (a Google Sheet run through Google Apps Script), so they work on any device. No email or surname is asked for children.'),
+      el('p', {}, 'The teacher’s natural voice is made on your own device: a voice model (about 90 MB) is downloaded once from Hugging Face and kept by the browser, and nothing your child types or says is sent anywhere by it. Until it is ready, or if you choose the device voice in the menu, the browser’s own voice speaks.'),
+      el('p', {}, 'Listening uses your browser’s speech recognition; in some browsers (such as Chrome) spoken answers are sent to the browser maker to be recognised. Typing always works instead.'),
       el('h2', { class: 'h3' }, 'Content'),
       el('p', {}, 'Questions are original. Written items are being reviewed by teachers; if you find a mistake, please tell us. IlmXL is not affiliated with any other learning platform.'),
     ),

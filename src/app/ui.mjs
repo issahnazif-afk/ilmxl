@@ -119,7 +119,112 @@ export function visual(v) {
     const g = Array.from({ length: 10 }, (_, i) => `<line x1="${20 + i * 20}" y1="10" x2="${20 + i * 20}" y2="190" stroke="currentColor" stroke-opacity=".15"/><line x1="20" y1="${190 - i * 20}" x2="200" y2="${190 - i * 20}" stroke="currentColor" stroke-opacity=".15"/><text x="${20 + i * 20}" y="204" font-size="10" text-anchor="middle" fill="currentColor">${i}</text><text x="10" y="${194 - i * 20}" font-size="10" text-anchor="middle" fill="currentColor">${i}</text>`).join('');
     svg = `<svg viewBox="0 0 210 210">${g}<line x1="20" y1="190" x2="200" y2="190" stroke="currentColor" stroke-width="2"/><line x1="20" y1="190" x2="20" y2="10" stroke="currentColor" stroke-width="2"/><circle cx="${20 + v.x * 20}" cy="${190 - v.y * 20}" r="6" fill="#E0442E"/></svg>`;
   } else if (v.type === 'righttri') svg = `<svg viewBox="0 0 220 150"><path d="M30 130h150V30z" fill="#E3ECFD" stroke="#2563EB" stroke-width="3"/><path d="M165 130v-15h15" fill="none" stroke="#2563EB" stroke-width="2"/><text x="105" y="146" text-anchor="middle" font-size="15" font-weight="800" fill="currentColor">${esc(v.a)}</text><text x="196" y="85" font-size="15" font-weight="800" fill="currentColor">${esc(v.b)}</text><text x="90" y="72" text-anchor="middle" font-size="15" font-weight="800" fill="currentColor">${esc(v.c)}</text></svg>`;
+  else if (v.type === 'column') svg = columnSvg(v);
+  else if (v.type === 'longdiv') svg = longDivSvg(v);
+  else if (v.type === 'numberline') svg = numberLineSvg(v);
+  else if (v.type === 'fracbars') svg = fracBarsSvg(v);
+  else if (v.type === 'area') svg = areaSvg(v);
+  else if (v.type === 'eqn') return el('div', { class: 'pic pic-eqn' }, ...v.lines.map((ln, i) => el('div', { class: `eq-line${i === v.lines.length - 1 ? ' now' : ''}` }, el('span', { class: 'eq' }, mathText(ln.eq)), ln.note ? el('span', { class: 'eq-note' }, mathText(ln.note)) : null)));
   return svg ? el('div', { class: `pic pic-${v.type}`, html: svg }) : null;
+}
+
+// ── pictures of written working (the step-by-step explanations) ──
+const MARK = '#DB2777', NEW = '#2563EB', CROSS = '#E0442E';
+const T = (x, y, s, size = 24, fill = 'currentColor', weight = 700) => `<text x="${x}" y="${y}" text-anchor="middle" font-size="${size}" font-weight="${weight}" fill="${fill}" style="font-variant-numeric:tabular-nums">${esc(s)}</text>`;
+// vertical arithmetic: columns counted from the right (0 = ones); hl = the column being worked on
+function columnSvg(v) {
+  const W = 30, LH = 36;
+  const all = [...v.rows, ...(v.partials ?? []), v.result ?? ''];
+  const cols = Math.max(...all.map((s) => s.length)) + 1;
+  const cx = (c) => 8 + (cols - 1 - c) * W + W / 2;
+  const marks = Object.keys(v.carries ?? {}).length || Object.keys(v.above ?? {}).length;
+  let y = marks ? 58 : 34;
+  const out = [];
+  const digits = (s, yy, fill = 'currentColor', crossed = []) => s.split('').map((ch, i) => {
+    const c = s.length - 1 - i; if (ch === ' ') return '';
+    const strike = crossed.includes(c) ? `<line x1="${cx(c) - 9}" y1="${yy - 6}" x2="${cx(c) + 9}" y2="${yy - 18}" stroke="${CROSS}" stroke-width="2.6" stroke-linecap="round"/>` : '';
+    return T(cx(c), yy, ch, 26, fill) + strike;
+  }).join('');
+  const top = y - LH + 8;
+  for (const [c, d] of Object.entries(v.carries ?? {})) out.push(T(cx(+c), marks ? 24 : 0, d, 16, MARK, 800));
+  for (const [c, d] of Object.entries(v.above ?? {})) out.push(T(cx(+c), 26, d, 17, NEW, 800));
+  v.rows.forEach((s, i) => {
+    out.push(digits(s, y, 'currentColor', i === 0 ? (v.crossed ?? []) : []));
+    if (i === v.rows.length - 1) out.push(T(cx(cols - 1), y, v.op, 26, 'currentColor', 600));
+    y += LH;
+  });
+  const line = (yy) => `<line x1="${8}" y1="${yy}" x2="${8 + cols * W}" y2="${yy}" stroke="currentColor" stroke-width="2.4"/>`;
+  out.push(line(y - LH + 12));
+  if (v.partials?.length) {
+    v.partials.forEach((s) => { out.push(digits(s, y + 4, 'currentColor')); y += LH; });
+    if (v.result) { out.push(line(y - LH + 16)); y += 4; }
+  }
+  if (v.result) out.push(digits(v.result, y + 4, NEW));
+  const H = y + 16;
+  const hl = v.hl >= 0 ? `<rect x="${cx(v.hl) - W / 2 + 2}" y="${top - 30}" width="${W - 4}" height="${H - top + 24}" rx="7" fill="${NEW}" opacity=".12"/>` : '';
+  return `<svg viewBox="0 0 ${16 + cols * W} ${H}" style="max-width:${16 + cols * W + 40}px">${hl}${out.join('')}</svg>`;
+}
+// long division in the bus-stop layout: the quotient over the dividend, the working underneath
+function longDivSvg(v) {
+  const W = 26, LH = 34, D = String(v.dividend), dv = String(v.divisor);
+  const x0 = 14 + dv.length * 16 + 22;                      // where the dividend's first digit column starts
+  const cx = (i) => x0 + i * W + W / 2;
+  const out = [];
+  String(v.quotient ?? '').split('').forEach((ch, i) => { if (ch !== ' ') out.push(T(cx(i), 30, ch, 24, NEW)); });
+  out.push(`<text x="${x0 - 22}" y="72" text-anchor="end" font-size="24" font-weight="700" fill="currentColor">${esc(dv)}</text>`);
+  out.push(`<path d="M${x0 - 14} 82 q 12 -20 0 -40 H ${x0 + D.length * W + 8}" fill="none" stroke="currentColor" stroke-width="2.4"/>`);
+  D.split('').forEach((ch, i) => out.push(T(cx(i), 72, ch, 24)));
+  let y = 72;
+  for (const w of v.work ?? []) {
+    y += LH;
+    const s = String(w.v), first = w.at - s.length + 1;
+    s.split('').forEach((ch, k) => out.push(T(cx(first + k), y, ch, 22, w.kind === 'left' ? MARK : 'currentColor')));
+    if (w.kind === 'take') { out.push(T(cx(first) - W + 4, y, '−', 22)); out.push(`<line x1="${cx(first) - W / 2 - 2}" y1="${y + 8}" x2="${cx(w.at) + W / 2}" y2="${y + 8}" stroke="currentColor" stroke-width="2"/>`); }
+  }
+  return `<svg viewBox="0 0 ${x0 + D.length * W + 18} ${y + 18}">${out.join('')}</svg>`;
+}
+// a number line from..to with ticks every `step`, labelled marks, and curved jumps above it
+function numberLineSvg(v) {
+  const n = Math.round((v.to - v.from) / v.step), Wd = 520, pad = 24, y = 92;
+  const X = (x) => pad + ((x - v.from) / (v.to - v.from)) * (Wd - 2 * pad);
+  const every = n <= 20 ? 1 : n <= 40 ? 2 : Math.ceil(n / 20);
+  const fmt = (x) => String(+x.toFixed(6));
+  const out = [`<line x1="${pad - 10}" y1="${y}" x2="${Wd - pad + 10}" y2="${y}" stroke="currentColor" stroke-width="2.2"/>`];
+  for (let i = 0; i <= n; i++) {
+    const x = v.from + i * v.step, big = i % every === 0;
+    out.push(`<line x1="${X(x)}" y1="${y - (big ? 8 : 5)}" x2="${X(x)}" y2="${y + (big ? 8 : 5)}" stroke="currentColor" stroke-width="${big ? 2 : 1.4}"/>`);
+    if (big) out.push(T(X(x), y + 28, fmt(x), 14, 'currentColor', 600));
+  }
+  (v.jumps ?? []).forEach((j, k) => {
+    const a = X(j.from), b = X(j.to), h = Math.min(56, 18 + Math.abs(b - a) / 3), mid = (a + b) / 2;
+    out.push(`<path d="M${a} ${y - 4} Q ${mid} ${y - 4 - 2 * h} ${b} ${y - 4}" fill="none" stroke="${k % 2 ? MARK : NEW}" stroke-width="2.4"/><path d="M${b} ${y - 4} l ${b > a ? -7 : 7} -6 M${b} ${y - 4} l ${b > a ? -2 : 2} -9" stroke="${k % 2 ? MARK : NEW}" stroke-width="2.4" fill="none" stroke-linecap="round"/>`);
+    if (j.label) out.push(T(mid, y - 10 - h, j.label, 15, k % 2 ? MARK : NEW, 800));
+  });
+  (v.marks ?? []).forEach((m) => out.push(`<circle cx="${X(m)}" cy="${y}" r="6.5" fill="${CROSS}"/>`));
+  return `<svg viewBox="0 0 ${Wd} 130">${out.join('')}</svg>`;
+}
+// fraction bars of equal length, one under another
+function fracBarsSvg(v) {
+  const Wd = 320, H = 34, lab = 64, out = [];
+  v.rows.forEach((r, k) => {
+    const y = 6 + k * (H + 14), w = Wd / r.d;
+    for (let i = 0; i < r.d; i++) out.push(`<rect x="${lab + i * w}" y="${y}" width="${w}" height="${H}" fill="${i < r.n ? (k % 2 ? MARK : NEW) : 'var(--surface)'}" fill-opacity="${i < r.n ? 0.8 : 1}" stroke="currentColor" stroke-width="1.6"/>`);
+    out.push(T(lab / 2, y + H / 2 + 7, r.label ?? `${r.n}/${r.d}`, 18));
+  });
+  return `<svg viewBox="0 0 ${lab + Wd + 6} ${6 + v.rows.length * (H + 14)}">${out.join('')}</svg>`;
+}
+// an area model: the two numbers split by place value, one rectangle per partial product
+function areaSvg(v) {
+  const sa = v.a.reduce((x, y) => x + y, 0), sb = v.b.reduce((x, y) => x + y, 0);
+  const Wd = 340, Hh = 200, ox = 46, oy = 30;
+  const ws = v.a.map((x) => Math.max(70, (x / sa) * Wd)), hs = v.b.map((x) => Math.max(46, (x / sb) * Hh));
+  const out = []; let X = ox;
+  v.a.forEach((x, i) => { out.push(T(X + ws[i] / 2, 20, x, 16, NEW, 800)); let Y = oy;
+    v.b.forEach((y, j) => { if (i === 0) out.push(T(22, Y + hs[j] / 2 + 6, y, 16, MARK, 800));
+      out.push(`<rect x="${X}" y="${Y}" width="${ws[i]}" height="${hs[j]}" fill="${(i + j) % 2 ? 'var(--surface-2)' : 'var(--surface)'}" stroke="currentColor" stroke-width="1.8"/>`, T(X + ws[i] / 2, Y + hs[j] / 2 + 6, x * y, 17));
+      Y += hs[j]; });
+    X += ws[i]; });
+  return `<svg viewBox="0 0 ${X + 10} ${oy + hs.reduce((p, q) => p + q, 0) + 8}">${out.join('')}</svg>`;
 }
 // "2^3" → 2<sup>3</sup> for display
 export function mathText(s) {

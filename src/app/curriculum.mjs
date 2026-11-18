@@ -70,16 +70,25 @@ export function lessonOf(skill) {
   if (skill.gen) {
     const lines = skill.lesson.map((t) => ({ say: speakable(t), board: t }));
     const ex = makeItem(skill, 12345);
-    const worked = [{ say: "Let's do one together.", board: ex.q, visual: ex.visual }, ...(ex.steps ?? []).map((t) => ({ say: speakable(t), board: t }))];
+    const worked = [{ say: "Let's do one together.", board: ex.q, visual: ex.visual }, ...(ex.steps ?? []).map((t) => ({ say: stepSay(t), board: stepText(t), visual: t.visual }))];
     return { steps: [...lines, ...worked], check: makeItem(skill, 777) };
   }
   return { steps: skill.lesson.map((x) => ({ say: x.say, board: x.board ?? x.say })), check: skill.check ? fromBank(skill.check) : makeItem(skill, 1) };
 }
-// symbols the browser voice would misread, said in words
+// 3/4 → "3 quarters", 1/2 → "1 half", 7/20 → "7 over 20": the way a teacher reads a fraction
+const DEN = { 2: ['half', 'halves'], 3: ['third', 'thirds'], 4: ['quarter', 'quarters'], 5: ['fifth', 'fifths'], 6: ['sixth', 'sixths'], 7: ['seventh', 'sevenths'], 8: ['eighth', 'eighths'], 9: ['ninth', 'ninths'], 10: ['tenth', 'tenths'], 12: ['twelfth', 'twelfths'], 100: ['hundredth', 'hundredths'] };
+export const fractionWords = (n, d) => (DEN[d] ? `${n} ${DEN[d][n === 1 ? 0 : 1]}` : `${n} over ${d}`);
+// a worked step is a string or { text, say?, visual? } (see src/math/steps.mjs)
+export const stepText = (s) => (typeof s === 'string' ? s : s?.text ?? '');
+export const stepSay = (s) => (typeof s === 'string' ? speakable(s) : s?.say ?? speakable(s?.text ?? ''));
+// symbols the voice would misread, said in words
 export function speakable(t) {
   return String(t)
-    .replace(/(\d)\s*×\s*(\d)/g, '$1 times $2').replace(/×/g, ' times ').replace(/÷/g, ' divided by ').replace(/−/g, ' minus ')
-    .replace(/(\d+)\/(\d+)/g, '$1 over $2').replace(/≈/g, ' about ').replace(/√/g, 'the square root of ')
+    .replace(/(\d)\s*R\s*(\d)/g, '$1 remainder $2')
+    .replace(/\((−?\d+(?:\.\d+)?)\)/g, '$1')                       // (−7) → −7
+    .replace(/(^|[\s(=,:])[−-](?=\d)/g, '$1negative ')                // a sign on a number: "negative 7"
+    .replace(/(\d)\s*×\s*(\d)/g, '$1 times $2').replace(/×/g, ' times ').replace(/÷/g, ' divided by ').replace(/−/g, ' minus ').replace(/ \+ /g, ' plus ')
+    .replace(/(?<![\d.])(\d+)\/(\d+)(?![\d.])/g, (m, n, d) => fractionWords(+n, +d)).replace(/(\w)\/(\w)/g, '$1 over $2').replace(/≈/g, ' about ').replace(/√/g, 'the square root of ')
     .replace(/(\w)\^(\d+)/g, '$1 to the power $2').replace(/²/g, ' squared').replace(/³/g, ' cubed').replace(/°/g, ' degrees')
     .replace(/</g, ' is less than ').replace(/>/g, ' is greater than ').replace(/ = /g, ' equals ').replace(/→/g, ', so ').replace(/\s+/g, ' ').trim();
 }

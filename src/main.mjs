@@ -12,6 +12,8 @@ import { el, icon } from './app/ui.mjs';
 import { current, learners, onChange, openAccount, mergeRemote } from './app/store.mjs';
 import { me, pull, signOut } from './app/account.mjs';
 import { isYoung, bandOf } from './app/curriculum.mjs';
+import { stopSpeaking } from './app/teacher.mjs';
+import { voiceState, voiceProgress, voicePref, setVoicePref, onVoiceState, loadNatural, isThrifty } from './app/voice.mjs';
 
 const views = {
   welcome: () => import('./views/welcome.mjs'),
@@ -49,6 +51,24 @@ export function themeButton() {
 export const MARK = '<svg viewBox="0 0 32 32"><defs><linearGradient id="mk" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#6366F1"/><stop offset=".55" stop-color="#8B5CF6"/><stop offset="1" stop-color="#EC4899"/></linearGradient></defs><rect width="32" height="32" rx="9" fill="url(#mk)"/><path d="M6 22.5c3.3-2 6.7-2 10 0 3.3-2 6.7-2 10 0V11c-3.3-2-6.7-2-10 0-3.3-2-6.7-2-10 0z" fill="none" stroke="#fff" stroke-width="2" stroke-linejoin="round"/><path d="M16 11v11.5" stroke="#fff" stroke-width="2"/><path d="m23 3.2 1 2.4 2.5.4-1.8 1.7.5 2.5-2.2-1.2-2.2 1.2.5-2.5-1.8-1.7 2.5-.4z" fill="#FDE047"/></svg>';
 export const brand = (href = '#/') => el('a', { class: 'brand', href }, el('span', { class: 'brand-mark', 'aria-hidden': 'true', html: MARK }), el('span', { class: 'brand-name' }, 'Ilm', el('b', {}, 'XL')));
 
+// the teacher's voice in the account menu: natural (made on this device) or the device's own voice
+function voiceItem() {
+  const b = el('button', { type: 'button', role: 'menuitem', class: 'voice-item' });
+  const paint = () => {
+    const st = voiceState(), pref = voicePref();
+    const [line, sub] = pref !== 'natural' ? ['Teacher’s voice: device', 'Tap for the natural voice']
+      : st === 'ready' ? ['Teacher’s voice: natural', 'Made on this device. Tap for the device voice']
+        : st === 'loading' ? [`Getting the natural voice ready… ${voiceProgress()}%`, 'A one-time download of about 90 MB']
+          : st === 'failed' ? ['Teacher’s voice: device', 'The natural voice could not start here. Tap to try again']
+            : isThrifty() ? ['Teacher’s voice: device', 'Tap to download the natural voice (about 90 MB)'] : ['Teacher’s voice: natural', 'Starting…'];
+    b.replaceChildren(icon('sound'), el('span', { class: 'vi-text' }, el('span', {}, line), el('small', {}, sub)));
+  };
+  b.addEventListener('click', (e) => { e.stopPropagation(); setVoicePref(voicePref() === 'natural' && voiceState() === 'ready' ? 'device' : 'natural'); paint(); });
+  const off = onVoiceState(() => (b.isConnected ? paint() : off()));
+  paint();
+  return b;
+}
+
 function shell(route) {
   const a = me(), l = current();
   if (!a) {
@@ -62,6 +82,7 @@ function shell(route) {
     ...learners().map((x) => el('a', { href: '#/who', role: 'menuitem', class: x.id === l?.id ? 'on' : '', onclick: (e) => { e.preventDefault(); import('./app/store.mjs').then((s) => { s.choose(x.id); menu.hidden = true; go(''); render(); }); } }, el('span', { class: 'me-dot sm', style: `--c:${x.colour}` }, x.name[0]?.toUpperCase()), x.name)),
     el('a', { href: '#/new', role: 'menuitem' }, icon('plus'), 'Add a learner'),
     el('hr'),
+    voiceItem(),
     el('a', { href: '#/parents', role: 'menuitem' }, icon('family'), 'Parents and account'),
     el('button', { type: 'button', role: 'menuitem', onclick: () => { signOut(); location.hash = '#/welcome'; location.reload(); } }, icon('logout'), 'Sign out'),
   );
@@ -93,7 +114,7 @@ async function render() {
   if (a && !PUBLIC.has(route) && !NO_LEARNER.has(route) && !current()) { go(learners().length ? 'who' : 'new'); return; }
   try { cleanup?.(); } catch {}
   cleanup = null;
-  try { speechSynthesis.cancel(); } catch {}
+  stopSpeaking();
   const mod = await views[route]();
   if (mine !== seq) return;
   const l = a ? current() : null;
@@ -143,3 +164,5 @@ export async function startAccount() {
 if (me()) openAccount(me().username);
 render();
 if (me()) startAccount();
+// signed in: get the natural voice ready in the background, once the page has settled
+if (me()) (globalThis.requestIdleCallback ?? ((f) => setTimeout(f, 2500)))(() => loadNatural());

@@ -1,10 +1,11 @@
 // Adaptive practice (#/practise/<skill>): questions until the XL score reaches 100. After two misses in a row the
 // teacher offers a lesson. Also the review of proficient skills (#/review) and the world's gates (#/gate/<skill>).
-import { el, icon, button, ring } from '../app/ui.mjs';
+import { el, icon, button, ring, visual, mathText } from '../app/ui.mjs';
 import { current, skillOf, answer, review, dueReviews, openGate, LEVELS } from '../app/store.mjs';
 import { SKILL, SUBJECTS, makeItem, itemKey, isYoung, gradeLabel } from '../app/curriculum.mjs';
 import { question } from '../app/question.mjs';
-import { TEACHERS, teacherFigure, say } from '../app/teacher.mjs';
+import { explain } from '../app/explain.mjs';
+import { TEACHERS, teacherFigure, say, stopSpeaking } from '../app/teacher.mjs';
 import { ISLANDS } from '../app/path.mjs';
 
 export default function (main, { route, args, go }) {
@@ -20,12 +21,27 @@ export default function (main, { route, args, go }) {
   const scoreEl = el('b', { class: 'xl-num' }), ringBox = el('span'), lvl = el('small');
   const stage = el('div', { class: 'stage' });
   const showScore = () => { const s = skillOf(l, skill.id); scoreEl.textContent = String(s.score); ringBox.replaceChildren(ring(s.level, 44)); lvl.textContent = LEVELS[s.level]; };
+  // "Learn with an example": a fresh question of this skill, solved step by step, before the learner tries one
+  const exHost = el('div');
+  const showExample = () => {
+    const it = makeItem(skill);
+    const right = it.kind === 'mc' ? it.choices[it.a] : it.answer;
+    const ex = explain(it.steps ?? [], { teacher: T.id, fig, title: 'How to solve it', lead: 'Here is an example. Watch how I solve it.' });
+    const close = button('Close the example', () => { stopSpeaking(); panel.remove(); }, 'btn btn-sm');
+    const panel = el('section', { class: 'example', 'aria-label': 'Worked example' },
+      el('p', { class: 'kicker' }, 'Example'), el('p', { class: 'q-text' }, mathText(it.q)), visual(it.visual),
+      el('p', { class: 'q-answer' }, 'Answer: ', el('b', {}, mathText(right))), ex, el('div', { class: 'row' }, close));
+    exHost.replaceChildren(panel); ex.start();
+    panel.scrollIntoView({ block: 'start', behavior: 'smooth' });
+  };
+  const exBtn = skill.gen ? button([icon('hint'), 'Learn with an example'], showExample, 'btn btn-sm ex-link') : null;
   main.append(
     el('a', { class: 'back', href: skill.subject === 'activities' ? '#/play' : `#/subject/${skill.subject}/${skill.grade}` }, icon('back'), sub.name),
     el('div', { class: 'prac' },
       el('div', { class: 'prac-main' },
         el('p', { class: 'kicker' }, `${sub.name} · ${gradeLabel(skill.grade)}`),
         el('h1', { class: 'h2' }, skill.title),
+        exBtn, exHost,
         stage),
       el('aside', { class: 'prac-side' },
         el('div', { class: 'xl' }, el('small', {}, 'XL score'), scoreEl, el('div', { class: 'xl-lv' }, ringBox, lvl)),
