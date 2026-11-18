@@ -49,7 +49,7 @@ function setup() {
   pr.setFrozenRows(1);
   pr.getRange('E:E').setNumberFormat('yyyy-mm-dd hh:mm');
   secret();
-  SpreadsheetApp.getUi().alert('IlmXL accounts are ready. Now deploy this script as a web app (Execute as: Me, Who has access: Anyone) and put its URL in GitHub as ILMXL_SERVER_URL.');
+  try { SpreadsheetApp.getUi().alert('IlmXL accounts are ready. Now deploy this script as a web app (Execute as: Me, Who has access: Anyone) and put its URL in GitHub as ILMXL_SERVER_URL.'); } catch (e) { /* run by the web app, not from the editor */ }
 }
 
 function doGet() { return json({ ok: true, service: 'ilmxl-accounts' }); }
@@ -98,8 +98,10 @@ function readToken(token) {
 }
 
 // ── rows ──
-function accounts() { return SpreadsheetApp.getActiveSpreadsheet().getSheetByName(ACCOUNTS_TAB); }
-function progressSheet() { return SpreadsheetApp.getActiveSpreadsheet().getSheetByName(PROGRESS_TAB); }
+// The tabs are made by setup(); if someone forgot to run it, or deleted a tab, the web app makes them itself.
+function tab(name) { const ss = SpreadsheetApp.getActiveSpreadsheet(); let sh = ss.getSheetByName(name); if (!sh) { setup(); sh = ss.getSheetByName(name); } return sh; }
+function accounts() { return tab(ACCOUNTS_TAB); }
+function progressSheet() { return tab(PROGRESS_TAB); }
 function findAccount(sh, username) {
   const u = String(username || '').trim().toLowerCase();
   if (!u || sh.getLastRow() < 2) return null;
