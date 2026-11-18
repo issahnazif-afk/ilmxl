@@ -1,0 +1,16 @@
+{
+  "name": "ilmxl",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "IlmXL: Maths, Science, English and Canadian Social Studies from Pre-K to grade 12, with an on-screen teacher.",
+  "scripts": {
+    "dev": "vite",
+    "check": "node scripts/check.mjs",
+    "build": "npm run check && vite build",
+    "preview": "vite preview"
+  },
+  "devDependencies": {
+    "vite": "^6.4.1"
+  }
+}
