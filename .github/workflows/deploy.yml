@@ -24,6 +24,9 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+        env:
+          # kokoro-js brings onnxruntime-node; the site never needs its GPU binaries, whose download fails on CI
+          ONNXRUNTIME_NODE_INSTALL_CUDA: skip
       - name: Check every question and puzzle, build the site
         env:
           # the IlmXL accounts server (apps-script/Code.gs): Settings → Secrets and variables → Actions → Variables
