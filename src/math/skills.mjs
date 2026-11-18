@@ -545,5 +545,37 @@ skill('12-limit', 12, 'Calculus', 'Limits by factoring', ['If you get 0/0, facto
   return num(2 * a, [`x² − ${a * a} = (x − ${neg(a)})(x + ${neg(a)}).`, `Cancel: x + ${neg(a)}. At x = ${a}: ${2 * a}.`], { q: `Find the limit as x → ${a} of (x² − ${a * a}) ÷ (x ${sgn(-a)}).` });
 });
 
+// the skills above, filed under their grade's categories (the names the grade files use)
+const RECAT = {
+  'k-count10': 'Counting to 10', 'k-count20': 'Counting to 20', 'k-after': 'Counting forward and back to 10', 'k-add5': 'Addition up to 5',
+  'k-sub5': 'Subtraction up to 5', 'k-add10': 'Addition up to 10', 'k-compare10': 'Comparing and ordering',
+  '1-add20': 'Addition up to 20', '1-missing': 'Addition up to 20', '1-sub20': 'Subtraction up to 20',
+  '3-round': 'Estimation and rounding', '3-fracid': 'Understand fractions', '3-fraccmp': 'Compare and order fractions', '3-area': 'Perimeter, area and volume', '3-perim': 'Perimeter, area and volume',
+  '4-equivfrac': 'Equivalent fractions', '4-fracadd': 'Fraction word problems', '4-decfrac': 'Fractions and decimals', '4-factors': 'Factors and multiples', '4-angles': 'Lines and angles',
+  '5-decadd': 'Add and subtract decimals', '5-decmult': 'Multiply decimals', '5-volume': 'Volume and surface area', '5-pow10': 'Multiply decimals', '5-coord': 'Coordinate plane',
+  '6-gcflcm': 'Number theory', '6-tri': 'Perimeter and area',
+  '7-circle': 'Perimeter and area', '7-pctchange': 'Percents', '7-ineq': 'Inequalities',
+  '8-pyth': 'Pythagorean theorem', '8-cyl': 'Surface area and volume',
+  '9-multistep': 'Solve equations', '9-like': 'Variable expressions and equations', '9-factor': 'Polynomials', '9-roots': 'Solve equations', '9-func': 'Relations and functions', '9-intercept': 'Linear functions',
+  '10-polyangle': 'Two-dimensional figures', '10-similar': 'Similarity',
+  '11-exp': 'Exponential functions', '11-log': 'Exponential functions', '11-seq': 'Sequences and series', '11-discrim': 'Quadratic relations', '11-complex': 'Quadratic relations',
+  '12-ncr': 'Probability', '12-unit': 'Trigonometry',   // 12-deriv and 12-limit stay under Calculus, an introduction past the grade 12 list
+};
+for (const s of S) { const c = RECAT[s.id.slice(5)]; if (c) s.strand = c; }
+
+// more skills, a file for each grade (src/math/more/g0.mjs … g12.mjs), written in the order of the grade's
+// categories; a grade's categories follow that file's order (skills above that share a category join it)
+import G0 from './more/g0.mjs'; import G1 from './more/g1.mjs'; import G2 from './more/g2.mjs'; import G3 from './more/g3.mjs';
+import G4 from './more/g4.mjs'; import G5 from './more/g5.mjs'; import G6 from './more/g6.mjs'; import G7 from './more/g7.mjs';
+import G8 from './more/g8.mjs'; import G9 from './more/g9.mjs'; import G10 from './more/g10.mjs'; import G11 from './more/g11.mjs'; import G12 from './more/g12.mjs';
+const MORE = [G0, G1, G2, G3, G4, G5, G6, G7, G8, G9, G10, G11, G12];
+const strandRank = new Map();   // 'grade|strand' → position in the grade file
+const keyOf = (s) => s.grade + '|' + s.strand;
+MORE.forEach((list) => list.forEach((s) => { if (!strandRank.has(keyOf(s))) strandRank.set(keyOf(s), strandRank.size); }));
+S.push(...MORE.flat());
+const pos = new Map(S.map((s, i) => [s, i]));
+const rank = (s) => strandRank.get(keyOf(s)) ?? 1e6 + pos.get(s);
+S.sort((a, b) => a.grade - b.grade || rank(a) - rank(b) || pos.get(a) - pos.get(b));
+
 export const MATH = S;
 export default S;

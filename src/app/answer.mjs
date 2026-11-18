@@ -11,7 +11,7 @@ export function parseNumber(s) {
   return NaN;
 }
 const simplestFraction = (s) => { const m = clean(s).match(/^-?(\d+)\/(\d+)$/); if (!m) return true; let [a, b] = [Number(m[1]), Number(m[2])]; while (b) [a, b] = [b, a % b]; return a === 1 && Number(m[2]) !== 1; };
-const norm = (s) => clean(s).toLowerCase().replace(/[.!?]+$/, '').replace(/\s*([,:()])\s*/g, '$1').replace(/^(the|a|an) /, '');
+const norm = (s) => clean(s).toLowerCase().replace(/[.!?]+$/, '').replace(/\s*([,:()])\s*/g, '$1').replace(/^(the|a|an) /, '').replace(/^\(([^()]*)\)$/, '$1');   // a point may be typed without its brackets
 const numbersIn = (s) => (clean(s).match(/-?\d*\.?\d+(\/\d+)?/g) ?? []).map(parseNumber);
 
 // returns { right, reason? }

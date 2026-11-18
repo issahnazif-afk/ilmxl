@@ -62,6 +62,9 @@ const P = {
   user: '<circle cx="12" cy="8" r="3.8"/><path d="M4.5 20c.8-4 3.8-6.2 7.5-6.2s6.7 2.2 7.5 6.2"/>',
   key: '<circle cx="8" cy="15" r="4"/><path d="m11 12 8.5-8.5M16.5 6.5l2.5 2.5M14 9l2 2"/>',
   wave: '<path d="M2 12c2.5-4 5-4 7.5 0s5 4 7.5 0 3.5-3 5-1"/>',
+  bolt: '<path d="M13 2 4 14h7l-1 8 9-12h-7z"/>',
+  timer: '<circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2.5M9 2h6"/>',
+  grid: '<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>',
 };
 export const icon = (name, cls = '') => {
   const s = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
@@ -165,8 +168,23 @@ function angleSvg(v) {
   const x2 = cx + L * Math.cos(a), y2 = cy - L * Math.sin(a), r = 26;
   return `<svg viewBox="0 0 220 140"><line x1="${cx}" y1="${cy}" x2="${cx + L}" y2="${cy}" stroke="currentColor" stroke-width="3" stroke-linecap="round"/><line x1="${cx}" y1="${cy}" x2="${x2}" y2="${y2}" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>${v.deg === 90 ? `<path d="M${cx + 16} ${cy}v-16h-16" fill="none" stroke="#DB2777" stroke-width="2"/>` : `<path d="M${cx + r} ${cy}A${r} ${r} 0 ${v.deg > 180 ? 1 : 0} 0 ${cx + r * Math.cos(a)} ${cy - r * Math.sin(a)}" fill="none" stroke="#DB2777" stroke-width="2.5"/>`}${v.label ? `<text x="${cx + 34 * Math.cos(a / 2) + 8}" y="${cy - 34 * Math.sin(a / 2)}" font-size="13" font-weight="800" fill="#DB2777">${esc(v.label)}</text>` : ''}</svg>`;
 }
+// plane with quad1: true — the first quadrant only, for data: { quad1, xMax, yMax, xStep?, yStep?, points, joined?, xLabel?, yLabel? }
+function quad1Svg(v) {
+  const xm = v.xMax ?? 10, ym = v.yMax ?? 10, xs = v.xStep ?? Math.max(1, Math.ceil(xm / 10)), ys = v.yStep ?? Math.max(1, Math.ceil(ym / 10));
+  const L = 34, B = 196, W = 200, H = 180, X = (x) => L + (x / xm) * W, Y = (y) => B - (y / ym) * H;
+  let g = '';
+  for (let x = 0; x <= xm + 1e-9; x += xs) g += `<line x1="${X(x)}" y1="${B - H}" x2="${X(x)}" y2="${B}" stroke="currentColor" stroke-opacity=".12"/><text x="${X(x)}" y="${B + 13}" font-size="9" text-anchor="middle" fill="currentColor">${+x.toFixed(4)}</text>`;
+  for (let y = 0; y <= ym + 1e-9; y += ys) g += `<line x1="${L}" y1="${Y(y)}" x2="${L + W}" y2="${Y(y)}" stroke="currentColor" stroke-opacity=".12"/><text x="${L - 5}" y="${Y(y) + 3}" font-size="9" text-anchor="end" fill="currentColor">${+y.toFixed(4)}</text>`;
+  const P = v.points ?? [];
+  const path = v.joined && P.length > 1 ? `<path d="M${P.map(([x, y]) => `${X(x)} ${Y(y)}`).join('L')}" fill="none" stroke="#2563EB" stroke-width="2.5"/>` : '';
+  const pts = P.map(([x, y, l]) => `<circle cx="${X(x)}" cy="${Y(y)}" r="4" fill="#E0442E"/>${l ? `<text x="${X(x) + 6}" y="${Y(y) - 6}" font-size="10" font-weight="800" fill="currentColor">${esc(l)}</text>` : ''}`).join('');
+  const axes = `<line x1="${L}" y1="${B}" x2="${L + W + 4}" y2="${B}" stroke="currentColor" stroke-width="1.6"/><line x1="${L}" y1="${B}" x2="${L}" y2="${B - H - 4}" stroke="currentColor" stroke-width="1.6"/>`;
+  const labs = `${v.xLabel ? `<text x="${L + W / 2}" y="${B + 28}" font-size="10" font-weight="700" text-anchor="middle" fill="currentColor">${esc(v.xLabel)}</text>` : ''}${v.yLabel ? `<text x="10" y="${B - H / 2}" font-size="10" font-weight="700" text-anchor="middle" fill="currentColor" transform="rotate(-90 10 ${B - H / 2})">${esc(v.yLabel)}</text>` : ''}`;
+  return `<svg viewBox="0 0 248 232">${g}${axes}${path}${pts}${labs}</svg>`;
+}
 // plane: { points?: [[x,y,label?],...], lines?: [[m,b],...], range: 6 } — a four-quadrant grid
 function planeSvg(v) {
+  if (v.quad1) return quad1Svg(v);
   const R = v.range ?? 6, u = 90 / R, c = 100, X = (x) => c + x * u, Y = (y) => c - y * u;
   const g = Array.from({ length: 2 * R + 1 }, (_, i) => { const k = i - R; return `<line x1="${X(k)}" y1="10" x2="${X(k)}" y2="190" stroke="currentColor" stroke-opacity="${k ? .12 : .7}" stroke-width="${k ? 1 : 1.5}"/><line x1="10" y1="${Y(k)}" x2="190" y2="${Y(k)}" stroke="currentColor" stroke-opacity="${k ? .12 : .7}" stroke-width="${k ? 1 : 1.5}"/>${k && k % (R > 6 ? 2 : 1) === 0 ? `<text x="${X(k)}" y="${c + 12}" font-size="8" text-anchor="middle" fill="currentColor">${k}</text><text x="${c - 4}" y="${Y(k) + 3}" font-size="8" text-anchor="end" fill="currentColor">${k}</text>` : ''}`; }).join('');
   const lines = (v.lines ?? []).map(([m, b], i) => `<line x1="${X(-R)}" y1="${Y(m * -R + b)}" x2="${X(R)}" y2="${Y(m * R + b)}" stroke="${['#2563EB', '#DB2777'][i % 2]}" stroke-width="2.5"/>`).join('');
@@ -239,8 +257,18 @@ function numberLineSvg(v) {
   for (let i = 0; i <= n; i++) {
     const x = v.from + i * v.step, big = i % every === 0;
     out.push(`<line x1="${X(x)}" y1="${y - (big ? 8 : 5)}" x2="${X(x)}" y2="${y + (big ? 8 : 5)}" stroke="currentColor" stroke-width="${big ? 2 : 1.4}"/>`);
-    if (big) out.push(T(X(x), y + 28, fmt(x), 14, 'currentColor', 600));
+    // labels: one per tick (strings, '' for none), e.g. fractions ['0', '1/4', '2/4', …]; hideLabels: no numbers at all
+    const lab = v.labels ? v.labels[i] : v.hideLabels ? '' : big ? fmt(x) : '';
+    if (lab) out.push(T(X(x), y + 28, lab, 14, 'currentColor', 600));
   }
+  // ray: an inequality's solution, { at, dir: 'left' | 'right', open } — a dot (open or filled) and a shaded arrow
+  if (v.ray) {
+    const a = X(v.ray.at), end = v.ray.dir === 'left' ? pad - 12 : Wd - pad + 12;
+    out.push(`<line x1="${a}" y1="${y}" x2="${end}" y2="${y}" stroke="${NEW}" stroke-width="6" stroke-linecap="round" opacity=".85"/><path d="M${end} ${y} l ${v.ray.dir === 'left' ? 10 : -10} -8 v16z" fill="${NEW}"/>`);
+  }
+  // dots: [{ at, open?, label? }] — points on the line; open dots are hollow
+  (v.dots ?? []).forEach((d) => out.push(`<circle cx="${X(d.at)}" cy="${y}" r="7.5" fill="${d.open ? 'var(--surface, #fff)' : NEW}" stroke="${NEW}" stroke-width="3"/>${d.label ? T(X(d.at), y - 16, d.label, 14, NEW, 800) : ''}`));
+  if (v.ray) out.push(`<circle cx="${X(v.ray.at)}" cy="${y}" r="7.5" fill="${v.ray.open ? 'var(--surface, #fff)' : NEW}" stroke="${NEW}" stroke-width="3"/>`);
   (v.jumps ?? []).forEach((j, k) => {
     const a = X(j.from), b = X(j.to), h = Math.min(56, 18 + Math.abs(b - a) / 3), mid = (a + b) / 2;
     out.push(`<path d="M${a} ${y - 4} Q ${mid} ${y - 4 - 2 * h} ${b} ${y - 4}" fill="none" stroke="${k % 2 ? MARK : NEW}" stroke-width="2.4"/><path d="M${b} ${y - 4} l ${b > a ? -7 : 7} -6 M${b} ${y - 4} l ${b > a ? -2 : 2} -9" stroke="${k % 2 ? MARK : NEW}" stroke-width="2.4" fill="none" stroke-linecap="round"/>`);

@@ -21,6 +21,7 @@ const views = {
   '': () => import('./views/home.mjs'),
   who: () => import('./views/onboard.mjs'), new: () => import('./views/onboard.mjs'),
   subject: () => import('./views/subject.mjs'),
+  fluency: () => import('./views/fluency.mjs'),
   learn: () => import('./views/learn.mjs'),
   practise: () => import('./views/practise.mjs'), review: () => import('./views/practise.mjs'), gate: () => import('./views/practise.mjs'),
   code: () => import('./views/code.mjs'),
@@ -29,7 +30,7 @@ const views = {
   parents: () => import('./views/parents.mjs'),
   about: () => import('./views/about.mjs'),
 };
-const PUBLIC = new Set(['welcome', 'signin', 'signup', 'about']);
+const PUBLIC = new Set(['welcome', 'signin', 'signup', 'about', 'subject', 'fluency']);   // anyone can browse the skills and try a sprint
 const NO_LEARNER = new Set(['who', 'new', 'parents']);
 const BARE = new Set(['signin', 'signup']);          // full-screen pages with their own header
 
@@ -73,7 +74,7 @@ function shell(route) {
   const a = me(), l = current();
   if (!a) {
     return el('header', { class: 'nav-wrap' }, el('nav', { class: 'nav', 'aria-label': 'IlmXL' }, brand('#/welcome'),
-      el('div', { class: 'nav-links' }, el('a', { href: '#/welcome' }, 'Home'), el('a', { href: '#/welcome#features', onclick: (e) => { e.preventDefault(); go('welcome'); setTimeout(() => document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' }), 300); } }, 'Features'), el('a', { href: '#/about', class: route === 'about' ? 'on' : '' }, 'About')),
+      el('div', { class: 'nav-links' }, el('a', { href: '#/welcome' }, 'Home'), el('a', { href: '#/subject/math' }, 'Skills'), el('a', { href: '#/fluency' }, 'Fluency Zone'), el('a', { href: '#/welcome#features', onclick: (e) => { e.preventDefault(); go('welcome'); setTimeout(() => document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' }), 300); } }, 'Features'), el('a', { href: '#/about', class: route === 'about' ? 'on' : '' }, 'About')),
       el('div', { class: 'nav-end' }, themeButton(), el('a', { class: 'btn btn-ghost btn-sm hide-sm', href: '#/signin' }, 'Sign in'), el('a', { class: 'btn btn-primary btn-sm', href: '#/signup' }, 'Get started'))));
   }
   const link = (href, ic, label, on) => el('a', { href, class: on ? 'on' : '' }, icon(ic), el('span', {}, label));
@@ -93,6 +94,7 @@ function shell(route) {
   return el('header', { class: 'nav-wrap' }, el('nav', { class: 'nav', 'aria-label': 'IlmXL' }, brand('#/'),
     l ? el('div', { class: 'nav-links app' },
       link('#/', 'home', 'Home', route === ''),
+      link('#/subject/math', 'grid', 'Skills', route === 'subject' || route === 'fluency'),
       l.grade < 0 ? link('#/play', 'star', 'Play', route === 'play' || route === 'trace') : link('#/code', 'code', 'Coding', route === 'code'),
       link('#/world', 'map', 'World', route === 'world' || route === 'gate'),
       link('#/parents', 'family', 'Parents', route === 'parents'),

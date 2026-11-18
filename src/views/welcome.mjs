@@ -5,13 +5,17 @@ import { PUZZLES } from '../app/coding.mjs';
 import { question } from '../app/question.mjs';
 import { teacherFigure } from '../app/teacher.mjs';
 import { isDemo } from '../app/account.mjs';
+import { GRADES } from '../app/curriculum.mjs';
+import { TOPICS, topicsOf } from '../app/topics.mjs';
+import { categories, GRADE_HUE } from './subject.mjs';
 
 const WORDS = ['Maths', 'English', 'Science', 'Social Studies', 'Coding'];
 
 export default function (main) {
   document.title = 'IlmXL · Learn with a teacher who listens';
   const count = (s) => SKILLS.filter((x) => x.subject === s).length;
-  const questions = 41000;
+  // every generated skill is checked over 400 questions before each build, plus every written item
+  const questions = SKILLS.reduce((a, x) => a + (x.gen ? 400 : (x.items?.length ?? 0)), 0);
 
   // the rotating word in the headline
   const word = el('span', { class: 'rot' }, ...WORDS.map((w, i) => el('span', { class: i === 0 ? 'on' : '' }, w)));
@@ -35,6 +39,30 @@ export default function (main) {
   const orbit = el('div', { class: 'orbit', 'aria-hidden': 'true' }, el('div', { class: 'ring r1' }), el('div', { class: 'ring r2' }),
     ...subjects.map((s, i) => el('span', { class: 'orb', style: `--a:${i * 60}deg;--sc:${SUBJECTS[s].colour};--ss:${SUBJECTS[s].soft}` }, icon(SUBJECTS[s].icon))));
 
+  // the showcase: a tablet with the grade 4 maths catalogue on it, tilting from 20° to flat as it scrolls in
+  const g4 = categories('math', 4).slice(0, 9);
+  const tablet = el('div', { class: 'tablet' }, el('div', { class: 'tablet-screen' },
+    el('div', { class: 'ts-bar' }, el('span', { class: 'ts-dots' }, el('i'), el('i'), el('i')), el('span', { class: 'ts-url' }, 'IlmXL · Grade 4 maths'), el('span', { class: 'ts-pill' }, icon('bolt'), 'Fluency Zone')),
+    el('div', { class: 'ts-body' },
+      el('div', { class: 'ts-rail' }, ...['K', '1', '2', '3', '4', '5', '6', '7', '8'].map((x, i) => el('span', { class: x === '4' ? 'on' : '', style: `--gh:${GRADE_HUE[i]}` }, x))),
+      el('div', { class: 'ts-cols' }, ...g4.map((c) => el('div', { class: 'ts-cat' }, el('b', {}, `${c.code}. ${c.name}`), ...c.skills.slice(0, 4).map((x, k) => el('span', {}, el('i', {}, String(k + 1)), x.title, k === 0 ? el('em', {}, String(70 + ((x.title.length * 7) % 30))) : null))))),
+    )));
+  const showHead = el('div', { class: 'show-head' }, el('p', { class: 'eyebrow' }, 'One app, everything in it'), el('h2', { class: 'h-sec' }, 'Hundreds of skills, ', el('span', { class: 'grad' }, 'one teacher'), ' beside you'), el('p', { class: 'muted' }, 'Every grade’s skills, lettered and numbered, with your score beside each. Pick one and Ms. Amina teaches it, step by step.'));
+  const showcase = el('section', { class: 'showcase' }, showHead, el('a', { class: 'tablet-wrap', href: '#/subject/math/4', 'aria-label': 'Browse grade 4 maths' }, tablet));
+  const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  let raf = 0;
+  const tilt = () => {
+    raf = 0;
+    const r = showcase.getBoundingClientRect(), vh = innerHeight;
+    const p = Math.max(0, Math.min(1, (vh - r.top) / (vh * 0.9)));        // 0 as it enters, 1 once well in view
+    const small = innerWidth < 760;
+    const [s0, s1] = small ? [0.86, 1] : [1.05, 1];
+    tablet.style.transform = `rotateX(${20 * (1 - p)}deg) scale(${s0 + (s1 - s0) * p})`;
+    showHead.style.transform = `translateY(${-30 * p}px)`;
+  };
+  const onScroll = () => { if (!raf) raf = requestAnimationFrame(tilt); };
+  if (!still) { addEventListener('scroll', onScroll, { passive: true }); addEventListener('resize', onScroll); requestAnimationFrame(tilt); }
+
   main.append(
     // ── hero ──
     el('section', { class: 'hero' },
@@ -52,6 +80,31 @@ export default function (main) {
       ),
     ),
     el('section', { class: 'band-marquee', 'aria-label': 'Some of the skills' }, marqueeRow(pick(24, 0), false), marqueeRow(pick(24, 2), true)),
+
+    // ── the app itself, on a tablet that tilts up into view as you scroll ──
+    showcase,
+
+    // ── every grade, every subject ──
+    el('section', { class: 'section', id: 'grades' },
+      el('div', { class: 'sec-head', 'data-reveal': '' }, el('p', { class: 'eyebrow' }, 'Pre-K to Grade 12'), el('h2', { class: 'h-sec' }, 'Pick a grade, see every skill'), el('p', { class: 'muted' }, `${count('math')} maths skills across ${TOPICS.length} topics, plus English, Science and Canadian Social Studies. Open any grade to browse; practise free with an account.`)),
+      el('div', { class: 'grade-cards' }, ...GRADES.filter((g) => g.g >= 0).map((g) => {
+        const subs = ['math', 'english', 'science', 'social'].map((x) => [x, SKILLS.filter((k) => k.subject === x && k.grade === g.g && !k.province).length]).filter(([, n]) => n);
+        const about = [...new Set(['math', 'english', 'science'].flatMap((x) => categories(x, g.g).slice(0, 2).map((c) => c.name.toLowerCase())))].slice(0, 5);
+        return el('article', { class: 'grade-card spot', style: `--gh:${GRADE_HUE[g.g]}`, 'data-reveal': '' },
+          el('header', {}, el('span', { class: 'gc-badge' }, g.short), el('h3', {}, g.label)),
+          el('p', { class: 'gc-about' }, about.length ? `${about.join(', ').replace(/^./, (c) => c.toUpperCase())} and more.` : 'Skills for this grade.'),
+          el('ul', { class: 'gc-subs' }, ...subs.map(([x, n]) => el('li', {}, el('a', { href: `#/subject/${x}/${g.g}` }, el('span', {}, SUBJECTS[x].name), el('b', {}, `${n} skills`, icon('next')))))));
+      })),
+    ),
+
+    // ── maths by topic, and the Fluency Zone ──
+    el('section', { class: 'section' },
+      el('div', { class: 'sec-head', 'data-reveal': '' }, el('p', { class: 'eyebrow' }, 'Maths by topic'), el('h2', { class: 'h-sec' }, 'Every topic, every grade'), el('p', { class: 'muted' }, 'From counting to calculus: open a topic to see its skills from Kindergarten up.')),
+      el('div', { class: 'topic-cloud', 'data-reveal': '' }, ...TOPICS.map((t) => { const n = SKILLS.filter((x) => x.subject === 'math' && topicsOf(x).includes(t.id)).length; return n ? el('a', { class: 'topic-pill', href: `#/subject/math/topic/${t.id}` }, t.name, el('small', {}, String(n))) : null; }).filter(Boolean)),
+      el('a', { class: 'fz-teaser spot', href: '#/fluency', 'data-reveal': '' },
+        el('span', { class: 'fz-car' }, icon('bolt')),
+        el('span', { class: 'fz-copy' }, el('b', {}, 'Fluency Zone'), el('span', {}, 'One-minute sprints on addition, subtraction, multiplication and division facts. Beat your best score.')),
+        el('span', { class: 'btn btn-primary' }, 'Try a sprint', icon('next')))),
 
     // ── features: a bento grid ──
     el('section', { class: 'section', id: 'features' },
@@ -108,12 +161,12 @@ export default function (main) {
       el('div', { class: 'aurora' }, el('i'), el('i')),
       el('h2', { class: 'h-sec' }, 'Ready when you are'), el('p', {}, 'Create a free account in under a minute.'),
       el('div', { class: 'cta' }, el('a', { class: 'btn btn-light btn-lg shimmer', href: '#/signup' }, 'Get started', icon('next')))),
-    el('footer', { class: 'foot' }, el('span', {}, '© IlmXL · Ilm Atlantic Tech'), el('a', { href: '#/about' }, 'About and privacy'), el('a', { href: '#/signin' }, 'Sign in')),
+    el('footer', { class: 'foot' }, el('span', {}, '© IlmXL · Ilm Atlantic Tech'), el('a', { href: '#/subject/math' }, 'All skills'), el('a', { href: '#/fluency' }, 'Fluency Zone'), el('a', { href: '#/about' }, 'About and privacy'), el('a', { href: '#/signin' }, 'Sign in')),
   );
 
   // number tickers count up when seen
   const tick = (b) => { const n = Number(b.dataset.n); const t0 = performance.now(); const step = (t) => { const k = Math.min(1, (t - t0) / 1400); b.textContent = Math.round(n * (1 - (1 - k) ** 3)).toLocaleString('en-CA'); if (k < 1) requestAnimationFrame(step); }; requestAnimationFrame(step); };
   const obs = 'IntersectionObserver' in window ? new IntersectionObserver((es) => es.forEach((e) => { if (e.isIntersecting) { tick(e.target); obs.unobserve(e.target); } })) : null;
   main.querySelectorAll('.ticker').forEach((b) => (obs ? obs.observe(b) : (b.textContent = Number(b.dataset.n).toLocaleString('en-CA'))));
-  return () => { clearInterval(rot); obs?.disconnect(); };
+  return () => { clearInterval(rot); obs?.disconnect(); removeEventListener('scroll', onScroll); removeEventListener('resize', onScroll); };
 }
