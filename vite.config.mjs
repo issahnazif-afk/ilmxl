@@ -11,4 +11,5 @@ if (process.env.VITE_ILMXL_SERVER) {
 export default defineConfig({
   base: process.env.ILMXL_BASE || '/ilmxl/',
   build: { target: 'es2022', chunkSizeWarningLimit: 900 },
+  worker: { format: 'es' },   // the voice worker (src/app/voice-worker.mjs) loads Kokoro in its own chunks
 });

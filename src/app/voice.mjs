@@ -5,7 +5,7 @@
 const MODEL = 'onnx-community/Kokoro-82M-v1.0-ONNX';
 export const KOKORO = { amina: 'af_heart', yusuf: 'am_michael' };
 
-let tts = null, loading = null, state = 'off', progress = 0;   // state: off | loading | ready | failed
+let tts = null, loading = null, state = 'off', progress = 0;   // state: off | loading | ready | failed  (tts: the worker once ready)
 const listeners = new Set();
 const set = (s) => { state = s; listeners.forEach((f) => { try { f(state, progress); } catch {} }); };
 export const voiceState = () => state;
@@ -24,22 +24,31 @@ export const isThrifty = thrifty;
 export function loadNatural({ force = false } = {}) {
   if (tts) return Promise.resolve(tts);
   if (loading) return loading;
-  if (typeof window === 'undefined' || voicePref() !== 'natural' || (thrifty() && !force)) return Promise.resolve(null);
+  if (typeof window === 'undefined' || typeof Worker === 'undefined' || voicePref() !== 'natural' || (thrifty() && !force)) return Promise.resolve(null);
   progress = 0; set('loading');
   const sizes = {};
-  loading = import('kokoro-js')
-    .then(({ KokoroTTS }) => KokoroTTS.from_pretrained(MODEL, {
-      dtype: 'q8', device: 'wasm',
-      progress_callback: (e) => {
-        if (e?.status !== 'progress' || !e.total) return;
-        sizes[e.file] = [e.loaded, e.total];
-        const all = Object.values(sizes), got = all.reduce((a, [l]) => a + l, 0), tot = all.reduce((a, [, t]) => a + t, 0);
+  loading = new Promise((resolve) => {
+    let w;
+    const fail = (e) => { console.warn('[voice] the natural voice could not start; using the device voice', e); try { w?.terminate(); } catch {} loading = null; set('failed'); resolve(null); };
+    try { w = new Worker(new URL('./voice-worker.mjs', import.meta.url), { type: 'module' }); } catch (e) { fail(e); return; }
+    w.onerror = (e) => {
+      if (!tts) { fail(e.message ?? e); return; }
+      // the worker stopped after it was ready: nothing waits for it, and the device voice speaks from now on
+      console.warn('[voice] the natural voice stopped', e.message ?? e);
+      tts = null; inFlight.forEach((done) => done(null)); inFlight.clear(); set('failed');
+    };
+    w.onmessage = ({ data }) => {
+      if (data.type === 'progress') {
+        sizes[data.file] = [data.loaded, data.total];
+        const all = Object.values(sizes), got = all.reduce((x, [l]) => x + l, 0), tot = all.reduce((x, [, t]) => x + t, 0);
         const p = Math.round((100 * got) / tot);
         if (p !== progress) { progress = p; set('loading'); }
-      },
-    }))
-    .then((m) => { tts = m; progress = 100; set('ready'); return m; })
-    .catch((e) => { console.warn('[voice] the natural voice could not start; using the device voice', e); loading = null; set('failed'); return null; });
+      } else if (data.type === 'ready') { tts = w; progress = 100; set('ready'); resolve(w); }
+      else if (data.type === 'failed') fail(data.error);
+      else if (data.type === 'audio') { const done = inFlight.get(data.id); inFlight.delete(data.id); done?.(data.blob); }
+    };
+    w.postMessage({ type: 'load', model: MODEL });
+  });
   return loading;
 }
 
@@ -48,11 +57,16 @@ export function loadNatural({ force = false } = {}) {
 const cache = new Map();
 const waiting = [];          // [{ key, text, voice, resolve }]
 let busy = false;
+// the worker is given one sentence at a time, so a sentence needed now can still go before prepared ones
+const inFlight = new Map();
+let nextId = 0;
+const generate = (text, voice) => new Promise((resolve) => { const id = ++nextId; inFlight.set(id, resolve); tts.postMessage({ type: 'gen', id, text, voice }); });
 async function work() {
   if (busy) return; busy = true;
   while (waiting.length) {
     const job = waiting.shift();
-    try { const a = await tts.generate(job.text, { voice: job.voice }); job.resolve(URL.createObjectURL(a.toBlob())); } catch { job.resolve(null); }
+    const blob = await generate(job.text, job.voice);
+    job.resolve(blob ? URL.createObjectURL(blob) : null);
   }
   busy = false;
 }

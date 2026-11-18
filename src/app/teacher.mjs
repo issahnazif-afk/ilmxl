@@ -79,7 +79,9 @@ export async function say(text, { teacher = 'amina', fig = null, rate } = {}) {
     const url = await Promise.race([next, new Promise((r) => setTimeout(() => r(null), 2500))]);
     if (mine !== run) return;
     if (i + 1 < parts.length) next = clip(parts[i + 1], teacher);
-    if (url) await playClip(url, fig, mine); else await deviceSay(parts[i], { teacher, fig, rate }, mine);
+    if (url) await playClip(url, fig, mine);
+    // not ready in time: the device voice says the rest of the line, so the voice never swaps back and forth
+    else return deviceSay(parts.slice(i).join(' '), { teacher, fig, rate }, mine);
     if (mine !== run) return;
   }
 }
