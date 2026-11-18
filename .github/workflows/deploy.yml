@@ -25,6 +25,9 @@ jobs:
           cache: npm
       - run: npm ci
       - name: Check every question and puzzle, build the site
+        env:
+          # the IlmXL accounts server (apps-script/Code.gs): Settings → Secrets and variables → Actions → Variables
+          VITE_ILMXL_SERVER: ${{ vars.ILMXL_SERVER_URL }}
         run: npm run build
       - uses: actions/upload-pages-artifact@v5.0.0
         with:

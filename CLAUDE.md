@@ -19,15 +19,29 @@ Activities, with an on-screen teacher. Static Vite site (no framework), publishe
 `npm run check` (part of `npm run build`) must pass: every maths generator over 400 seeds, every bank item, every
 puzzle solution, the answer marker. Never invent facts in the banks; if unsure, leave the item out.
 
+## Accounts
+
+Like Ta'aleem: a Google Apps Script web app on a Google Sheet (`apps-script/Code.gs`, set-up in its README).
+Parents/guardians, students 13+ and teachers sign up with a username and password (salted, hashed server-side;
+signed 60-day tokens). Children are learners inside an account, by first name and grade only; no email collected.
+The site reads the server URL from `VITE_ILMXL_SERVER` (GitHub variable `ILMXL_SERVER_URL`). Without it,
+accounts are device-only (PBKDF2 in the browser) and the pages say so. Client: `src/app/account.mjs`; each
+account's learners are in localStorage `ilmxl-v1:<username>` and every change is queued to the server
+(`store.mjs` save → `queueSave`). Public routes: welcome, signin, signup, about; everything else needs sign-in.
+
 ## Design
 
-Tokens in `src/styles/ilmxl.css`. Young style (`html[data-young="1"]`, Pre-K to grade 3): bigger type and targets,
-a number keypad, questions read aloud. No glass, glow or emoji icons; icons are our own SVGs in `src/app/ui.mjs`.
+The user chose a modern product look in the spirit of the 21st.dev / shadcn community components (this replaces
+the "no glass, no glow" rule used in Sanad and Ta'aleem; it does not apply here). Tokens and everything else in
+`src/styles/ilmxl.css`: zinc neutrals, the indigo → violet → pink brand gradient, Bricolage Grotesque headings,
+Plus Jakarta Sans text, Baloo 2 for young learners (`html[data-young="1"]`, Pre-K to grade 3), floating glass navbar,
+spotlight cards (`.spot`), aurora/grid backgrounds, shimmer buttons, `[data-reveal]` scroll-ins, light and dark
+(`data-theme`). Appearance matters a great deal to the user: check new screens in both themes and at phone width.
+Icons are our own SVGs in `src/app/ui.mjs`; no emoji icons. Honour prefers-reduced-motion.
 
 ## Privacy
 
-No accounts, no server: learners and progress in localStorage (`ilmxl-v1`). Say accurately that the browser's
-speech recognition may send audio to the browser maker.
+Say accurately that the browser's speech recognition may send audio to the browser maker.
 
 ## Commits
 

@@ -3,6 +3,7 @@ import { el, icon, button } from '../app/ui.mjs';
 import { learners, choose, addLearner } from '../app/store.mjs';
 import { GRADES, PROVINCES, gradeLabel } from '../app/curriculum.mjs';
 import { TEACHERS, teacherFigure, say } from '../app/teacher.mjs';
+import { me } from '../app/account.mjs';
 
 const COLOURS = ['#2563EB', '#C2410C', '#15803D', '#B91C1C', '#7C3AED', '#DB2777', '#0E7490', '#A16207'];
 const WAYS = [
@@ -25,11 +26,12 @@ export default function (main, { route, go }) {
     );
     return;
   }
-  const st = { name: '', grade: 1, province: 'NS', teacher: 'amina', ways: ['watch'], colour: COLOURS[all.length % COLOURS.length] };
-  const nameIn = el('input', { type: 'text', maxlength: 30, required: true, autocomplete: 'off', placeholder: 'First name', oninput: (e) => (st.name = e.target.value) });
+  const acct = me();
+  const st = { name: acct?.type === 'student' && !all.length ? acct.name.split(' ')[0] : '', grade: acct?.type === 'student' ? 8 : 1, province: acct?.province || 'NS', teacher: 'amina', ways: ['watch'], colour: COLOURS[all.length % COLOURS.length] };
+  const nameIn = el('input', { type: 'text', maxlength: 30, required: true, autocomplete: 'off', placeholder: 'First name', value: st.name, oninput: (e) => (st.name = e.target.value) });
   const gradeSel = el('div', { class: 'grade-pick', role: 'radiogroup', 'aria-label': 'Grade' },
     ...GRADES.map((g) => el('button', { type: 'button', role: 'radio', 'aria-checked': String(g.g === st.grade), class: g.g === st.grade ? 'on' : '', onclick: (e) => { st.grade = g.g; gradeSel.querySelectorAll('button').forEach((b) => { b.classList.remove('on'); b.setAttribute('aria-checked', 'false'); }); e.currentTarget.classList.add('on'); e.currentTarget.setAttribute('aria-checked', 'true'); } }, el('b', {}, g.short), el('small', {}, g.g < 1 ? g.label : ''))));
-  const provSel = el('select', { onchange: (e) => (st.province = e.target.value) }, ...PROVINCES.map((p) => el('option', { value: p.id, selected: p.id === 'NS' }, p.name + (p.ready ? '' : ' (Canada-wide topics for now)'))));
+  const provSel = el('select', { onchange: (e) => (st.province = e.target.value) }, ...PROVINCES.map((p) => el('option', { value: p.id, selected: p.id === st.province }, p.name + (p.ready ? '' : ' (Canada-wide topics for now)'))));
   const teachers = el('div', { class: 'teacher-pick' }, ...Object.values(TEACHERS).map((t) => {
     const fig = teacherFigure(t.id);
     return el('button', { type: 'button', class: `t-card ${t.id === st.teacher ? 'on' : ''}`, onclick: (e) => { st.teacher = t.id; teachers.querySelectorAll('.t-card').forEach((b) => b.classList.remove('on')); e.currentTarget.classList.add('on'); say(`Hello! I am ${t.name}. I will be your teacher.`, { teacher: t.id, fig }); } }, fig, el('b', {}, t.name), el('small', {}, t.blurb));
@@ -38,9 +40,9 @@ export default function (main, { route, go }) {
   const colours = el('div', { class: 'colours' }, ...COLOURS.map((c) => el('button', { type: 'button', class: `colour ${c === st.colour ? 'on' : ''}`, style: `--c:${c}`, 'aria-label': 'Colour', onclick: (e) => { st.colour = c; colours.querySelectorAll('.colour').forEach((b) => b.classList.remove('on')); e.currentTarget.classList.add('on'); } })));
   const err = el('p', { class: 'err', hidden: true });
   main.append(
-    el('p', { class: 'kicker' }, all.length ? 'New learner' : 'Welcome to IlmXL'),
-    el('h1', { class: 'h1' }, all.length ? 'Add a learner' : 'Let’s set up your learner'),
-    el('p', { class: 'lede' }, 'Maths, English, Science and Canadian Social Studies from Pre-K to grade 12, with a teacher on screen. Everything stays on this device: no account, nothing sent anywhere.'),
+    el('p', { class: 'kicker' }, all.length ? 'New learner' : `Welcome, ${acct?.name?.split(' ')[0] ?? ''}`),
+    el('h1', { class: 'h1' }, all.length ? 'Add a learner' : acct?.type === 'student' ? 'Set up your learning' : 'Add your first learner'),
+    el('p', { class: 'lede' }, acct?.type === 'student' ? 'Choose your grade and your teacher. You can change them later.' : 'Each child gets their own path, teacher and progress. Use a first name only. You can add more learners later.'),
     el('form', { class: 'setup', onsubmit: (e) => {
       e.preventDefault();
       if (!st.name.trim()) { err.hidden = false; err.textContent = 'Please enter a name.'; nameIn.focus(); return; }

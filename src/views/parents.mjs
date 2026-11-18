@@ -5,6 +5,7 @@ import { learners, parentGate, updateLearner, removeLearner, exportAll, importAl
 import { SKILL, SUBJECTS, GRADES, PROVINCES, gradeLabel } from '../app/curriculum.mjs';
 import { subjectsFor, summary, pathFor } from '../app/path.mjs';
 import { TEACHERS } from '../app/teacher.mjs';
+import { me, isDemo, signOut, changePassword, messageFor } from '../app/account.mjs';
 
 let unlocked = false;
 export default function (main, { go }) {
@@ -23,7 +24,8 @@ export default function (main, { go }) {
 function render(main, go) {
   const all = learners();
   main.append(el('p', { class: 'kicker' }, 'Parents'), el('h1', { class: 'h1' }, 'How your learners are doing'),
-    el('p', { class: 'lede' }, 'Everything here is stored on this device only. Save a backup to move it to another device.'));
+    el('p', { class: 'lede' }, isDemo() ? 'Your account and learners are kept on this device for now. Save a backup to move them to another device.' : 'Progress is saved to your account, so it follows you to any device.'),
+    accountPanel());
   if (!all.length) main.append(el('p', {}, 'No learners yet. ', el('a', { href: '#/new' }, 'Add one')));
   for (const l of all) main.append(card(l, () => { main.replaceChildren(); render(main, go); }));
   // backup
@@ -68,4 +70,22 @@ function card(l, refresh) {
       ),
       button([icon('trash'), `Remove ${l.name}`], () => { if (confirm(`Remove ${l.name} and all their progress from this device?`)) { removeLearner(l.id); refresh(); } }, 'btn btn-quiet danger')),
   );
+}
+
+function accountPanel() {
+  const a = me(); if (!a) return null;
+  const TYPE = { parent: 'Parent or guardian', student: 'Student (13+)', teacher: 'Teacher' };
+  const old = el('input', { type: 'password', autocomplete: 'current-password', placeholder: 'Current password' });
+  const pw = el('input', { type: 'password', autocomplete: 'new-password', minlength: 8, placeholder: 'New password (8+ characters)' });
+  const msg = el('p', { class: 'small', 'aria-live': 'polite' });
+  const form = el('form', { class: 'set-grid', hidden: true, onsubmit: async (e) => {
+    e.preventDefault(); msg.textContent = 'Saving…';
+    const r = await changePassword(old.value, pw.value);
+    msg.textContent = r.ok ? 'Password changed.' : messageFor(r.error);
+    if (r.ok) { old.value = ''; pw.value = ''; }
+  } }, el('label', {}, 'Current password', old), el('label', {}, 'New password', pw), el('div', { class: 'row' }, el('button', { type: 'submit', class: 'btn btn-primary' }, 'Change password')));
+  return el('section', { class: 'panel' },
+    el('div', { class: 'acct' }, el('span', { class: 'acct-av' }, a.name[0]?.toUpperCase()), el('div', {}, el('h2', { class: 'h3' }, a.name), el('small', {}, `@${a.username} · ${TYPE[a.type] ?? ''}${isDemo() ? ' · on this device' : ''}`)),
+      el('div', { class: 'row', style: 'margin:0' }, button([icon('key'), 'Password'], () => (form.hidden = !form.hidden), 'btn btn-sm'), button([icon('logout'), 'Sign out'], () => { signOut(); location.hash = '#/welcome'; location.reload(); }, 'btn btn-sm'))),
+    form, msg);
 }

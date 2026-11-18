@@ -8,7 +8,9 @@ Free learning from Pre-K to grade 12 with a teacher on screen who teaches, liste
 - **Coding**: robot block puzzles (sequences, loops, ifs).
 - **Activities** (Pre-K): letters, numbers, colours, shapes, tracing, all spoken.
 - Adaptive practice with an XL score (0–100), mastery levels and spaced review; a quest world with gates, gems and a
-  camp to decorate; a parents' dashboard with backup. No accounts: everything stays on the device.
+  camp to decorate; a parents' dashboard with backup.
+- **Accounts** for parents, students 13+ and teachers, kept in a Google Sheet through Apps Script
+  (see [apps-script/README.md](apps-script/README.md)); children are learners inside an account.
 
 ```
 npm install

@@ -1,20 +1,57 @@
-// Learners and their progress, kept on this device only (no account, nothing sent anywhere: children's privacy).
-// A family can keep several learners. A parent can save everything to a file and load it on another device.
+// Learners and their progress. Each account keeps its own learners on this device (ilmxl-v1:<username>) and, when
+// the accounts server is connected, every change is also saved to the account (src/app/account.mjs), so it follows
+// the family to another device. A parent can still save everything to a file.
 //
-// learner:  { id, name, grade, province, teacher, ways, colour, created, progress }
+// learner:  { id, name, grade, province, teacher, ways, colour, created, updated, progress }
 // progress: { skills: { [id]: Skill }, stars, days: [YYYY-MM-DD], log: [Entry], world: { gems, gates: { [skill]: 1 }, owned: [], placed: [] }, code: { [puzzle]: stars } }
 // Skill:    { score (XL score 0–100), level (0–4), tries, right, streak, seen, learned?, due? }
-const KEY = 'ilmxl-v1';
+import { queueSave, removeRemote } from './account.mjs';
+const LEGACY = 'ilmxl-v1';
+let KEY = null;
 const today = () => new Date().toISOString().slice(0, 10);
-let db = load();
+let db = { learners: [], current: null };
+const sent = new Map();     // learner id → the JSON last saved to the account
 
 function load() {
   try { const j = JSON.parse(localStorage.getItem(KEY) || 'null'); if (j?.learners) return j; } catch {}
+  // learners made on this device before accounts existed come into the first account opened here
+  try { const j = JSON.parse(localStorage.getItem(LEGACY) || 'null'); if (j?.learners?.length) { localStorage.removeItem(LEGACY); return j; } } catch {}
   return { learners: [], current: null };
 }
-function save() { try { localStorage.setItem(KEY, JSON.stringify(db)); } catch {} listeners.forEach((f) => f()); }
+function save() {
+  if (!KEY) return;
+  for (const l of db.learners) { const t = JSON.stringify(l); if (sent.get(l.id) !== t) { l.updated = Date.now(); const t2 = JSON.stringify(l); sent.set(l.id, t2); queueSave(l); } }
+  try { localStorage.setItem(KEY, JSON.stringify(db)); } catch {}
+  listeners.forEach((f) => f());
+}
 const listeners = new Set();
 export const onChange = (f) => { listeners.add(f); return () => listeners.delete(f); };
+
+// open an account's learners on this device
+export function openAccount(username) {
+  KEY = `ilmxl-v1:${username}`; db = load(); sent.clear();
+  const fresh = !localStorage.getItem(KEY);
+  db.learners.forEach((l) => sent.set(l.id, fresh ? '' : JSON.stringify(l)));
+  try { localStorage.setItem(KEY, JSON.stringify(db)); } catch {}
+  if (fresh) save();       // legacy learners brought in: send them to the account
+}
+export function closeAccount() { KEY = null; db = { learners: [], current: null }; sent.clear(); }
+// learners from the server: the newer copy of each wins; ones only on the server are added
+export function mergeRemote(list) {
+  if (!KEY || !Array.isArray(list)) return false;
+  let changed = false;
+  for (const r of list) {
+    if (!r?.id) continue;
+    const i = db.learners.findIndex((l) => l.id === r.id);
+    if (i < 0) { db.learners.push(r); changed = true; }
+    else if ((r.updated ?? 0) > (db.learners[i].updated ?? 0)) { db.learners[i] = r; changed = true; }
+    else continue;
+    sent.set(r.id, JSON.stringify(r));
+  }
+  if (!db.current && db.learners.length) db.current = db.learners[0].id;
+  if (changed) { try { localStorage.setItem(KEY, JSON.stringify(db)); } catch {} listeners.forEach((f) => f()); }
+  return changed;
+}
 
 export const learners = () => db.learners;
 export const current = () => db.learners.find((l) => l.id === db.current) ?? null;
@@ -25,7 +62,7 @@ export function addLearner({ name, grade, province, teacher, ways, colour }) {
   db.learners.push(l); db.current = l.id; save(); return l;
 }
 export function updateLearner(id, f) { const l = db.learners.find((x) => x.id === id); if (l) { f(l); save(); } }
-export function removeLearner(id) { db.learners = db.learners.filter((l) => l.id !== id); if (db.current === id) db.current = db.learners[0]?.id ?? null; save(); }
+export function removeLearner(id) { removeRemote(id); sent.delete(id); db.learners = db.learners.filter((l) => l.id !== id); if (db.current === id) db.current = db.learners[0]?.id ?? null; save(); }
 
 // the parents' area: a sum to answer (keeps young children out; it is not a password)
 export const parentGate = () => { const a = 6 + Math.floor(Math.random() * 7), b = 3 + Math.floor(Math.random() * 7); return { q: `${a} × ${b}`, a: a * b }; };
