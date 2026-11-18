@@ -8,7 +8,7 @@ import { SKILLS, makeItem, lessonOf, fromBank } from '../src/app/curriculum.mjs'
 import { mark, parseNumber, spokenToNumber } from '../src/app/answer.mjs';
 import { PUZZLES, parse, run, countBlocks } from '../src/app/coding.mjs';
 
-const VISUALS = new Set(['objects', 'groups', 'takeaway', 'tenframes', 'blocks', 'clock', 'fraction', 'shape', 'array', 'grid', 'coord', 'righttri', 'column', 'longdiv', 'numberline', 'fracbars', 'area', 'eqn']);
+const VISUALS = new Set(['bars', 'table', 'coins', 'poly', 'angle', 'plane', 'objects', 'groups', 'takeaway', 'tenframes', 'blocks', 'clock', 'fraction', 'shape', 'array', 'grid', 'coord', 'righttri', 'column', 'longdiv', 'numberline', 'fracbars', 'area', 'eqn']);
 const fails = [];
 const failCount = {};
 const fail = (where, msg) => { const k = where.split(/[#\[ ]/)[0]; failCount[k] = (failCount[k] ?? 0) + 1; if (fails.length < 60) fails.push(`${where}: ${msg}`); else fails.length === 60 && fails.push('…'); };
@@ -52,8 +52,11 @@ function checkItem(where, it, generated = false) {
   questions++;
 }
 
+// ONLY=math-4- npm run check: check just the skills whose id starts with that (for working on one grade)
+const ONLY = process.env.ONLY ?? '';
 const ids = new Set();
 for (const s of SKILLS) {
+  if (ONLY && !s.id.startsWith(ONLY)) continue;
   if (ids.has(s.id)) fail(s.id, 'duplicate id'); ids.add(s.id);
   if (!s.title || !s.subject || typeof s.grade !== 'number' || s.grade < -1 || s.grade > 12) fail(s.id, 'missing title/subject/grade');
   if (s.gen) {

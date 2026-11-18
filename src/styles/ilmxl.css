@@ -628,3 +628,8 @@ html[data-young="1"] .choice .big { font-family: var(--font-young); }
 .voice-item .vi-text { display: grid; gap: 1px; }
 .voice-item small { font-size: 12px; color: var(--muted); font-weight: 500; }
 .ex-steps.all li { color: var(--ink); }
+
+/* data tables in maths questions */
+.pic-table table { border-collapse: collapse; margin: 0 auto; font-variant-numeric: tabular-nums; }
+.pic-table th, .pic-table td { border: 1px solid var(--line, #d4d4d8); padding: .4rem .8rem; text-align: center; }
+.pic-table th { background: color-mix(in srgb, #6366F1 10%, transparent); font-weight: 800; }

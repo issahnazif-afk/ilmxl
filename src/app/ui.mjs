@@ -124,8 +124,54 @@ export function visual(v) {
   else if (v.type === 'numberline') svg = numberLineSvg(v);
   else if (v.type === 'fracbars') svg = fracBarsSvg(v);
   else if (v.type === 'area') svg = areaSvg(v);
+  else if (v.type === 'bars') svg = barsSvg(v);
+  else if (v.type === 'table') return el('div', { class: 'pic pic-table' }, el('table', {}, v.head ? el('thead', {}, el('tr', {}, ...v.head.map((h) => el('th', {}, mathText(String(h)))))) : null, el('tbody', {}, ...v.rows.map((row) => el('tr', {}, ...row.map((c) => el('td', {}, mathText(String(c)))))))));
+  else if (v.type === 'coins') svg = coinsSvg(v);
+  else if (v.type === 'poly') svg = polySvg(v);
+  else if (v.type === 'angle') svg = angleSvg(v);
+  else if (v.type === 'plane') svg = planeSvg(v);
   else if (v.type === 'eqn') return el('div', { class: 'pic pic-eqn' }, ...v.lines.map((ln, i) => el('div', { class: `eq-line${i === v.lines.length - 1 ? ' now' : ''}` }, el('span', { class: 'eq' }, mathText(ln.eq)), ln.note ? el('span', { class: 'eq-note' }, mathText(ln.note)) : null)));
   return svg ? el('div', { class: `pic pic-${v.type}`, html: svg }) : null;
+}
+
+// ── data and geometry pictures (for the maths skills) ──
+// bars: { labels: [..], values: [..], title?, horizontal? } — a bar graph with a labelled scale
+function barsSvg(v) {
+  const n = v.values.length, max = Math.max(1, ...v.values), step = max <= 10 ? 1 : max <= 20 ? 2 : max <= 50 ? 5 : max <= 100 ? 10 : Math.ceil(max / 10 / 5) * 5;
+  const top = Math.ceil(max / step) * step, W = 60 + n * 56, H = 210, base = 180, sc = 150 / top;
+  const grid = Array.from({ length: Math.floor(top / step) + 1 }, (_, i) => { const y = base - i * step * sc; return `<line x1="44" y1="${y}" x2="${W - 6}" y2="${y}" stroke="currentColor" stroke-opacity=".12"/><text x="38" y="${y + 4}" text-anchor="end" font-size="11" fill="currentColor">${i * step}</text>`; }).join('');
+  const bars = v.values.map((x, i) => `<rect x="${56 + i * 56}" y="${base - x * sc}" width="36" height="${x * sc}" rx="3" fill="${['#6366F1', '#EC4899', '#14B8A6', '#F59E0B', '#8B5CF6', '#0EA5E9', '#EF4444'][i % 7]}"/><text x="${74 + i * 56}" y="${base + 16}" text-anchor="middle" font-size="11" font-weight="700" fill="currentColor">${esc(v.labels[i])}</text>`).join('');
+  return `<svg viewBox="0 0 ${W} ${H}">${v.title ? `<text x="${W / 2}" y="14" text-anchor="middle" font-size="12" font-weight="800" fill="currentColor">${esc(v.title)}</text>` : ''}${grid}<line x1="44" y1="${base}" x2="${W - 6}" y2="${base}" stroke="currentColor" stroke-width="2"/>${bars}</svg>`;
+}
+// coins: { coins: [5, 10, 25, 100, 200, ...] } in cents (Canadian coins), bills: 500, 1000, 2000
+function coinsSvg(v) {
+  const C = { 5: ['5¢', 19, '#C9CED6'], 10: ['10¢', 16, '#C9CED6'], 25: ['25¢', 21, '#C9CED6'], 100: ['$1', 22, '#D9A931'], 200: ['$2', 24, '#D9A931'] };
+  let x = 6; const parts = v.coins.map((c) => {
+    if (c >= 500) { const s = `<rect x="${x}" y="8" width="70" height="40" rx="4" fill="${{ 500: '#7DB3E0', 1000: '#B58AD6', 2000: '#7CC48A', 5000: '#E58C8C' }[c] ?? '#9CC'}" stroke="currentColor" stroke-opacity=".4"/><text x="${x + 35}" y="34" text-anchor="middle" font-size="15" font-weight="800" fill="#1F2937">$${c / 100}</text>`; x += 78; return s; }
+    const [t, r, f] = C[c] ?? [`${c}¢`, 18, '#C9CED6']; const s = `<circle cx="${x + r}" cy="28" r="${r}" fill="${f}" stroke="#6B7280" stroke-width="2"/><text x="${x + r}" y="32" text-anchor="middle" font-size="11" font-weight="800" fill="#1F2937">${t}</text>`; x += r * 2 + 6; return s;
+  });
+  return `<svg viewBox="0 0 ${Math.max(60, x)} 56">${parts.join('')}</svg>`;
+}
+// poly: { points: [[x,y],...] in 0–10 units, labels?: ['5 cm', ...] for each side (from point i to i+1), grid? }
+function polySvg(v) {
+  const P = v.points.map(([x, y]) => [14 + x * 18, 196 - y * 18]);
+  const grid = v.grid ? Array.from({ length: 11 }, (_, i) => `<line x1="${14 + i * 18}" y1="16" x2="${14 + i * 18}" y2="196" stroke="currentColor" stroke-opacity=".12"/><line x1="14" y1="${16 + i * 18}" x2="194" y2="${16 + i * 18}" stroke="currentColor" stroke-opacity=".12"/>`).join('') : '';
+  const labels = (v.labels ?? []).map((t, i) => { if (!t) return ''; const [a, b] = [P[i], P[(i + 1) % P.length]]; const cx = P.reduce((s, p) => s + p[0], 0) / P.length, cy = P.reduce((s, p) => s + p[1], 0) / P.length; let mx = (a[0] + b[0]) / 2, my = (a[1] + b[1]) / 2; const dx = mx - cx, dy = my - cy, d = Math.hypot(dx, dy) || 1; mx += (dx / d) * 14; my += (dy / d) * 14; return `<text x="${mx}" y="${my + 4}" text-anchor="middle" font-size="12" font-weight="800" fill="currentColor">${esc(t)}</text>`; }).join('');
+  return `<svg viewBox="-10 0 230 214">${grid}<path d="M${P.map((p) => p.join(' ')).join('L')}z" fill="#E3ECFD" stroke="#2563EB" stroke-width="3" stroke-linejoin="round"/>${labels}</svg>`;
+}
+// angle: { deg, label? } — an angle drawn from a horizontal ray, with its arc
+function angleSvg(v) {
+  const a = (v.deg * Math.PI) / 180, cx = v.deg > 90 ? 120 : 40, cy = 120, L = 90;
+  const x2 = cx + L * Math.cos(a), y2 = cy - L * Math.sin(a), r = 26;
+  return `<svg viewBox="0 0 220 140"><line x1="${cx}" y1="${cy}" x2="${cx + L}" y2="${cy}" stroke="currentColor" stroke-width="3" stroke-linecap="round"/><line x1="${cx}" y1="${cy}" x2="${x2}" y2="${y2}" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>${v.deg === 90 ? `<path d="M${cx + 16} ${cy}v-16h-16" fill="none" stroke="#DB2777" stroke-width="2"/>` : `<path d="M${cx + r} ${cy}A${r} ${r} 0 ${v.deg > 180 ? 1 : 0} 0 ${cx + r * Math.cos(a)} ${cy - r * Math.sin(a)}" fill="none" stroke="#DB2777" stroke-width="2.5"/>`}${v.label ? `<text x="${cx + 34 * Math.cos(a / 2) + 8}" y="${cy - 34 * Math.sin(a / 2)}" font-size="13" font-weight="800" fill="#DB2777">${esc(v.label)}</text>` : ''}</svg>`;
+}
+// plane: { points?: [[x,y,label?],...], lines?: [[m,b],...], range: 6 } — a four-quadrant grid
+function planeSvg(v) {
+  const R = v.range ?? 6, u = 90 / R, c = 100, X = (x) => c + x * u, Y = (y) => c - y * u;
+  const g = Array.from({ length: 2 * R + 1 }, (_, i) => { const k = i - R; return `<line x1="${X(k)}" y1="10" x2="${X(k)}" y2="190" stroke="currentColor" stroke-opacity="${k ? .12 : .7}" stroke-width="${k ? 1 : 1.5}"/><line x1="10" y1="${Y(k)}" x2="190" y2="${Y(k)}" stroke="currentColor" stroke-opacity="${k ? .12 : .7}" stroke-width="${k ? 1 : 1.5}"/>${k && k % (R > 6 ? 2 : 1) === 0 ? `<text x="${X(k)}" y="${c + 12}" font-size="8" text-anchor="middle" fill="currentColor">${k}</text><text x="${c - 4}" y="${Y(k) + 3}" font-size="8" text-anchor="end" fill="currentColor">${k}</text>` : ''}`; }).join('');
+  const lines = (v.lines ?? []).map(([m, b], i) => `<line x1="${X(-R)}" y1="${Y(m * -R + b)}" x2="${X(R)}" y2="${Y(m * R + b)}" stroke="${['#2563EB', '#DB2777'][i % 2]}" stroke-width="2.5"/>`).join('');
+  const pts = (v.points ?? []).map(([x, y, l]) => `<circle cx="${X(x)}" cy="${Y(y)}" r="4.5" fill="#E0442E"/>${l ? `<text x="${X(x) + 7}" y="${Y(y) - 6}" font-size="11" font-weight="800" fill="currentColor">${esc(l)}</text>` : ''}`).join('');
+  return `<svg viewBox="0 0 200 200"><defs><clipPath id="pc"><rect x="10" y="10" width="180" height="180"/></clipPath></defs>${g}<g clip-path="url(#pc)">${lines}</g>${pts}</svg>`;
 }
 
 // ── pictures of written working (the step-by-step explanations) ──
