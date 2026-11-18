@@ -31,3 +31,17 @@ sign-in page says so.
 
 Children do not create accounts: a parent, guardian or teacher does, and adds the children as learners. Learners
 are stored by first name and grade only. No email address is collected.
+
+## If sign-up says "the accounts server is not answering"
+
+Open the web app address in a private browser window. If Google asks you to sign in, or says you need access, the
+web app is not open to the public:
+
+- *Who has access* must be **Anyone**, not "Anyone within" your organisation or "Anyone with a Google account".
+  Change it under **Deploy → Manage deployments → ✏️ Edit**, choose **Anyone**, and **Deploy** (the address stays
+  the same).
+- If **Anyone** is not offered, your Google Workspace administrator has turned off public web apps. Deploy from a
+  personal Google account instead (make the Sheet there), and put the new address in `ILMXL_SERVER_URL`.
+
+An address that starts `https://script.google.com/a/macros/<your-domain>/` is fine: the build changes it to the
+plain `https://script.google.com/macros/s/…` form so your organisation's domain is not published.

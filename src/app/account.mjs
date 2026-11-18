@@ -22,7 +22,8 @@ export const MESSAGES = {
   'busy': 'Lots of people are joining right now. Please try again shortly.',
   'signed-out': 'Your sign-in has expired. Please sign in again.',
   'too-many-learners': 'An account can have up to 12 learners.',
-  offline: 'We could not reach the server. Check your internet connection and try again.',
+  offline: 'You seem to be offline. Check your internet connection and try again.',
+  server: 'The IlmXL accounts server is not answering right now. Please try again in a few minutes.',
 };
 export const messageFor = (code) => MESSAGES[code] ?? 'Something went wrong. Please try again.';
 
@@ -33,7 +34,11 @@ async function post(body, { timeout = 20000, keepalive = false } = {}) {
     const r = await fetch(SERVER, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(body), signal: ctl.signal, redirect: 'follow', keepalive });
     if (!r.ok) throw new Error('HTTP ' + r.status);
     return await r.json();
-  } catch { return { ok: false, error: 'offline' }; } finally { clearTimeout(t); }
+  } catch (e) {
+    // a refused or misconfigured server looks like a network error to the browser; only say "offline" when it is
+    if (typeof console !== 'undefined') console.warn('IlmXL accounts server:', e?.message ?? e);
+    return { ok: false, error: typeof navigator !== 'undefined' && navigator.onLine === false ? 'offline' : 'server' };
+  } finally { clearTimeout(t); }
 }
 
 // ── device-only accounts (no server) ──
@@ -103,7 +108,7 @@ export function queueSave(learner) {
 export function flush(keepalive = false) {
   const a = me(); if (!a || isDemo() || !queue.size) return;
   const items = [...queue.values()]; queue.clear();
-  for (const learner of items) post({ action: 'save', token: a.token, learner }, { keepalive }).then((r) => { if (!r.ok && r.error === 'offline') queue.set(learner.id, learner); });
+  for (const learner of items) post({ action: 'save', token: a.token, learner }, { keepalive }).then((r) => { if (!r.ok && (r.error === 'offline' || r.error === 'server')) queue.set(learner.id, learner); });
 }
 export function removeRemote(id) { const a = me(); if (a && !isDemo()) post({ action: 'remove', token: a.token, id }); }
 export async function changePassword(old, password) {
