@@ -22,6 +22,18 @@ Activities, with an on-screen teacher. Static Vite site (no framework), publishe
   builders (columnAdd/columnSub with decimals and regrouping, columnMul/columnMul1, longDivision, numberLine,
   fractionBars, eqnLines, areaModel) so the working is drawn as a teacher writes it; `visual()` in `src/app/ui.mjs`
   draws every picture type. `npm run check` fails if a generator's last two steps never reach its answer.
+- Geometry figures: `src/math/figs.mjs` (Node-safe builders: labelled polygons with marks, heights and highlights,
+  circles, angle diagrams, solids in oblique 3-D with hidden edges dashed, nets, cross-sections) → `{ type: 'fig' }`,
+  drawn by `src/app/figure.mjs` (theme colours in the `--fg-*` CSS variables, chalk colours on the classroom board).
+  `{ type: 'figs', figs, captions }` shows several side by side. Every geometry question should have its figure, and
+  its worked steps should highlight (`hl`) the part each step uses; `src/math/more/geo10.mjs` is the pattern.
+  The checker validates every figure (`figProblems`).
+- Lessons (`lessonOf` in curriculum.mjs): key ideas (a lesson line may be `{ text, visual }`), two worked examples of
+  different kinds, then three check questions (two right completes the lesson).
+- Unit exams (`#/exam/<subject>/<grade>/<unit code | all>`, `src/views/exam.mjs`, sets from `src/app/exams.mjs`): 10
+  questions per unit, 25 for a grade exam, no marking until the end, then results by skill and every question with
+  its working; best/last scores in `progress.exams`. Printable worksheets with answer keys (optionally with worked
+  solutions): `#/worksheet/…[/<seed>]`, public. The checker makes every unit's exam.
 - Explanations (`src/app/explain.mjs`): the step-by-step player, used after a wrong answer, on "See the steps",
   in "Learn with an example" (practice) and in lessons. Spoken text: `stepSay()`/`speakable()` in curriculum.mjs
   (fractions as "3 quarters", "negative 7", "plus").

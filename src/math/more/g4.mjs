@@ -1,5 +1,6 @@
 // Grade 4 maths: more skills, one or more for each topic of the grade (see src/math/kit.mjs for the helpers).
 import { grade, mc, near, num, txt, OBJ, plural, NAMES, comma, par, gcd, lcm, simplify, frac, isPrime, dec, sgn, neg, St, columnAdd, columnSub, columnMul, longDivision, numberLine, fractionBars, eqnLines, areaModel, multiplesOf, PLACE } from '../kit.mjs';
+import * as GEO45 from './geo45.mjs';
 const { skill, list } = grade();
 
 // ── small helpers for this grade ──
@@ -592,20 +593,7 @@ skill('4-inout', 4, 'Patterns', 'Input and output tables', ['An input/output tab
   const others = [['+', k + 1], ['−', k], ['×', 2], ['+', k * 2]].map(([o, c]) => `${o} ${c}`).filter((x) => x !== rule);
   return mc(r, rule, others, { q: 'What is the rule for this table?', visual: { type: 'table', head: ['Input', 'Output'], rows: ins.map((x) => [x, f(x)]) }, steps: [`${ins[0]} → ${f(ins[0])} and ${ins[1]} → ${f(ins[1])}.`, `The rule ${rule} works for every row.`] });
 });
-skill('4-shapepat', 4, 'Patterns', 'Shape patterns', ['A repeating pattern has a core that repeats again and again.', 'A growing pattern adds the same amount each time.'], (r) => {
-  const v = r.int(0, 2), SH = ['circle', 'square', 'triangle', 'star', 'heart', 'diamond'];
-  if (v <= 1) {
-    const len = r.int(2, 4), core = r.shuffle(SH).slice(0, len), shown = Array.from({ length: len * 2 + r.int(0, len - 1) }, (_, i) => core[i % len]);
-    if (v === 0) {
-      const next = core[shown.length % len];
-      return mc(r, next, SH.filter((x) => x !== next).slice(0, 3), { q: `What comes next? ${shown.join(', ')}, ?`, steps: [`The part that repeats is: ${core.join(', ')}.`, `After ${shown.at(-1)} comes ${next}.`] });
-    }
-    const pos = r.int(10, 30), right = core[(pos - 1) % len];
-    return mc(r, right, SH.filter((x) => x !== right).slice(0, 3), { q: `The pattern ${core.join(', ')} repeats over and over. What is shape number ${pos}?`, steps: [`The core has ${len} shapes. ${pos} ÷ ${len} = ${Math.floor(pos / len)} R ${pos % len}.`, pos % len ? `Remainder ${pos % len} means shape ${pos % len} of the core: ${right}.` : `No remainder means the last shape of the core: ${right}.`] });
-  }
-  const s = r.int(2, 6), k = r.int(2, 5), n = r.int(5, 10), t = s + (n - 1) * k;
-  return num(t, [`Figures: ${[1, 2, 3].map((i) => s + (i - 1) * k).join(', ')}, … Each figure adds ${k} squares.`, `Figure ${n} = ${s} + ${n - 1} × ${k} = ${t}.`, `So figure ${n} has ${t} squares.`], { q: `Figure 1 has ${s} squares, figure 2 has ${s + k}, and figure 3 has ${s + 2 * k}. The pattern keeps growing the same way. How many squares are in figure ${n}?`, expr: `${s}+${n - 1}*${k}` });
-});
+skill('4-shapepat', 4, 'Patterns', 'Shape patterns', GEO45.LESSONS.shapepat, GEO45.shapePat);
 
 // ───────────── 19. Coordinate plane ─────────────
 const PLACES = ['Library', 'School', 'Park', 'Rink', 'Pool', 'Store', 'Farm', 'Zoo'];
@@ -816,154 +804,25 @@ skillT('4-schedule', 4, 'Time', 'Schedules, time zones and time patterns', ['Rea
 });
 
 // ───────────── 24. Lines and angles ─────────────
-skill('4-lines', 4, 'Lines and angles', 'Lines, rays and kinds of angles', ['A line goes on forever both ways; a ray has one endpoint; a segment has two.', 'Acute is less than 90°, right is 90°, obtuse is between 90° and 180°, straight is 180°.', 'A full turn is 360°, so a quarter turn is 90°.'], (r) => {
-  const v = r.int(0, 4);
-  if (v === 0) {
-    const deg = r.pick([r.int(10, 85), 90, r.int(95, 175), 180]), right = deg < 90 ? 'Acute' : deg === 90 ? 'Right' : deg < 180 ? 'Obtuse' : 'Straight';
-    return mc(r, right, ['Acute', 'Right', 'Obtuse', 'Straight'].filter((x) => x !== right), { q: `What kind of angle is ${deg}°?`, visual: { type: 'angle', deg, label: `${deg}°` }, steps: [`Compare ${deg}° with 90° and 180°.`, `${deg}° is ${deg < 90 ? 'less than 90°' : deg === 90 ? 'exactly 90°' : deg < 180 ? 'between 90° and 180°' : 'exactly 180°'}, so it is ${right.toLowerCase()}.`] });
-  }
-  if (v === 1) {
-    const P = r.int(0, 2), d = ['part of a line with two endpoints', 'part of a line with one endpoint that goes on forever in one direction', 'a straight path that goes on forever in both directions'][P], N = ['Line segment', 'Ray', 'Line'];
-    return mc(r, N[P], N.filter((_, i) => i !== P).concat(['Angle']), { q: `What is the name for ${d}?`, steps: ['Count the endpoints: a line has 0, a ray has 1, a segment has 2.', `So it is a ${N[P].toLowerCase()}.`] });
-  }
-  if (v === 2) {
-    const P = r.int(0, 2), d = ['never meet, like the rails of a train track', 'cross to make square corners, like the corner of a page', 'cross but not at a right angle, like the letter X leaning over'][P], N = ['Parallel', 'Perpendicular', 'Intersecting (not perpendicular)'];
-    return mc(r, N[P], N.filter((_, i) => i !== P), { q: `Two lines ${d}. What are they called?`, steps: ['Parallel lines never meet. Perpendicular lines meet at a right angle.', `So they are ${N[P].toLowerCase()}.`] });
-  }
-  if (v === 3) {
-    const [n, d] = r.pick([[1, 4], [1, 2], [3, 4], [1, 3], [1, 6], [1, 8], [2, 3], [1, 12], [1, 10]]), deg = 360 * n / d;
-    return num(deg, [`A full turn is 360°.`, `${n}/${d} of 360°: 360 ÷ ${d} = ${360 / d}${n > 1 ? `, × ${n} = ${deg}` : ''}.`, `So the angle is ${deg}°.`], { q: `An angle turns through ${n}/${d} of a full circle. How many degrees is the angle?`, visual: { type: 'angle', deg }, expr: `360*${n}/${d}` });
-  }
-  const deg = r.pick([90, 180, 270, 360]), F = { 90: '1/4', 180: '1/2', 270: '3/4', 360: '1 (a full turn)' };
-  return mc(r, F[deg], Object.values(F).filter((x) => x !== F[deg]), { q: `A wheel turns ${deg}°. What fraction of a full turn is that?`, visual: deg < 360 ? { type: 'angle', deg } : null, steps: [`A full turn is 360°.`, `${deg} out of 360 is ${F[deg]}.`] });
-});
+skill('4-lines', 4, 'Lines and angles', 'Lines, rays and kinds of angles', GEO45.LESSONS.lines, (r) => GEO45.linesAngles(r, 4));
 
 // ───────────── 25. Two-dimensional figures ─────────────
-const POLYN = { 3: 'triangle', 4: 'quadrilateral', 5: 'pentagon', 6: 'hexagon', 7: 'heptagon', 8: 'octagon', 9: 'nonagon', 10: 'decagon' };
-const regPoly = (n) => Array.from({ length: n }, (_, i) => { const a = Math.PI / 2 + (2 * Math.PI * i) / n; return [+(5 + 4.5 * Math.cos(a)).toFixed(2), +(5 + 4.5 * Math.sin(a)).toFixed(2)]; });
-skill('4-polygons', 4, 'Two-dimensional figures', 'Polygons', ['A polygon is a closed shape made of straight sides.', 'Pentagon 5 sides, hexagon 6, octagon 8. A regular polygon has all sides and all angles equal.', 'Congruent shapes are the same size and the same shape.'], (r) => {
-  const v = r.int(0, 4), n = r.int(3, 10);
-  if (v === 0) return r.bool() ? num(n, [`A ${POLYN[n]} has ${n} sides.`, `So the answer is ${n}.`], { q: `How many sides does a ${POLYN[n]} have?`, visual: { type: 'poly', points: regPoly(n) } })
-    : mc(r, POLYN[n], [n - 1, n + 1, n + 2, n - 2].filter((k) => POLYN[k]).map((k) => POLYN[k]), { q: 'What is the name of this polygon?', visual: { type: 'poly', points: regPoly(n) }, steps: [`Count the sides: ${n}.`, `A polygon with ${n} sides is a ${POLYN[n]}.`] });
-  if (v === 1) {
-    const s = r.pick(['circle', 'oval', 'heart', 'square', 'triangle', 'rectangle', 'diamond', 'star']), yes = !['circle', 'oval', 'heart'].includes(s);
-    return yesNo(r, yes, { q: 'Is this shape a polygon?', visual: { type: 'shape', name: s }, steps: ['A polygon is closed and has only straight sides.', yes ? 'This shape is closed and every side is straight, so yes.' : 'This shape has a curved edge, so no.'] });
-  }
-  if (v === 2) {
-    const P = r.pick([['regular', regPoly(r.int(3, 8))], ['irregular', [[1, 2], [9, 2], [9, 6], [1, 6]]], ['irregular', [[1, 1], [9, 1], [3, 8]]], ['irregular', [[2, 1], [8, 1], [9, 6], [5, 9], [1, 5]]], ['regular', [[2, 2], [8, 2], [8, 8], [2, 8]]]]);
-    const right = P[0] === 'regular' ? 'Regular' : 'Irregular';
-    return mc(r, right, [right === 'Regular' ? 'Irregular' : 'Regular'], { q: 'Is this polygon regular or irregular?', visual: { type: 'poly', points: P[1], grid: true }, steps: ['A regular polygon has all sides equal and all angles equal.', right === 'Regular' ? 'All the sides and angles match, so it is regular.' : 'Its sides are not all the same length, so it is irregular.'] });
-  }
-  if (v === 3) {
-    const a = r.int(3, 9), b = r.int(3, 9), c = r.int(Math.abs(a - b) + 1, a + b - 1), same = r.bool(), c2 = same ? c : c + 1;
-    return yesNo(r, same, { q: `Triangle A has sides ${a} cm, ${b} cm and ${c} cm. Triangle B has sides ${b} cm, ${c2} cm and ${a} cm. Are they congruent?`, steps: ['Congruent shapes have exactly the same size and shape, so the side lengths must match.', same ? 'Both have sides ' + [a, b, c].sort((x, y) => x - y).join(', ') + ' cm, so yes.' : `One side is ${c} cm in A but ${c2} cm in B, so no.`] });
-  }
-  return mc(r, POLYN[n], [POLYN[n === 3 ? 4 : n - 1], POLYN[n === 10 ? 9 : n + 1], 'circle'], { q: `I am a polygon with ${n} straight sides and ${n} corners. What am I?`, steps: [`${n} sides means a ${POLYN[n]}.`, `So it is a ${POLYN[n]}.`] });
-});
+skill('4-polygons', 4, 'Two-dimensional figures', 'Polygons', GEO45.LESSONS.polygons, (r) => GEO45.polygons(r, 4));
 
 // ───────────── 26. Triangles and quadrilaterals ─────────────
-skill('4-triangles', 4, 'Triangles and quadrilaterals', 'Kinds of triangles', ['By sides: equilateral (3 equal), isosceles (2 equal), scalene (none equal).', 'By angles: acute (all less than 90°), right (one 90°), obtuse (one more than 90°).'], (r) => {
-  if (r.bool()) {
-    const k = r.int(0, 2), a = r.int(3, 9); let b = r.int(3, 9), c = r.int(3, 9);
-    if (k === 0) b = c = a; else if (k === 1) { b = a; while (c === a || c >= 2 * a) c = r.int(2, 2 * a - 1); } else { while (b === a) b = r.int(3, 9); c = r.int(Math.abs(a - b) + 1, a + b - 1); while (c === a || c === b) c = r.int(Math.abs(a - b) + 1, a + b - 1); }
-    const right = ['Equilateral', 'Isosceles', 'Scalene'][k];
-    return mc(r, right, ['Equilateral', 'Isosceles', 'Scalene'].filter((x) => x !== right), { q: `A triangle has sides of ${a} cm, ${b} cm and ${c} cm. What kind of triangle is it?`, steps: [`Look for equal sides: ${a}, ${b}, ${c}.`, `${k === 0 ? 'All three are equal' : k === 1 ? 'Exactly two are equal' : 'No sides are equal'}, so it is ${right.toLowerCase()}.`] });
-  }
-  const k = r.int(0, 2), big = k === 0 ? r.int(61, 85) : k === 1 ? 90 : r.int(95, 140), a2 = r.int(Math.max(20, 180 - 2 * big), Math.min(big, 160 - big)), a3 = 180 - big - a2;
-  const right = ['Acute', 'Right', 'Obtuse'][k], angs = r.shuffle([big, a2, a3]);
-  return mc(r, right, ['Acute', 'Right', 'Obtuse'].filter((x) => x !== right), { q: `A triangle has angles of ${angs.join('°, ')}°. What kind of triangle is it?`, steps: [`The biggest angle is ${big}°.`, `${big < 90 ? 'All angles are less than 90°' : big === 90 ? 'One angle is exactly 90°' : 'One angle is more than 90°'}, so it is a${k === 0 ? 'n' : ''} ${right.toLowerCase()} triangle.`] });
-});
-const QUADS = { Square: [[2, 2], [7, 2], [7, 7], [2, 7]], Rectangle: [[1, 3], [9, 3], [9, 7], [1, 7]], Rhombus: [[5, 1], [8, 5], [5, 9], [2, 5]], Parallelogram: [[1, 2], [7, 2], [9, 7], [3, 7]], Trapezoid: [[1, 2], [9, 2], [7, 7], [3, 7]] };
-const QWHY = { Square: '4 equal sides and 4 right angles', Rectangle: '4 right angles, but not all sides equal', Rhombus: '4 equal sides, but no right angles', Parallelogram: '2 pairs of parallel sides, no right angles and not all sides equal', Trapezoid: 'exactly 1 pair of parallel sides' };
-skill('4-quads', 4, 'Triangles and quadrilaterals', 'Kinds of quadrilaterals', ['A parallelogram has 2 pairs of parallel sides. A trapezoid has exactly 1 pair.', 'A rectangle has 4 right angles; a rhombus has 4 equal sides; a square has both.'], (r) => {
-  const v = r.int(0, 2), names = Object.keys(QUADS);
-  if (v === 0) { const k = r.pick(names); return mc(r, k, names.filter((x) => x !== k).slice(0, 3), { q: 'What is the best name for this quadrilateral?', visual: { type: 'poly', points: QUADS[k], grid: true }, steps: ['Check the sides, the angles and which sides are parallel.', `It has ${QWHY[k]}, so it is a ${k.toLowerCase()}.`] }); }
-  if (v === 1) { const k = r.pick(names), p = k === 'Trapezoid' ? 1 : 2; return num(p, [`A ${k.toLowerCase()} has ${QWHY[k]}.`, `So it has ${p} pair${p === 1 ? '' : 's'} of parallel sides.`], { q: `How many pairs of parallel sides does a ${k.toLowerCase()} have?`, visual: { type: 'poly', points: QUADS[k], grid: true } }); }
-  const S = r.pick([['Every square is a rectangle.', true], ['Every rectangle is a parallelogram.', true], ['Every square is a rhombus.', true], ['Every rhombus is a square.', false], ['Every parallelogram is a rectangle.', false], ['A trapezoid has two pairs of parallel sides.', false], ['Every rectangle is a square.', false], ['A rhombus is a parallelogram.', true]]);
-  return TF(r, S[1], { q: `True or false? ${S[0]}`, steps: ['Square: 4 equal sides and 4 right angles. Rectangle: 4 right angles. Rhombus: 4 equal sides. All three are parallelograms.', S[1] ? 'The first shape always has what the second one needs, so it is true.' : 'Not every one of the first shape has what the second one needs, so it is false.'] });
-});
+skill('4-triangles', 4, 'Triangles and quadrilaterals', 'Kinds of triangles', GEO45.LESSONS.triangles, (r) => GEO45.triangles(r, 4));
+skill('4-quads', 4, 'Triangles and quadrilaterals', 'Kinds of quadrilaterals', GEO45.LESSONS.quads, (r) => GEO45.quads(r, 4));
 
 // ───────────── 27. Symmetry and transformations ─────────────
-const SYM = [['square', 4, [[2, 2], [8, 2], [8, 8], [2, 8]]], ['rectangle', 2, [[1, 3], [9, 3], [9, 7], [1, 7]]], ['equilateral triangle', 3, regPoly(3)], ['regular hexagon', 6, regPoly(6)], ['regular pentagon', 5, regPoly(5)], ['isosceles triangle', 1, [[1, 1], [9, 1], [5, 9]]], ['rhombus', 2, [[5, 1], [8, 5], [5, 9], [2, 5]]], ['parallelogram', 0, [[1, 2], [7, 2], [9, 7], [3, 7]]], ['scalene triangle', 0, [[1, 1], [9, 1], [3, 7]]]];
-skill('4-symmetry', 4, 'Symmetry and transformations', 'Symmetry, slides, flips and turns', ['A line of symmetry folds a shape into two matching halves.', 'A slide is a translation, a flip is a reflection, and a turn is a rotation.'], (r) => {
-  const v = r.int(0, 3);
-  if (v === 0) { const [n, k, pts] = r.pick(SYM); return num(k, [`Look for every fold line that makes the two halves match.`, k ? `A ${n} has ${k} line${k === 1 ? '' : 's'} of symmetry.` : `No fold makes the halves match.`, `So the answer is ${k}.`], { q: `How many lines of symmetry does this ${n} have?`, visual: { type: 'poly', points: pts } }); }
-  if (v === 1) {
-    const yes = ['A', 'H', 'M', 'O', 'T', 'U', 'V', 'W', 'X', 'Y'], no = ['F', 'G', 'J', 'L', 'N', 'P', 'R', 'S', 'Z'], right = r.pick(yes);
-    return mc(r, right, r.shuffle(no).slice(0, 3), { q: 'Which letter has a line of symmetry going straight up and down?', steps: ['Imagine folding each letter down the middle.', `Only ${right} folds into two matching halves.`] });
-  }
-  if (v === 2) {
-    const [n, k] = r.pick([['square', 4], ['rectangle', 2], ['equilateral triangle', 3], ['regular hexagon', 6], ['parallelogram', 2], ['rhombus', 2]]), turn = r.pick([['a quarter turn (90°)', 4], ['a half turn (180°)', 2], ['a third of a turn (120°)', 3]]), yes = k % turn[1] === 0;
-    return yesNo(r, yes, { q: `Does a ${n} look exactly the same after ${turn[0]} about its centre?`, steps: [`A ${n} matches itself ${k} times in one full turn.`, yes ? `${turn[0][0].toUpperCase() + turn[0].slice(1)} is one of those positions, so yes.` : `${turn[0][0].toUpperCase() + turn[0].slice(1)} is not one of those positions, so no.`] });
-  }
-  const P = r.int(0, 2), d = [`slides ${r.int(2, 6)} units to the right without turning or flipping`, 'flips over a line, like a mirror image', `turns ${r.pick(['90°', '180°'])} around a point`][P], N = ['Translation', 'Reflection', 'Rotation'];
-  return mc(r, N[P], N.filter((_, i) => i !== P), { q: `A shape ${d}. What is this move called?`, steps: ['Slide = translation, flip = reflection, turn = rotation.', `So it is a ${N[P].toLowerCase()}.`] });
-});
+skill('4-symmetry', 4, 'Symmetry and transformations', 'Symmetry, slides, flips and turns', GEO45.LESSONS.symmetry, (r) => GEO45.symmetry(r, 4));
 
 // ───────────── 28. Three-dimensional figures ─────────────
-const SOLIDS = { cube: [6, 12, 8], 'rectangular prism': [6, 12, 8], 'triangular prism': [5, 9, 6], 'square pyramid': [5, 8, 5], 'triangular pyramid': [4, 6, 4] };
-skill('4-solids', 4, '3D figures', 'Faces, edges, vertices and nets', ['A face is a flat surface, an edge is where two faces meet, and a vertex is a corner.', 'A net is a flat shape that folds up into a 3D figure.'], (r) => {
-  const v = r.int(0, 2);
-  if (v === 0) {
-    const s = r.pick(Object.keys(SOLIDS)), k = r.int(0, 2), what = ['faces', 'edges', 'vertices'][k], n = SOLIDS[s][k];
-    return num(n, [`${['Count the flat surfaces', 'Count where two faces meet', 'Count the corners'][k]} of a ${s}.`, `A ${s} has ${n} ${what}.`, `So the answer is ${n}.`], { q: `How many ${what} does a ${s} have?` });
-  }
-  const D = [['6 square faces that are all the same', 'cube'], ['2 circle faces and a curved surface', 'cylinder'], ['1 circle face, a curved surface and one point at the top', 'cone'], ['a curved surface with no flat faces, no edges and no vertices', 'sphere'], ['a square base and 4 triangle faces that meet at a point', 'square pyramid'], ['2 triangle faces and 3 rectangle faces', 'triangular prism'], ['6 rectangle faces', 'rectangular prism']];
-  const names = D.map((x) => x[1]), [d, right] = r.pick(D);
-  if (v === 1) return mc(r, right, r.shuffle(names.filter((x) => x !== right)).slice(0, 3), { q: `Which 3D figure has ${d}?`, steps: ['Match the faces to the figure.', `${d[0].toUpperCase() + d.slice(1)}: that is a ${right}.`] });
-  const N = [['6 squares', 'cube'], ['2 triangles and 3 rectangles', 'triangular prism'], ['1 square and 4 triangles', 'square pyramid'], ['4 triangles', 'triangular pyramid'], ['2 circles and 1 rectangle', 'cylinder'], ['6 rectangles', 'rectangular prism']], [nd, nr] = r.pick(N);
-  return mc(r, nr, r.shuffle(N.map((x) => x[1]).filter((x) => x !== nr)).slice(0, 3), { q: `A net is made of ${nd}. What 3D figure does it fold into?`, steps: ['Each shape in the net becomes one face.', `${nd[0].toUpperCase() + nd.slice(1)} fold into a ${nr}.`] });
-});
+skill('4-solids', 4, '3D figures', 'Faces, edges, vertices and nets', GEO45.LESSONS.solids, (r) => GEO45.solids(r, 4));
 
 // ───────────── 29. Area, perimeter and volume ─────────────
-const Lshape = (r) => { const W = r.int(5, 10), H = r.int(5, 10), w = r.int(2, W - 2), h = r.int(2, H - 2); return { W, H, w, h, points: [[0, 0], [W, 0], [W, H - h], [W - w, H - h], [W - w, H], [0, H]], labels: [W, H - h, w, h, W - w, H].map((x) => `${x} m`) }; };
-skill('4-perimeter', 4, 'Area, perimeter and volume', 'Perimeter', ['Perimeter is the distance around a shape: add all the sides.', 'A rectangle: 2 × length + 2 × width.'], (r) => {
-  const v = r.int(0, 2);
-  if (v === 0) {
-    const n = r.int(3, 6), pts = n === 4 ? [[1, 1], [9, 2], [8, 8], [2, 7]] : regPoly(n).map(([x, y], i) => [x + (i % 2) * 0.4, y]), sides = pts.map(() => r.int(2, 15)), P = sides.reduce((a, b) => a + b, 0);
-    return num(P, [`Add every side: ${sides.join(' + ')}.`, `${sides.join(' + ')} = ${P}.`, `So the perimeter is ${P} cm.`], { q: 'What is the perimeter of this shape, in cm?', visual: { type: 'poly', points: pts, labels: sides.map((s) => `${s} cm`) }, expr: sides.join('+') });
-  }
-  if (v === 1) {
-    const L = r.int(2, 9), W = r.int(1, 7), x0 = r.int(0, 10 - L), y0 = r.int(0, 10 - W);
-    return num(2 * (L + W), [`Count the units along each side: ${L}, ${W}, ${L}, ${W}.`, `${L} + ${W} + ${L} + ${W} = ${2 * (L + W)}.`, `So the perimeter is ${2 * (L + W)} units.`], { q: 'Each grid square is 1 unit long. What is the perimeter of the rectangle, in units?', visual: { type: 'poly', points: [[x0, y0], [x0 + L, y0], [x0 + L, y0 + W], [x0, y0 + W]], grid: true }, expr: `2*(${L}+${W})` });
-  }
-  if (r.bool()) {
-    const L = r.int(4, 30), W = r.int(2, 20), P = 2 * (L + W);
-    return num(W, [`Two lengths: 2 × ${L} = ${2 * L}.`, `The two widths share the rest: ${P} − ${2 * L} = ${2 * W}, and ${2 * W} ÷ 2 = ${W}.`, `So the width is ${W} m.`], { q: `A rectangle has a perimeter of ${P} m. Its length is ${L} m. What is its width, in m?`, visual: { type: 'poly', points: [[1, 3], [9, 3], [9, 7], [1, 7]], labels: [`${L} m`, '? m', '', ''] }, expr: `(${P}-2*${L})/2` });
-  }
-  const a = r.int(3, 12), b = r.int(3, 12), c = r.int(Math.abs(a - b) + 1, a + b - 1), P = a + b + c;
-  return num(c, [`Add the sides you know: ${a} + ${b} = ${a + b}.`, `The missing side is ${P} − ${a + b} = ${c}.`, `So the missing side is ${c} cm.`], { q: `A triangle has a perimeter of ${P} cm. Two sides are ${a} cm and ${b} cm. How long is the third side, in cm?`, visual: { type: 'poly', points: [[1, 1], [9, 1], [4, 8]], labels: [`${a} cm`, `${b} cm`, '? cm'] }, expr: `${P}-${a}-${b}` });
-});
-skill('4-area', 4, 'Area, perimeter and volume', 'Area of rectangles and other shapes', ['Area is the number of unit squares that cover a shape.', 'Rectangle area = length × width.', 'Split an odd shape into rectangles and add their areas.'], (r) => {
-  const v = r.int(0, 3);
-  if (v === 0) { const rows = r.int(2, 8), cols = r.int(2, 10); return num(rows * cols, [`There are ${rows} rows of ${cols} squares.`, `${rows} × ${cols} = ${rows * cols}.`, `So the area is ${rows * cols} square units.`], { q: 'What is the area of this rectangle, in square units?', visual: { type: 'grid', rows, cols }, expr: `${rows}*${cols}` }); }
-  if (v === 1) {
-    const L = r.int(3, 25), W = r.int(2, 15);
-    if (r.bool()) return num(L * W, [`Area = length × width.`, `${L} × ${W} = ${L * W}.`, `So the area is ${L * W} cm².`], { q: `A rectangle is ${L} cm long and ${W} cm wide. What is its area, in square centimetres?`, visual: { type: 'poly', points: [[1, 3], [9, 3], [9, 7], [1, 7]], labels: [`${L} cm`, `${W} cm`, '', ''] }, expr: `${L}*${W}` });
-    return num(W, [`Area = length × width, so width = area ÷ length.`, `${L * W} ÷ ${L} = ${W}.`, `So the width is ${W} cm.`], { q: `A rectangle has an area of ${L * W} cm². Its length is ${L} cm. What is its width, in cm?`, expr: `${L * W}/${L}` });
-  }
-  if (v === 2) {
-    const s = Lshape(r), A = s.W * s.H - s.w * s.h, A1 = (s.W - s.w) * s.H, A2 = s.w * (s.H - s.h);
-    return num(A, [`Split the shape into two rectangles: ${s.W - s.w} × ${s.H} and ${s.w} × ${s.H - s.h}.`, `${s.W - s.w} × ${s.H} = ${A1} and ${s.w} × ${s.H - s.h} = ${A2}.`, `Add: ${A1} + ${A2} = ${A}. So the area is ${A} m².`], { q: 'What is the area of this shape, in square metres?', visual: { type: 'poly', points: s.points, labels: s.labels }, expr: `${s.W}*${s.H}-${s.w}*${s.h}` });
-  }
-  const A = r.pick([12, 16, 18, 20, 24, 30, 36]), fs = factorsOf(A).filter((x) => x > 1 && x * x <= A), x = r.pick(fs), y = A / x;
-  return mc(r, `${x} by ${y}`, [`${x} by ${y + 1}`, `${x + 1} by ${y + 1}`, `${A / 2} by ${A / 2 - 2}`].filter((w) => { const [p, q] = w.split(' by ').map(Number); return p * q !== A; }), { q: `Which rectangle has an area of ${A} square units?`, steps: ['Multiply length × width for each choice.', `${x} × ${y} = ${A}.`] });
-});
-skill('4-areaword', 4, 'Area, perimeter and volume', 'Area and perimeter problems, and volume', ['Fencing goes around a shape (perimeter); carpet covers it (area).', 'Volume is the number of unit cubes that fill a box: length × width × height.'], (r) => {
-  const v = r.int(0, 2), name = nm(r);
-  if (v === 0) {
-    const L = r.int(4, 20), W = r.int(3, 15), fence = r.bool();
-    return fence ? num(2 * (L + W), [`Fence goes all the way around, so find the perimeter.`, `2 × ${L} + 2 × ${W} = ${2 * L} + ${2 * W} = ${2 * (L + W)}.`, `So ${name} needs ${2 * (L + W)} m of fence.`], { q: `${name}'s garden is a rectangle ${L} m long and ${W} m wide. How many metres of fence go all the way around it?`, expr: `2*(${L}+${W})` })
-      : num(L * W, [`Grass covers the whole garden, so find the area.`, `${L} × ${W} = ${L * W}.`, `So ${L * W} m² of grass is needed.`], { q: `${name}'s garden is a rectangle ${L} m long and ${W} m wide. How many square metres of grass seed cover it?`, expr: `${L}*${W}` });
-  }
-  if (v === 1) {
-    const P = 2 * r.int(8, 15), half = P / 2, a = r.int(1, Math.floor(half / 2) - 1), b = Math.floor(half / 2), ask = r.bool();
-    const s1 = `${a} m by ${half - a} m`, s2 = `${b} m by ${half - b} m`, big = a * (half - a) > b * (half - b) ? s1 : s2;
-    return mc(r, big, [big === s1 ? s2 : s1, 'They have the same area'], { q: `Two rectangles both have a perimeter of ${P} m: one is ${s1}, the other is ${s2}. Which has the greater area?`, steps: [`Areas: ${a} × ${half - a} = ${a * (half - a)} and ${b} × ${half - b} = ${b * (half - b)}.`, `${big} has the greater area. (The closer to a square, the bigger the area.)`] });
-  }
-  const l = r.int(2, 6), w = r.int(2, 5), h = r.int(2, 5);
-  return num(l * w * h, [`One layer has ${l} × ${w} = ${l * w} cubes.`, `There are ${h} layers: ${l * w} × ${h} = ${l * w * h}.`, `So the volume is ${l * w * h} cubic units.`], { q: `A box is filled with unit cubes. It is ${l} cubes long, ${w} cubes wide and ${h} cubes high. How many cubes fill it?`, expr: `${l}*${w}*${h}` });
-});
+skill('4-perimeter', 4, 'Area, perimeter and volume', 'Perimeter', GEO45.LESSONS.perimeter, (r) => GEO45.perimeter(r, 4));
+skill('4-area', 4, 'Area, perimeter and volume', 'Area of rectangles and other shapes', GEO45.LESSONS.area, (r) => GEO45.area(r, 4));
+skill('4-areaword', 4, 'Area, perimeter and volume', 'Area and perimeter problems, and volume', GEO45.LESSONS.areaword, (r) => GEO45.areaWord(r, nm(r)));
 
 // ───────────── 30. Understand fractions ─────────────
 const fsign = (a, b, c, d) => (a * d > c * b ? '>' : a * d < c * b ? '<' : '=');

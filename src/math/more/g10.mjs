@@ -1,5 +1,8 @@
 // Grade 10 maths: more skills, one or more for each topic of the grade (see src/math/kit.mjs for the helpers).
 import { grade, mc, near, num, txt, OBJ, plural, NAMES, comma, par, gcd, lcm, simplify, frac, isPrime, dec, sgn, neg, St, columnAdd, columnSub, columnMul, longDivision, numberLine, fractionBars, eqnLines, areaModel, multiplesOf, PLACE } from '../kit.mjs';
+import * as GEO from './geo10.mjs';
+import * as G from '../figs.mjs';
+import * as GH from './geo-hs.mjs';
 const { skill, list } = grade();
 
 // ── small helpers for this grade ──
@@ -235,19 +238,65 @@ skill('10-ratexp', 10, 'Rational exponents', 'Rational exponents', ['x^(1/n) is 
 });
 
 // ───────────── 6. Coordinate plane ─────────────
-skill('10-quadrant', 10, 'Coordinate geometry', 'Quadrants, endpoints and distance', ['The axes split the plane into four quadrants, numbered I to IV anticlockwise from the top right.', 'The midpoint is halfway: to find a missing endpoint, go from the midpoint the same distance again.'], (r) => {
-  const v = r.int(0, 2);
+// ── coordinate geometry with pictures (figures: ../figs.mjs and ./geo-hs.mjs) ──
+const KL = (text, visual) => ({ text, visual });
+const gw = (pts, e = 1, m = 5) => GH.window(pts, e, m);
+// the right triangle under a segment A–B on a grid: legs across and up, labelled with their lengths
+const distPic = (x1, y1, x2, y2, hl = []) => {
+  const corner = [x2, y1], dx = Math.abs(x2 - x1), dy = Math.abs(y2 - y1);
+  return GH.gridFig({ ...gw([[x1, y1], [x2, y2]]), pts: [[x1, y1, 'A'], [x2, y2, 'B']], segs: [[[x1, y1], [x2, y2], hl.includes('d') ? 'hlline' : 'ink'], ...(dx && dy ? [[[x1, y1], corner, hl.includes('x') ? 'hlline' : 'aux'], [corner, [x2, y2], hl.includes('y') ? 'hlline' : 'aux']] : [])], rights: dx && dy ? [[corner, [x1, y1], [x2, y2]]] : [], sides: dx && dy && hl.length ? [[[x1, y1], corner, `${dx}`, 'hl', [x2, y2]], [corner, [x2, y2], `${dy}`, 'hl', [x1, y1]]] : [] });
+};
+skill('10-quadrant', 10, 'Coordinate geometry', 'Quadrants, endpoints and distance', [
+  KL('The axes split the plane into four quadrants, numbered I to IV anticlockwise from the top right: I (+, +), II (−, +), III (−, −), IV (+, −).', GH.gridFig({ x0: -5, x1: 5, y0: -5, y1: 5, notes: [{ at: [2.5, 2.5], s: 'I', t: 'hl' }, { at: [-2.5, 2.5], s: 'II', t: 'hl' }, { at: [-2.5, -2.5], s: 'III', t: 'hl' }, { at: [2.5, -2.5], s: 'IV', t: 'hl' }] })),
+  KL('A point (x, y): go across x, then up or down y.', GH.gridFig({ x0: -2, x1: 6, y0: -2, y1: 5, pts: [[4, 3, 'P(4, 3)']], segs: [[[0, 0], [4, 0], 'hlline'], [[4, 0], [4, 3], 'hlline']] })),
+  KL('The midpoint is halfway: average the x-values and average the y-values.', GH.gridFig({ x0: -1, x1: 7, y0: -1, y1: 6, pts: [[0, 1, 'A'], [6, 5, 'B'], [3, 3, 'M', 'hl']], segs: [[[0, 1], [6, 5], 'ink']] })),
+  KL('Distance: draw the right triangle under the segment. Its legs are the change in x and the change in y, so d = √(Δx² + Δy²).', distPic(-2, -1, 2, 2, ['x', 'y'])),
+], (r) => {
+  const v = r.int(0, 6);
   if (v === 0) {
     const x = r.nonzero(-6, 6), y = r.nonzero(-6, 6), Q = x > 0 ? (y > 0 ? 'I' : 'IV') : y > 0 ? 'II' : 'III';
-    return mc(r, `Quadrant ${Q}`, ['I', 'II', 'III', 'IV'].filter((t) => t !== Q).map((t) => `Quadrant ${t}`), { q: `Which quadrant is the point ${P(x, y)} in?`, visual: { type: 'plane', points: [[x, y, 'A']], range: 6 }, steps: [`x is ${x > 0 ? 'positive (right)' : 'negative (left)'} and y is ${y > 0 ? 'positive (up)' : 'negative (down)'}.`, `So the point is in Quadrant ${Q}.`] });
+    const pic = GH.gridFig({ x0: -7, x1: 7, y0: -7, y1: 7, pts: [[x, y, 'A']] });
+    return mc(r, `Quadrant ${Q}`, ['I', 'II', 'III', 'IV'].filter((t) => t !== Q).map((t) => `Quadrant ${t}`), { q: `Which quadrant is point A in?`, visual: pic, steps: [St(`A is ${P(x, y)}: x is ${x > 0 ? 'positive (right of the y-axis)' : 'negative (left of the y-axis)'} and y is ${y > 0 ? 'positive (above the x-axis)' : 'negative (below the x-axis)'}.`, GH.gridFig({ x0: -7, x1: 7, y0: -7, y1: 7, pts: [[x, y, 'A']], segs: [[[0, 0], [x, 0], 'hlline'], [[x, 0], [x, y], 'hlline']] })), `So the point is in Quadrant ${Q}.`] });
   }
   if (v === 1) {
-    const x1 = r.int(-8, 8), y1 = r.int(-8, 8), mx = r.int(-6, 6), my = r.int(-6, 6), x2 = 2 * mx - x1, y2 = 2 * my - y1;
-    return ptItem(x2, y2, [`From A to M, x changes by ${neg(mx - x1)} and y changes by ${neg(my - y1)}.`, `Do the same again from M: x = ${neg(mx)} ${sgn(mx - x1)} = ${neg(x2)}, y = ${neg(my)} ${sgn(my - y1)} = ${neg(y2)}.`, `So B = ${P(x2, y2)}.`], { q: `M${P(mx, my)} is the midpoint of AB, and A is ${P(x1, y1)}. Find B. Write it as (x, y).` });
+    const x = r.int(-6, 6), y = r.int(-6, 6);
+    const w = { x0: -7, x1: 7, y0: -7, y1: 7 };
+    return ptItem(x, y, [St(`Start at the origin. Go across to x = ${neg(x)}${x ? ` (${x > 0 ? 'right' : 'left'})` : ''}.`, GH.gridFig({ ...w, pts: [[x, y, 'P']], segs: [[[0, 0], [x, 0], 'hlline']] })), St(`Then ${y >= 0 ? 'up' : 'down'} to y = ${neg(y)}.`, GH.gridFig({ ...w, pts: [[x, y, 'P']], segs: [[[0, 0], [x, 0], 'hlline'], [[x, 0], [x, y], 'hlline']] })), `So P = ${P(x, y)}.`], { q: 'What are the coordinates of point P? Write them as (x, y).', visual: GH.gridFig({ ...w, pts: [[x, y, 'P']] }) });
   }
-  let dx, dy; do { dx = r.int(1, 8); dy = r.int(1, 8); } while (Number.isInteger(Math.hypot(dx, dy)));
-  const x1 = r.int(-5, 5), y1 = r.int(-5, 5), x2 = x1 + dx * r.pick([1, -1]), y2 = y1 + dy * r.pick([1, -1]), d = r1(Math.hypot(dx, dy));
-  return num(dec(d), [`Δx = ${dx} and Δy = ${dy}.`, `d = √(${dx}² + ${dy}²) = √${dx * dx + dy * dy}.`, `√${dx * dx + dy * dy} ≈ ${dec(d)}.`, `So the distance is about ${dec(d)}.`], { q: `Find the distance between ${P(x1, y1)} and ${P(x2, y2)}. Round to the nearest tenth.`, tol: 0.05001, expr: `Math.hypot(${x2}-(${x1}),${y2}-(${y1}))` });
+  if (v === 2 || v === 3) {
+    let x1, y1, x2, y2; do { x1 = r.int(-7, 7); y1 = r.int(-7, 7); x2 = r.int(-7, 7); y2 = r.int(-7, 7); } while ((x1 + x2) % 2 || (y1 + y2) % 2 || (x1 === x2 && y1 === y2));
+    const mx = (x1 + x2) / 2, my = (y1 + y2) / 2, w = gw([[x1, y1], [x2, y2]]);
+    if (v === 2) return ptItem(mx, my, [
+      St(`Average the x-values: (${neg(x1)} + ${par(x2)}) ÷ 2 = ${neg(x1 + x2)} ÷ 2 = ${neg(mx)}.`),
+      St(`Average the y-values: (${neg(y1)} + ${par(y2)}) ÷ 2 = ${neg(y1 + y2)} ÷ 2 = ${neg(my)}.`, GH.gridFig({ ...w, pts: [[x1, y1, 'A'], [x2, y2, 'B'], [mx, my, 'M', 'hl']], segs: [[[x1, y1], [x2, y2], 'ink']] })),
+      `So the midpoint is M${P(mx, my)}.`,
+    ], { q: 'Find the midpoint M of segment AB. Write it as (x, y).', visual: GH.gridFig({ ...w, pts: [[x1, y1, 'A'], [x2, y2, 'B']], segs: [[[x1, y1], [x2, y2], 'ink']] }) });
+    return ptItem(x2, y2, [
+      St(`From A to M, x changes by ${neg(mx - x1)} and y changes by ${neg(my - y1)}.`, GH.gridFig({ ...w, pts: [[x1, y1, 'A'], [mx, my, 'M']], arrows: [[[x1, y1], [mx, my], 'aux']] })),
+      St(`M is halfway, so B is the same step again from M: x = ${neg(mx)} ${sgn(mx - x1)} = ${neg(x2)}, y = ${neg(my)} ${sgn(my - y1)} = ${neg(y2)}.`, GH.gridFig({ ...w, pts: [[x1, y1, 'A'], [mx, my, 'M'], [x2, y2, 'B', 'hl']], arrows: [[[x1, y1], [mx, my], 'aux'], [[mx, my], [x2, y2], 'aux']] })),
+      `So B = ${P(x2, y2)}.`,
+    ], { q: `M${P(mx, my)} is the midpoint of AB, and A is ${P(x1, y1)}. Find B. Write it as (x, y).`, visual: GH.gridFig({ ...w, pts: [[x1, y1, 'A'], [mx, my, 'M']], segs: [[[x1, y1], [mx, my], 'ink']] }) });
+  }
+  if (v === 4 || v === 5) {
+    let dx, dy;
+    if (v === 5) [dx, dy] = r.pick([[3, 4], [4, 3], [6, 8], [8, 6], [5, 12], [12, 5]]);
+    else do { dx = r.int(1, 7); dy = r.int(1, 7); } while (Number.isInteger(Math.hypot(dx, dy)));
+    const sx = r.pick([1, -1]), sy = r.pick([1, -1]), x1 = sx > 0 ? r.int(-7, 7 - dx) : r.int(-7 + dx, 7), y1 = sy > 0 ? r.int(-7, 7 - dy) : r.int(-7 + dy, 7), x2 = x1 + sx * dx, y2 = y1 + sy * dy;
+    const s = dx * dx + dy * dy, d = Math.hypot(dx, dy), ans = v === 5 ? String(d) : dec(r1(d));
+    return num(ans, [
+      St(`Draw the right triangle under AB. Across: ${neg(x2)} − ${par(x1)} gives ${dx} units. Up or down: ${neg(y2)} − ${par(y1)} gives ${dy} units.`, distPic(x1, y1, x2, y2, ['x', 'y'])),
+      St(`AB is the hypotenuse: d = √(${dx}² + ${dy}²) = √(${dx * dx} + ${dy * dy}) = √${s}.`, distPic(x1, y1, x2, y2, ['x', 'y', 'd'])),
+      v === 5 ? `√${s} = ${d}.` : `√${s} ≈ ${dec(d, 3)}, which is ${ans} to the nearest tenth.`,
+      `So the distance AB is ${v === 5 ? '' : 'about '}${ans}.`,
+    ], { q: `Find the distance between A${P(x1, y1)} and B${P(x2, y2)}${v === 5 ? '' : '. Round to the nearest tenth'}.`, visual: distPic(x1, y1, x2, y2), tol: v === 5 ? undefined : 0.05001, expr: `Math.hypot(${x2}-(${x1}),${y2}-(${y1}))` });
+  }
+  const c = r.int(-6, 6), a = r.int(-7, 5), b = r.int(a + 1, 7), vert = r.bool();
+  const [A, B] = vert ? [[c, a], [c, b]] : [[a, c], [b, c]], w = gw([A, B]);
+  return num(b - a, [
+    St(`A and B have the same ${vert ? 'x' : 'y'}-coordinate, so AB is ${vert ? 'up and down' : 'straight across'}: just count.`, GH.gridFig({ ...w, pts: [[...A, 'A'], [...B, 'B']], segs: [[A, B, 'hlline']] })),
+    `${neg(b)} − ${par(a)} = ${b - a}.`,
+    `So the distance is ${b - a} units.`,
+  ], { q: `Find the distance between A${P(...A)} and B${P(...B)}.`, visual: GH.gridFig({ ...w, pts: [[...A, 'A'], [...B, 'B']] }), expr: `${b}-(${a})` });
 });
 
 // ───────────── 7. Solve equations ─────────────
@@ -818,16 +867,36 @@ skill('10-rational', 10, 'Rational functions and expressions', 'Rational express
 
 // ───────────── 21. Circles in the coordinate plane ─────────────
 const circ = (h, k, R2) => `${sqx('x', h)} + ${sqx('y', k)} = ${R2}`;
-skill('10-circle', 10, 'Circles in the coordinate plane', 'Equations of circles', ['A circle with centre (h, k) and radius r has equation (x − h)² + (y − k)² = r².', 'Watch the signs: (x + 3)² means h = −3.'], (r) => {
-  const v = r.int(0, 3), h = r.nonzero(-6, 6), k = r.int(-6, 6), rr = r.int(1, 9);
-  if (v === 0) return ptItem(h, k, [`Compare with (x − h)² + (y − k)² = r².`, `h = ${neg(h)} and k = ${neg(k)}.`, `So the centre is ${P(h, k)}.`], { q: `What is the centre of the circle ${circ(h, k, rr * rr)}? Write it as (x, y).` });
+// a circle on a grid, with its centre C and (optionally) a radius drawn across to the right
+const circGrid = (h, k, rr, o = {}) => GH.gridFig({ ...gw([[h - rr, k - rr], [h + rr, k + rr]], 1, 4), circles: [{ c: [h, k], r: rr, t: 'ink' }], pts: [[h, k, o.cName ?? 'C', o.hlC ? 'hl' : undefined], ...(o.pts ?? [])], segs: o.radius ? [[[h, k], [h + rr, k], o.hlR ? 'hlline' : 'aux']] : o.segs ?? [], sides: o.rLabel ? [[[h, k], [h + rr, k], o.rLabel, 'hl', [h, k + 1]]] : [] });
+skill('10-circle', 10, 'Circles in the coordinate plane', 'Equations of circles', [
+  KL('Every point on a circle is the same distance r from the centre (h, k). By Pythagoras, (x − h)² + (y − k)² = r².', circGrid(2, 1, 3, { radius: true, rLabel: 'r', hlC: true })),
+  KL('Read the centre with the signs changed: (x − 2)² + (y − 1)² = 9 has centre (2, 1). (x + 3)² means h = −3.'),
+  KL('The number on the right is r², not r: r² = 9 means r = 3.', circGrid(2, 1, 3, { radius: true, rLabel: 'r = 3', hlR: true })),
+  KL('In the form x² + y² + Dx + Ey + F = 0, complete the square for x and for y to find the centre and radius.'),
+], (r) => {
+  const v = r.int(0, 6), h = r.nonzero(-4, 4), k = r.int(-4, 4), rr = r.int(1, 5);
+  const eq = circ(h, k, rr * rr);
+  if (v === 0) return ptItem(h, k, [St(`Compare with (x − h)² + (y − k)² = r². The signs inside the brackets are the opposite of the centre's coordinates.`), St(`h = ${neg(h)} and k = ${neg(k)}.`, circGrid(h, k, rr, { hlC: true })), `So the centre is ${P(h, k)}.`], { q: `What is the centre of the circle ${eq}? Write it as (x, y).` });
   if (v === 1) {
     const dia = r.bool();
-    return num(dia ? 2 * rr : rr, [`r² = ${rr * rr}, so r = √${rr * rr} = ${rr}.`, dia ? `The diameter is 2r = ${2 * rr}.` : `The radius is ${rr}.`, `So the ${dia ? 'diameter' : 'radius'} is ${dia ? 2 * rr : rr}.`], { q: `What is the ${dia ? 'diameter' : 'radius'} of the circle ${circ(h, k, rr * rr)}?`, expr: `${dia ? 2 : 1}*Math.sqrt(${rr * rr})` });
+    return num(dia ? 2 * rr : rr, [St(`The right side is r²: r² = ${rr * rr}, so r = √${rr * rr} = ${rr}.`, circGrid(h, k, rr, { radius: true, rLabel: `${rr}`, hlR: true })), dia ? `The diameter is 2r = ${2 * rr}.` : `The radius is ${rr}.`, `So the ${dia ? 'diameter' : 'radius'} is ${dia ? 2 * rr : rr}.`], { q: `What is the ${dia ? 'diameter' : 'radius'} of the circle ${eq}?`, expr: `${dia ? 2 : 1}*Math.sqrt(${rr * rr})` });
   }
-  if (v === 2) { const right = circ(h, k, rr * rr); return mc(r, right, [circ(-h, -k, rr * rr), circ(h, k, rr === 1 ? 2 : rr), circ(-h, k, rr * rr)].filter((x) => x !== right), { q: `Which is the equation of the circle with centre ${P(h, k)} and radius ${rr}?`, steps: [`Put h = ${neg(h)}, k = ${neg(k)} and r = ${rr} into (x − h)² + (y − k)² = r².`, `r² = ${rr * rr}, so ${right}.`] }); }
-  const D = -2 * h, E = -2 * k, Fc = h * h + k * k - rr * rr;
-  return num(rr, [`Group and complete the squares: (x² ${sgn(D)}x + ${h * h}) + (y² ${E ? `${sgn(E)}y ` : ''}+ ${k * k}) = ${neg(-Fc)} + ${h * h} + ${k * k}.`, `That is ${circ(h, k, rr * rr)}.`, `r = √${rr * rr} = ${rr}.`, `So the radius is ${rr}.`], { q: `What is the radius of the circle ${lin([[1, 'x²'], [1, 'y²'], [D, 'x'], [E, 'y'], [Fc, '']])} = 0?`, expr: `Math.sqrt(${h * h + k * k - Fc})` });
+  const wrongs = [circ(-h, -k, rr * rr), circ(h, k, rr === 1 ? 2 : rr), circ(-h, k, rr * rr), circ(h, -k, rr * rr)].filter((x) => x !== eq);
+  if (v === 2) return mc(r, eq, wrongs.slice(0, 3), { q: `Which is the equation of the circle with centre ${P(h, k)} and radius ${rr}?`, steps: [St(`Put h = ${neg(h)}, k = ${neg(k)} and r = ${rr} into (x − h)² + (y − k)² = r². Subtracting a negative makes a plus.`, circGrid(h, k, rr, { radius: true, rLabel: `${rr}` })), `r² = ${rr * rr}, so the equation is ${eq}.`] });
+  if (v === 3) return mc(r, eq, wrongs.slice(0, 3), { q: 'Which equation describes the circle on the grid?', visual: circGrid(h, k, rr), steps: [St(`Read the centre: C${P(h, k)}. Count from C straight across to the circle: r = ${rr}.`, circGrid(h, k, rr, { radius: true, rLabel: `${rr}`, hlC: true, hlR: true })), `So (x − h)² + (y − k)² = r² gives ${eq}.`] });
+  if (v === 4) {
+    const D = -2 * h, E = -2 * k, Fc = h * h + k * k - rr * rr;
+    return num(rr, [`Group the x terms and the y terms, and move ${neg(Fc)} across: (x² ${sgn(D)}x) + (y²${E ? ` ${sgn(E)}y` : ''}) = ${neg(-Fc)}.`, `Complete each square by adding (half the middle number)²: ${h * h} and ${k * k}. That gives ${eq}.`, St(`r² = ${rr * rr}, so r = √${rr * rr} = ${rr}.`, circGrid(h, k, rr, { radius: true, rLabel: `${rr}`, hlR: true })), `So the radius is ${rr}.`], { q: `What is the radius of the circle ${lin([[1, 'x²'], [1, 'y²'], [D, 'x'], [E, 'y'], [Fc, '']])} = 0?`, expr: `Math.sqrt(${h * h + k * k - Fc})` });
+  }
+  if (v === 5) {
+    let px_, py_; do { px_ = h + r.int(-rr - 2, rr + 2); py_ = k + r.int(-rr - 2, rr + 2); } while (px_ === h && py_ === k);
+    const s = (px_ - h) ** 2 + (py_ - k) ** 2, R2 = rr * rr, right = s === R2 ? 'On the circle' : s < R2 ? 'Inside the circle' : 'Outside the circle';
+    return mc(r, right, ['On the circle', 'Inside the circle', 'Outside the circle'].filter((x) => x !== right), { q: `Is the point Q${P(px_, py_)} on, inside or outside the circle ${eq}?`, steps: [`Put x = ${neg(px_)} and y = ${neg(py_)} into the left side: (${neg(px_)} ${sgn(-h)})² + (${neg(py_)} ${sgn(-k)})² = ${(px_ - h) ** 2} + ${(py_ - k) ** 2} = ${s}.`, St(`Compare with r² = ${R2}: ${s} ${s === R2 ? '=' : s < R2 ? '<' : '>'} ${R2}, so Q is ${right.toLowerCase()}.`, circGrid(h, k, rr, { pts: [[px_, py_, 'Q', 'hl']], segs: [[[h, k], [px_, py_], 'aux']] }))] });
+  }
+  const [dx, dy] = r.pick([[3, 4], [4, 3], [0, 3], [2, 2], [1, 3], [2, 1], [3, 0], [1, 1]]), sx = r.pick([1, -1]), sy = r.pick([1, -1]), qx = h + sx * dx, qy = k + sy * dy, R2 = dx * dx + dy * dy;
+  const pic = (hl) => GH.gridFig({ ...gw([[h - 5, k - 5], [h + 5, k + 5]], 0, 5), circles: [{ c: [h, k], r: Math.sqrt(R2), t: 'ink' }], pts: [[h, k, 'C'], [qx, qy, 'Q']], segs: [[[h, k], [qx, qy], hl ? 'hlline' : 'aux'], ...(hl && dx && dy ? [[[h, k], [qx, k], 'aux'], [[qx, k], [qx, qy], 'aux']] : [])] });
+  return num(R2, [St(`The radius is the distance CQ. Across: ${dx}. Up or down: ${dy}.`, pic(true)), `r² = ${dx}² + ${dy}² = ${R2}. (We need r², so no square root.)`, `So r² = ${R2}, and the circle is ${circ(h, k, R2)}.`], { q: `A circle has centre C${P(h, k)} and passes through Q${P(qx, qy)}. Its equation is (x − h)² + (y − k)² = r². What is r²?`, visual: pic(false), expr: `(${qx}-(${h}))**2+(${qy}-(${k}))**2` });
 });
 
 // ───────────── 22. Logic ─────────────
@@ -917,299 +986,532 @@ skill('10-imperial', 10, 'Measurement', 'Imperial units and scale drawings', ['1
 });
 
 // ───────────── 24. Constructions ─────────────
-skill('10-construct', 10, 'Constructions', 'Compass constructions', ['To bisect an angle: draw an arc from the vertex across both rays, then equal arcs from those two points; join the vertex to where they cross.', 'To copy an angle, copy two distances with the compass: the arc radius and the gap between the arc points.'], (r) => {
-  const v = r.int(0, 3);
-  if (v === 0) { const a = r.int(10, 85) * 2; return num(a / 2, ['An angle bisector splits the angle into two equal angles.', `${a}° ÷ 2 = ${a / 2}°.`, `So each new angle is ${a / 2}°.`], { q: `You bisect an angle of ${a}° with a compass and straightedge. What is the measure of each new angle, in degrees?`, visual: { type: 'angle', deg: a, label: `${a}°` }, expr: `${a}/2` }); }
-  if (v === 1) return mc(r, 'Draw an arc centred at the vertex that crosses both rays.', ['Measure the angle with a protractor.', 'Draw a line from the vertex to any point inside the angle.', 'Draw a circle through the two rays’ end points.'], { q: 'When you construct the bisector of an angle with a compass, what is the first step?', steps: ['The construction uses only a compass and a straightedge: no measuring.', 'First, draw an arc centred at the vertex that crosses both rays.'] });
-  if (v === 2) return mc(r, 'The distance between the two points where the first arc crosses the rays', ['The length of the longer ray', 'The distance from the vertex to the end of a ray', 'The size of the angle in degrees'], { q: 'When copying an angle onto a new ray, after drawing the matching arcs, which distance do you copy with the compass?', steps: ['Both angles get arcs with the same radius.', 'Then copying the gap between the arc points makes the openings match.'] });
-  const which = r.bool() ? 'bisecting an angle' : 'copying an angle';
-  return mc(r, 'SSS', ['SAS', 'ASA', 'AAS'], { q: `The compass construction for ${which} works because it builds two congruent triangles. Which congruence rule proves this?`, steps: ['Every length in the construction is set by the compass: three pairs of equal sides.', 'Three pairs of equal sides: SSS.'] });
+// compass constructions, drawn: the arcs are dashed, the finished line is highlighted
+const deg = (a, b) => (Math.atan2(b[1] - a[1], b[0] - a[0]) * 180) / Math.PI;
+function bisectFig(a, { stage = 3, label = `${a}°`, half = '' } = {}) {
+  const V = [0, 0], r0 = 2.6, rho = 2.7, Pp = GH.onCircle(V, r0, 0), Q = GH.onCircle(V, r0, a);
+  const m = a / 2, along = r0 * Math.cos((m * Math.PI) / 180) + Math.sqrt(rho * rho - (r0 * Math.sin((m * Math.PI) / 180)) ** 2), X = GH.onCircle(V, along, m);
+  const P = { V, A: GH.onCircle(V, 5.5, 0), B: GH.onCircle(V, 5.5, a), Pp, Q, X, E: GH.onCircle(V, 6, m) };
+  const arcs = [];
+  if (stage >= 1) arcs.push({ c: 'V', r: r0, from: -12, to: a + 12, t: 'aux' });
+  if (stage >= 2) { const t1 = deg(Pp, X), t2 = deg(Q, X); arcs.push({ c: 'Pp', r: rho, from: t1 - 14, to: t1 + 14, t: 'aux' }, { c: 'Q', r: rho, from: t2 - 14, to: t2 + 14, t: 'aux' }); }
+  return GH.scene({ P, W: 280, H: 210, pad: 26, fit: [[0, -0.6]], segs: [['V', 'A'], ['V', 'B'], ...(stage >= 3 ? [['V', 'E', 'hlline']] : [])], arcs, dots: stage >= 1 ? ['Pp', 'Q', ...(stage >= 2 ? ['X'] : [])] : [], angs: stage >= 3 && half ? [{ v: 'V', a: 'A', b: 'E', s: half, r: 34 }] : [{ v: 'V', a: 'A', b: 'B', s: label, r: 18 }], names: { V: 'V' } });
+}
+function perpFig({ L = '', marks = false, Pd = null } = {}) {
+  const A = [0, 0], B = [6, 0], y = Math.sqrt(16 - 9), P = { A, B, M: [3, 0], U: [3, 3.6], Dn: [3, -3.6], X1: [3, y], X2: [3, -y], ...(Pd ? { Pp: [3, 2.2] } : {}) };
+  const t = deg(A, [3, y]);
+  return GH.scene({ P, W: 280, H: 220, pad: 24, segs: [['A', 'B'], ['U', 'Dn', 'hlline'], ...(Pd ? [['Pp', 'A', 'aux'], ['Pp', 'B', 'aux']] : [])], arcs: [{ c: 'A', r: 4, from: t - 14, to: t + 14, t: 'aux' }, { c: 'A', r: 4, from: -t - 14, to: -t + 14, t: 'aux' }, { c: 'B', r: 4, from: 180 - t - 14, to: 180 - t + 14, t: 'aux' }, { c: 'B', r: 4, from: 180 + t - 14, to: 180 + t + 14, t: 'aux' }], dots: ['A', 'B', 'M', ...(Pd ? ['Pp'] : [])], ticks: marks ? [['A', 'M', 1], ['M', 'B', 1]] : [], rights: marks ? [['M', 'B', 'U']] : [], notes: L ? [{ at: [1.4, -0.5], s: L }] : [], sides: [...(Pd ? [['Pp', 'A', Pd[0], Pd[2] ?? 'ink', [3, 0]], ['Pp', 'B', Pd[1], 'hl', [3, 0]]] : [])], names: { A: 'A', B: 'B', M: 'M', ...(Pd ? { Pp: 'P' } : {}) }, nameDir: { A: [-1, -0.4], B: [1, -0.4], M: [0.6, -1], Pp: [0.8, 1] } });
+}
+const equiFig = (hl) => { const t = 60; return GH.scene({ P: { A: [0, 0], B: [4, 0], C: [2, 2 * Math.sqrt(3)] }, W: 260, H: 210, pad: 26, fills: hl ? [{ pts: ['A', 'B', 'C'] }] : [], segs: [['A', 'B'], ['A', 'C', hl ? 'ink' : 'aux'], ['B', 'C', hl ? 'ink' : 'aux']], arcs: [{ c: 'A', r: 4, from: t - 18, to: t + 12, t: 'aux' }, { c: 'B', r: 4, from: 180 - t - 12, to: 180 - t + 18, t: 'aux' }], ticks: hl ? [['A', 'B', 1], ['B', 'C', 1], ['C', 'A', 1]] : [], angs: hl ? [{ v: 'A', a: 'B', b: 'C', s: '?' }] : [], dots: ['A', 'B', 'C'], names: ['A', 'B', 'C'] }); };
+skill('10-construct', 10, 'Constructions', 'Compass constructions', [
+  KL('Constructions use only a compass and a straightedge: no measuring. The compass copies lengths.'),
+  KL('To bisect an angle: an arc from the vertex crosses both rays; equal arcs from those two points cross; join the vertex to the crossing.', bisectFig(70, { stage: 3, label: '' })),
+  KL('The perpendicular bisector of AB: equal arcs (more than half of AB) from A and from B cross above and below; the line through the crossings cuts AB in half at right angles.', perpFig({ marks: true })),
+  KL('An equilateral triangle: arcs of radius AB from A and from B meet at C, so all three sides are equal and every angle is 60°.', equiFig(true)),
+  KL('Every construction works because the compass makes equal lengths, so the triangles it builds are congruent (SSS).'),
+], (r) => {
+  const v = r.int(0, 7);
+  if (v === 0) {
+    const a = r.int(10, 85) * 2;
+    return num(a / 2, [St('Arc from the vertex V crossing both rays.', bisectFig(a, { stage: 1 })), St('Equal arcs from the two crossing points meet inside the angle.', bisectFig(a, { stage: 2 })), St(`The line from V through that point splits the angle into two equal parts: ${a}° ÷ 2 = ${a / 2}°.`, bisectFig(a, { stage: 3, half: `${a / 2}°` })), `So each new angle is ${a / 2}°.`], { q: `This angle of ${a}° is bisected with a compass and straightedge. What is the measure of each new angle, in degrees?`, visual: bisectFig(a, { stage: 0 }), expr: `${a}/2` });
+  }
+  if (v === 1) { const a = r.int(40, 140); return mc(r, 'Draw an arc centred at the vertex that crosses both rays.', ['Measure the angle with a protractor.', 'Draw a line from the vertex to any point inside the angle.', 'Draw a circle through the two rays’ end points.'], { q: 'You want to bisect this angle with a compass and straightedge. What is the first step?', visual: bisectFig(a, { stage: 0, label: '' }), steps: [St('The construction uses only a compass and a straightedge: no measuring.'), St('First, draw an arc centred at the vertex that crosses both rays.', bisectFig(a, { stage: 1, label: '' }))] }); }
+  if (v === 2) return mc(r, 'The distance between the two points where the first arc crosses the rays', ['The length of the longer ray', 'The distance from the vertex to the end of a ray', 'The size of the angle in degrees'], { q: 'When copying an angle onto a new ray, after drawing the matching arcs, which distance do you copy with the compass?', visual: bisectFig(60, { stage: 1, label: '' }), steps: [St('Both angles get arcs with the same radius from their vertices.'), St('Then copying the gap between the two arc points makes the openings match.', bisectFig(60, { stage: 1, label: '' }))] });
+  if (v === 3) {
+    const which = r.bool() ? 'bisecting an angle' : 'the perpendicular bisector';
+    return mc(r, 'SSS', ['SAS', 'ASA', 'AAS'], { q: `The compass construction for ${which} works because it builds two congruent triangles. Which congruence rule proves this?`, visual: which === 'bisecting an angle' ? bisectFig(80, { stage: 2, label: '' }) : perpFig({}), steps: [St('Every length in the construction is set by the compass, and the two triangles share a side: three pairs of equal sides.'), 'Three pairs of equal sides: SSS.'] });
+  }
+  if (v === 4) {
+    const L = 2 * r.int(3, 15);
+    return num(L / 2, [St('The perpendicular bisector crosses AB at its midpoint M, at a right angle.', perpFig({ L: `${L} cm`, marks: true })), `AM = ${L} ÷ 2 = ${L / 2}.`, `So AM = ${L / 2} cm.`], { q: `The perpendicular bisector of AB is constructed. AB = ${L} cm. How long is AM, in cm?`, visual: perpFig({ L: `${L} cm` }), expr: `${L}/2` });
+  }
+  if (v === 5) {
+    const d = r.int(3, 20);
+    return num(d, [St('Every point on the perpendicular bisector of AB is the same distance from A as from B.', perpFig({ marks: true, Pd: [`${d} cm`, `${d} cm`, 'hl'] })), `PB = PA = ${d}.`, `So PB = ${d} cm.`], { q: `P is on the perpendicular bisector of AB, and PA = ${d} cm. How long is PB?`, visual: perpFig({ Pd: [`${d} cm`, '?'] }), expr: String(d) });
+  }
+  if (v === 6) return num(60, [St('C is on an arc centred at A and on an arc centred at B, both with radius AB. So CA = AB and CB = AB.', equiFig(false)), St('All three sides are equal, so the triangle is equilateral, and its three equal angles share 180°: 180 ÷ 3 = 60.', equiFig(true)), 'So ∠CAB = 60°.'], { q: 'Arcs with radius AB are drawn from A and from B; they meet at C. What is ∠CAB, in degrees?', visual: equiFig(false), expr: '180/3' });
+  const a = r.pick([40, 48, 60, 72, 80, 88, 100, 120, 128, 140, 160, 172]);
+  return num(a / 4, [St(`Bisect once: ${a}° ÷ 2 = ${a / 2}°.`, bisectFig(a, { stage: 3, half: `${a / 2}°` })), `Bisect one half again: ${a / 2}° ÷ 2 = ${a / 4}°.`, `So the smallest angle is ${a / 4}°.`], { q: `An angle of ${a}° is bisected, and then one of the two new angles is bisected again. What is the measure of each of the smallest angles, in degrees?`, visual: bisectFig(a, { stage: 0 }), expr: `${a}/4` });
 });
 
-// ───────────── 25. Two-dimensional figures ─────────────
-skill('10-area2d', 10, 'Two-dimensional figures', 'Area and perimeter', ['Triangle: A = bh ÷ 2. Parallelogram: A = bh. Trapezoid: A = (a + b)h ÷ 2. Circle: A = πr², C = 2πr.', 'For a compound shape, split it into simple shapes, or take away the missing part.'], (r) => {
-  const v = r.int(0, 4);
-  if (v === 0) {
-    const t = r.int(0, 2), b = r.int(3, 20), h = r.int(2, 15);
-    if (t === 0) { const A = b * h / 2; return num(dec(A), [`A = base × height ÷ 2.`, `${b} × ${h} ÷ 2 = ${dec(A)}.`, `So the area is ${dec(A)} cm².`], { q: `A triangle has base ${b} cm and height ${h} cm. What is its area in cm²?`, expr: `${b}*${h}/2` }); }
-    if (t === 1) return num(b * h, ['A = base × height.', `${b} × ${h} = ${b * h}.`, `So the area is ${b * h} m².`], { q: `A parallelogram has base ${b} m and height ${h} m. What is its area in m²?`, expr: `${b}*${h}` });
-    const a = r.int(2, b), A = (a + b) * h / 2;
-    return num(dec(A), ['A = (a + b) × h ÷ 2.', `(${a} + ${b}) × ${h} ÷ 2 = ${dec(A)}.`, `So the area is ${dec(A)} cm².`], { q: `A trapezoid has parallel sides ${a} cm and ${b} cm and height ${h} cm. What is its area in cm²?`, visual: { type: 'poly', points: [[1, 2], [9, 2], [7, 7], [3, 7]], labels: [`${b} cm`, '', `${a} cm`, ''] }, expr: `(${a}+${b})*${h}/2` });
-  }
-  if (v === 1) {
-    const rad = r.int(2, 15), useD = r.bool(), area = r.bool(), val = area ? 3.14 * rad * rad : 2 * 3.14 * rad, ans = dec(r1(val));
-    return num(ans, [useD ? `The radius is half the diameter: ${2 * rad} ÷ 2 = ${rad} cm.` : `The radius is ${rad} cm.`, area ? `A = πr² ≈ 3.14 × ${rad}² = 3.14 × ${rad * rad} = ${dec(val)}.` : `C = 2πr ≈ 2 × 3.14 × ${rad} = ${dec(val)}.`, `Rounded to the nearest tenth: ${ans}.`, `So the ${area ? 'area is about ' + ans + ' cm²' : 'circumference is about ' + ans + ' cm'}.`], { q: `A circle has ${useD ? `diameter ${2 * rad}` : `radius ${rad}`} cm. Using π ≈ 3.14, find its ${area ? 'area in cm²' : 'circumference in cm'}. Round to the nearest tenth.`, tol: 0.05001, expr: area ? `3.14*${rad}**2` : `2*3.14*${rad}` });
-  }
-  if (v === 2) {
-    const W = r.int(6, 10), H = r.int(6, 10), a = r.int(2, H - 2), c = r.int(2, W - 2), A = W * a + c * (H - a);
-    return num(A, [`Split it into two rectangles: a ${W} × ${a} rectangle at the bottom and a ${c} × ${H - a} rectangle on top.`, `${W * a} + ${c * (H - a)} = ${A}.`, `So the area is ${A} m².`], { q: 'What is the area of this shape, in m²? (All corners are right angles.)', visual: { type: 'poly', points: [[0, 0], [W, 0], [W, a], [c, a], [c, H], [0, H]], labels: [`${W} m`, `${a} m`, `${W - c} m`, `${H - a} m`, `${c} m`, `${H} m`] }, expr: `${W}*${H}-${W - c}*${H - a}` });
-  }
-  if (v === 3) {
-    if (r.bool()) { const s = r.int(2, 10) * 2, val = s * s - 3.14 * (s / 2) ** 2, ans = dec(r1(val)); return num(ans, [`Square: ${s}² = ${s * s} cm². Circle: radius ${s / 2}, area ≈ 3.14 × ${(s / 2) ** 2} = ${dec(3.14 * (s / 2) ** 2)} cm².`, `Take away: ${s * s} − ${dec(3.14 * (s / 2) ** 2)} = ${dec(val)}.`, `Rounded to the nearest tenth: ${ans}.`, `So the shaded area is about ${ans} cm².`], { q: `A circle fits exactly inside a square with side ${s} cm. Using π ≈ 3.14, what is the area inside the square but outside the circle, in cm²? Round to the nearest tenth.`, tol: 0.05001, expr: `${s}**2-3.14*(${s}/2)**2` }); }
-    const W = r.int(8, 20), H = r.int(6, 15), w = r.int(2, W - 3), h = r.int(2, H - 3);
-    return num(W * H - w * h, [`Big rectangle: ${W} × ${H} = ${W * H} m².`, `Take away the pool: ${w} × ${h} = ${w * h} m², so ${W * H} − ${w * h} = ${W * H - w * h}.`, `So the lawn is ${W * H - w * h} m².`], { q: `A yard is ${W} m by ${H} m. A ${w} m by ${h} m pool is inside it. What is the area of the yard that is not pool, in m²?`, expr: `${W}*${H}-${w}*${h}` });
-  }
-  const x1 = r.int(0, 4), y1 = r.int(0, 4), x2 = x1 + r.int(2, 6), y2 = y1 + r.int(2, 6), per = r.bool(), w = x2 - x1, h = y2 - y1;
-  return num(per ? 2 * (w + h) : w * h, [`Width = ${x2} − ${x1} = ${w}. Height = ${y2} − ${y1} = ${h}.`, per ? `Perimeter = 2 × (${w} + ${h}) = ${2 * (w + h)}.` : `Area = ${w} × ${h} = ${w * h}.`, `So the ${per ? 'perimeter' : 'area'} is ${per ? 2 * (w + h) : w * h} ${per ? 'units' : 'square units'}.`], { q: `A rectangle has vertices (${x1}, ${y1}), (${x2}, ${y1}), (${x2}, ${y2}) and (${x1}, ${y2}). What is its ${per ? 'perimeter' : 'area'}?`, visual: { type: 'poly', points: [[x1, y1], [x2, y1], [x2, y2], [x1, y2]], grid: true }, expr: per ? `2*(${w}+${h})` : `${w}*${h}` });
-});
-skill('10-quads', 10, 'Two-dimensional figures', 'Quadrilaterals and polygons', ['A parallelogram has two pairs of parallel sides; its opposite angles are equal and its diagonals bisect each other.', 'A rhombus has four equal sides and perpendicular diagonals. A trapezoid has exactly one pair of parallel sides.'], (r) => {
-  const v = r.int(0, 4);
-  if (v === 0) {
-    const Q = [['four right angles and four equal sides', 'Square'], ['four right angles, but its sides are not all equal', 'Rectangle'], ['four equal sides, but no right angles', 'Rhombus'], ['exactly one pair of parallel sides', 'Trapezoid'], ['two pairs of parallel sides, no right angles, and sides that are not all equal', 'Parallelogram'], ['two pairs of equal sides next to each other, and no parallel sides', 'Kite']];
-    const [d, right] = r.pick(Q);
-    return mc(r, right, r.shuffle(Q.map((x) => x[1]).filter((x) => x !== right)).slice(0, 3), { q: `A quadrilateral has ${d}. What is the most specific name for it?`, steps: [`Check each property: ${d}.`, `That describes a ${right.toLowerCase()}.`] });
-  }
-  if (v === 1) {
-    if (r.bool()) { const a = r.int(35, 145); const opp = r.bool(); return num(opp ? a : 180 - a, [opp ? 'Opposite angles of a parallelogram are equal.' : 'Angles next to each other in a parallelogram add to 180°.', opp ? `So the angle is ${a}°.` : `180 − ${a} = ${180 - a}.`, `So the angle is ${opp ? a : 180 - a}°.`], { q: `One angle of a parallelogram is ${a}°. What is the angle ${opp ? 'opposite' : 'next to'} it, in degrees?`, expr: opp ? String(a) : `180-${a}` }); }
-    const x = r.int(4, 12), p = r.int(1, 3), q = p + r.int(1, 3), c = r.int(0, 20), d = (q - p) * x + c;
-    return num(x, ['The diagonals of a parallelogram bisect each other, so the two parts are equal.', `${px([q, c])} = ${px([p, d])}, so ${q - p}x = ${d - c}.`, `x = ${x}.`, `So x = ${x}.`], { q: `The diagonals of parallelogram ABCD meet at E. AE = ${px([q, c])} and EC = ${px([p, d])}. Find x.`, unit: 'x =', expr: `(${d}-${c})/(${q - p})` });
-  }
-  if (v === 2) {
-    const [a, b, c] = r.pick([[3, 4, 5], [5, 12, 13], [6, 8, 10], [8, 15, 17], [9, 12, 15]]), area = r.bool();
-    if (area) return num(2 * a * b, [`The diagonals are ${2 * a} and ${2 * b}.`, `Area = d₁ × d₂ ÷ 2 = ${2 * a} × ${2 * b} ÷ 2 = ${2 * a * b}.`, `So the area is ${2 * a * b} cm².`], { q: `A rhombus has diagonals ${2 * a} cm and ${2 * b} cm. What is its area in cm²?`, expr: `${2 * a}*${2 * b}/2` });
-    return num(c, [`The diagonals of a rhombus bisect each other at right angles, making right triangles with legs ${a} and ${b}.`, `side = √(${a}² + ${b}²) = √${c * c} = ${c}.`, `So each side is ${c} cm.`], { q: `A rhombus has diagonals ${2 * a} cm and ${2 * b} cm. How long is each side, in cm?`, expr: `Math.hypot(${a},${b})` });
-  }
-  if (v === 3) { const n = r.pick([5, 6, 8, 9, 10, 12]); return num(360 / n, ['The exterior angles of any polygon add to 360°.', `A regular polygon with ${n} sides has ${n} equal exterior angles: 360 ÷ ${n} = ${360 / n}.`, `So each exterior angle is ${360 / n}°.`], { q: `What is each exterior angle of a regular polygon with ${n} sides, in degrees?`, expr: `360/${n}` }); }
-  const NM = [[5, 'Pentagon'], [6, 'Hexagon'], [7, 'Heptagon'], [8, 'Octagon'], [9, 'Nonagon'], [10, 'Decagon'], [12, 'Dodecagon']], [n, right] = r.pick(NM);
-  return mc(r, right, r.shuffle(NM.filter((x) => x[0] !== n).map((x) => x[1])).slice(0, 3), { q: `What is a polygon with ${n} sides called?`, steps: [`The name comes from the number of sides: ${n}.`, `A ${n}-sided polygon is a ${right.toLowerCase()}.`] });
-});
+// ───────────── 25. Two-dimensional figures (taught with figures: see geo10.mjs) ─────────────
+skill('10-area2d', 10, 'Two-dimensional figures', 'Area and perimeter', GEO.LESSONS.area2d, GEO.area2d);
+skill('10-quads', 10, 'Two-dimensional figures', 'Quadrilaterals and polygons', GEO.LESSONS.quads, GEO.quads);
 
 // ───────────── 26. Three-dimensional figures ─────────────
-const BASES = [[3, 'triangular'], [4, 'rectangular'], [5, 'pentagonal'], [6, 'hexagonal'], [8, 'octagonal']];
-skill('10-solids', 10, 'Three-dimensional figures', 'Faces, edges, nets and cross-sections', ['A prism has two matching bases joined by rectangles; a pyramid has one base and triangles that meet at a point.', 'A cross-section is the flat shape you see when you slice a solid.'], (r) => {
-  const v = r.int(0, 3);
-  if (v === 0) {
-    const [n, nm] = r.pick(BASES), prism = r.bool(), what = r.pick(['faces', 'edges', 'vertices']);
-    const val = prism ? { faces: n + 2, edges: 3 * n, vertices: 2 * n }[what] : { faces: n + 1, edges: 2 * n, vertices: n + 1 }[what];
-    const why = prism ? { faces: `${n} side faces + 2 bases = ${n + 2}.`, edges: `${n} edges on each base + ${n} joining them = ${3 * n}.`, vertices: `${n} on each base: 2 × ${n} = ${2 * n}.` }[what] : { faces: `${n} triangles + 1 base = ${n + 1}.`, edges: `${n} on the base + ${n} up to the top = ${2 * n}.`, vertices: `${n} on the base + 1 at the top = ${n + 1}.` }[what];
-    return num(val, [`The base has ${n} sides.`, why, `So it has ${val} ${what}.`], { q: `How many ${what} does ${/^[aeiou]/.test(nm) ? "an" : "a"} ${nm} ${prism ? 'prism' : 'pyramid'} have?`, expr: String(val) });
-  }
-  if (v === 1) {
-    const X = [['a cube', 'parallel to one face', 'Square'], ['a cylinder', 'parallel to its bases', 'Circle'], ['a cylinder', 'straight down through both bases, through the centre', 'Rectangle'], ['a cone', 'parallel to its base', 'Circle'], ['a cone', 'straight down through the tip, at right angles to the base', 'Triangle'], ['a square pyramid', 'parallel to its base', 'Square'], ['a sphere', 'through any plane', 'Circle'], ['a rectangular prism (not a cube)', 'parallel to its long, thin side face', 'Rectangle']];
-    const [s, how, right] = r.pick(X);
-    return mc(r, right, ['Square', 'Circle', 'Rectangle', 'Triangle'].filter((x) => x !== right), { q: `You slice ${s} ${how}. What shape is the cross-section?`, steps: [`Picture the cut face of ${s} sliced ${how}.`, `It is a ${right.toLowerCase()}.`] });
-  }
-  if (v === 2) {
-    const R = [['a rectangle', 'one of its sides', 'Cylinder'], ['a right triangle', 'one of its legs', 'Cone'], ['a semicircle', 'its diameter', 'Sphere']];
-    const [s, ax, right] = r.pick(R);
-    return mc(r, right, ['Cylinder', 'Cone', 'Sphere', 'Square pyramid'].filter((x) => x !== right), { q: `${cap1(s)} is spun all the way around ${ax}. What solid does it make?`, steps: [`As ${s} turns, every point traces a circle.`, `The result is a ${right.toLowerCase()}.`] });
-  }
-  const N = [['6 equal squares', 'Cube'], ['2 circles and a rectangle', 'Cylinder'], ['1 square and 4 triangles', 'Square pyramid'], ['2 triangles and 3 rectangles', 'Triangular prism'], ['a circle and a sector of a larger circle', 'Cone'], ['4 equal triangles', 'Triangular pyramid']];
-  const [d, right] = r.pick(N);
-  return mc(r, right, r.shuffle(N.map((x) => x[1]).filter((x) => x !== right)).slice(0, 3), { q: `A net is made of ${d}. What solid does it fold into?`, steps: ['Each piece of a net becomes one face of the solid.', `${cap1(d)} fold into a ${right.toLowerCase()}.`] });
-});
-skill('10-volume', 10, 'Three-dimensional figures', 'Volume', ['Prism or cylinder: V = base area × height. Pyramid or cone: V = base area × height ÷ 3.', 'Sphere: V = 4/3 × π × r³.'], (r) => {
-  const v = r.int(0, 5), a = r.int(2, 12), b = r.int(2, 12), h = r.int(2, 15);
-  if (v === 0) return num(a * b * h, [`V = length × width × height.`, `${a} × ${b} × ${h} = ${a * b * h}.`, `So the volume is ${a * b * h} cm³.`], { q: `A box is ${a} cm long, ${b} cm wide and ${h} cm high. What is its volume in cm³?`, expr: `${a}*${b}*${h}` });
-  if (v === 1) { const A = a * b / 2; return num(dec(A * h), [`The triangle base has area ${a} × ${b} ÷ 2 = ${dec(A)} cm².`, `V = ${dec(A)} × ${h} = ${dec(A * h)}.`, `So the volume is ${dec(A * h)} cm³.`], { q: `A triangular prism has a triangle base with base ${a} cm and height ${b} cm. The prism is ${h} cm long. What is its volume in cm³?`, expr: `${a}*${b}/2*${h}` }); }
-  if (v === 2) { const hh = r.int(1, 8) * 3; return num(a * a * hh / 3, ['V = base area × height ÷ 3.', `${a}² × ${hh} ÷ 3 = ${a * a} × ${hh} ÷ 3 = ${a * a * hh / 3}.`, `So the volume is ${a * a * hh / 3} m³.`], { q: `A square pyramid has base edge ${a} m and height ${hh} m. What is its volume in m³?`, expr: `${a}**2*${hh}/3` }); }
-  const rad = r.int(1, 10);
-  const shape = ['cylinder', 'cone', 'sphere'][v - 3], val = v === 3 ? 3.14 * rad * rad * h : v === 4 ? 3.14 * rad * rad * h / 3 : 4 / 3 * 3.14 * rad ** 3, ans = dec(r1(val));
-  const f = v === 3 ? `V = πr²h ≈ 3.14 × ${rad}² × ${h}` : v === 4 ? `V = πr²h ÷ 3 ≈ 3.14 × ${rad}² × ${h} ÷ 3` : `V = 4/3 × π × r³ ≈ 4/3 × 3.14 × ${rad}³`;
-  return num(ans, [f + '.', `= ${dec(val, 3)}, which rounds to ${ans}.`, `So the volume is about ${ans} cm³.`], { q: `A ${shape} has radius ${rad} cm${v === 5 ? '' : ` and height ${h} cm`}. Using π ≈ 3.14, find its volume in cm³. Round to the nearest tenth.`, tol: 0.05001, expr: v === 3 ? `3.14*${rad}**2*${h}` : v === 4 ? `3.14*${rad}**2*${h}/3` : `4/3*3.14*${rad}**3` });
-});
-skill('10-surface', 10, 'Three-dimensional figures', 'Surface area and similar solids', ['Surface area is the total area of all the faces: add up the area of each piece of the net.', 'If two solids are similar with scale factor k, their surface areas are in the ratio k² and their volumes in the ratio k³.'], (r) => {
-  const v = r.int(0, 4), a = r.int(2, 12), b = r.int(2, 12), h = r.int(2, 12);
-  if (v === 0) { const S = 2 * (a * b + a * h + b * h); return num(S, [`There are three pairs of faces: ${a} × ${b}, ${a} × ${h} and ${b} × ${h}.`, `2 × (${a * b} + ${a * h} + ${b * h}) = ${S}.`, `So the surface area is ${S} cm².`], { q: `What is the surface area of a box ${a} cm by ${b} cm by ${h} cm, in cm²?`, expr: `2*(${a}*${b}+${a}*${h}+${b}*${h})` }); }
-  if (v === 1) { const l = r.int(3, 15); const S = a * a + 2 * a * l; return num(S, [`Base: ${a} × ${a} = ${a * a}. Each triangle: ${a} × ${l} ÷ 2 = ${a * l / 2}, and there are 4.`, `${a * a} + 4 × ${a * l / 2} = ${S}.`, `So the surface area is ${S} cm².`], { q: `A square pyramid has base edge ${a} cm and slant height ${l} cm. What is its surface area in cm²?`, expr: `${a}**2+2*${a}*${l}` }); }
-  if (v === 2 || v === 3) {
-    const rad = r.int(1, 9), cyl = v === 2 && r.bool(), val = cyl ? 2 * 3.14 * rad * rad + 2 * 3.14 * rad * h : v === 2 ? 4 * 3.14 * rad * rad : 3.14 * rad * rad + 3.14 * rad * (rad + h), ans = dec(r1(val));
-    const f = cyl ? `SA = 2πr² + 2πrh ≈ 2 × 3.14 × ${rad}² + 2 × 3.14 × ${rad} × ${h}` : v === 2 ? `SA = 4πr² ≈ 4 × 3.14 × ${rad}²` : `SA = πr² + πrl ≈ 3.14 × ${rad}² + 3.14 × ${rad} × ${rad + h}`;
-    return num(ans, [f + '.', `= ${dec(val, 3)}, which rounds to ${ans}.`, `So the surface area is about ${ans} cm².`], { q: `${cyl ? `A cylinder has radius ${rad} cm and height ${h} cm` : v === 2 ? `A sphere has radius ${rad} cm` : `A cone has radius ${rad} cm and slant height ${rad + h} cm`}. Using π ≈ 3.14, find its surface area in cm². Round to the nearest tenth.`, tol: 0.05001, expr: cyl ? `2*3.14*${rad}**2+2*3.14*${rad}*${h}` : v === 2 ? `4*3.14*${rad}**2` : `3.14*${rad}**2+3.14*${rad}*${rad + h}` });
-  }
-  const k = r.int(2, 4), vol = r.bool(), base = r.int(2, 30);
-  return num(base * k ** (vol ? 3 : 2), [`The scale factor is ${k}, so ${vol ? 'volumes' : 'surface areas'} grow by ${k}^${vol ? 3 : 2} = ${k ** (vol ? 3 : 2)}.`, `${base} × ${k ** (vol ? 3 : 2)} = ${base * k ** (vol ? 3 : 2)}.`, `So the larger one has ${vol ? 'volume' : 'surface area'} ${base * k ** (vol ? 3 : 2)} ${vol ? 'cm³' : 'cm²'}.`], { q: `Two solids are similar. Each length of the larger one is ${k} times the smaller one. The smaller has ${vol ? 'volume' : 'surface area'} ${base} ${vol ? 'cm³' : 'cm²'}. What is the ${vol ? 'volume' : 'surface area'} of the larger one?`, expr: `${base}*${k}**${vol ? 3 : 2}` });
-});
+skill('10-solids', 10, 'Three-dimensional figures', 'Faces, edges, nets and cross-sections', GEO.LESSONS.solids, GEO.solids);
+skill('10-volume', 10, 'Three-dimensional figures', 'Volume', GEO.LESSONS.volume, GEO.volume);
+skill('10-surface', 10, 'Three-dimensional figures', 'Surface area and similar solids', GEO.LESSONS.surface, GEO.surface);
 
 // ───────────── 27. Congruent figures ─────────────
+// two triangles side by side with matching marks: the second is the first turned, flipped and scaled by k (or a
+// different triangle T2). Vertices are numbered 0, 1, 2 in each triangle.
+//   ticks [[i, j, n]], arcs [[i, n, label1, label2]], rights [i], labels [[t, i, j, text, tone]], hl [[t, i, j]], angl [[t, i, text, tone]]
+function twoTri({ T, T2, k = 1, turn = 0, flip = false, N = ['A', 'B', 'C', 'D', 'E', 'F'], ticks = [], arcs = [], rights = [], labels = [], hl = [], angl = [], W = 320, H = 200 }) {
+  const [P1, P2] = T2 ? [T, GH.besides(T, T2)] : GH.pairPts(T, { k, turn, flip });
+  const P = {}; N.forEach((n, i) => (P[n] = i < 3 ? P1[i] : P2[i - 3]));
+  const v = (t, i) => N[t * 3 + i];
+  const tk = [], an = [], rt = [];
+  for (const [i, j, n] of ticks) for (const t of [0, 1]) tk.push([v(t, i), v(t, j), n]);
+  for (const [i, n, s1 = '', s2 = ''] of arcs) for (const t of [0, 1]) an.push({ v: v(t, i), a: v(t, (i + 1) % 3), b: v(t, (i + 2) % 3), n, s: t ? s2 : s1, r: 17 });
+  for (const [t, i, s, tone] of angl) an.push({ v: v(t, i), a: v(t, (i + 1) % 3), b: v(t, (i + 2) % 3), s, r: 20, t: tone ?? 'mark' });
+  for (const i of rights) for (const t of [0, 1]) rt.push([v(t, i), v(t, (i + 1) % 3), v(t, (i + 2) % 3)]);
+  return GH.scene({ P, W, H, pad: 30, fills: [{ pts: N.slice(0, 3) }, { pts: N.slice(3) }], segs: hl.map(([t, i, j]) => [v(t, i), v(t, j), 'hlline']), ticks: tk, angs: an, rights: rt, sides: labels.map(([t, i, j, s, tone]) => [v(t, i), v(t, j), s, tone ?? 'ink']), names: N });
+}
+// a scalene triangle whose angles at corners 0 and 1 are A and B
+const tri = (r, A = r.int(48, 72), B = r.int(42, 66)) => GH.triFromAngles(A, B, 4);
 const TRIS = [['ABC', 'DEF'], ['PQR', 'XYZ'], ['JKL', 'MNO'], ['RST', 'UVW']];
-skill('10-congthm', 10, 'Congruent figures', 'Triangle congruence rules', ['SSS: three pairs of equal sides. SAS: two sides and the angle between them. ASA: two angles and the side between them.', 'AAS: two angles and a side not between them. HL: right triangles with equal hypotenuses and one pair of equal legs. SSA and AAA do not prove congruence.'], (r) => {
-  const [t1, t2] = r.pick(TRIS), rot = r.int(0, 2), A = [...t1.slice(rot), ...t1.slice(0, rot)], B = [...t2.slice(rot), ...t2.slice(0, rot)];
-  const [X, Y, Z] = A, [X2, Y2, Z2] = B;
-  const kind = r.pick(['SSS', 'SAS', 'ASA', 'AAS', 'HL', 'SSA', 'AAA']);
-  const facts = { SSS: [`${X}${Y} = ${X2}${Y2}`, `${Y}${Z} = ${Y2}${Z2}`, `${Z}${X} = ${Z2}${X2}`], SAS: [`${X}${Y} = ${X2}${Y2}`, `∠${Y} = ∠${Y2}`, `${Y}${Z} = ${Y2}${Z2}`], ASA: [`∠${X} = ∠${X2}`, `${X}${Y} = ${X2}${Y2}`, `∠${Y} = ∠${Y2}`], AAS: [`∠${X} = ∠${X2}`, `∠${Y} = ∠${Y2}`, `${Y}${Z} = ${Y2}${Z2}`], HL: [`∠${Z} and ∠${Z2} are right angles`, `${X}${Y} = ${X2}${Y2}`, `${Y}${Z} = ${Y2}${Z2}`], SSA: [`${X}${Y} = ${X2}${Y2}`, `${Y}${Z} = ${Y2}${Z2}`, `∠${X} = ∠${X2}`], AAA: [`∠${X} = ∠${X2}`, `∠${Y} = ∠${Y2}`, `∠${Z} = ∠${Z2}`] }[kind];
-  const right = kind === 'SSA' || kind === 'AAA' ? 'Not enough information' : kind;
-  const why = { SSS: 'All three pairs of sides are equal.', SAS: `∠${Y} is between sides ${X}${Y} and ${Y}${Z}.`, ASA: `Side ${X}${Y} is between ∠${X} and ∠${Y}.`, AAS: `Side ${Y}${Z} is not between ∠${X} and ∠${Y}.`, HL: `They are right triangles, ${X}${Y} is the hypotenuse, and ${Y}${Z} is a leg.`, SSA: `∠${X} is not between the two sides, and SSA does not prove congruence.`, AAA: 'Equal angles give the same shape but not always the same size.' }[kind];
-  const opts = ['SSS', 'SAS', 'ASA', 'AAS', 'HL', 'Not enough information'].filter((x) => x !== right);
-  return mc(r, right, right === 'Not enough information' ? r.shuffle(opts).slice(0, 3) : [...r.shuffle(opts.filter((x) => x !== 'Not enough information')).slice(0, 2), 'Not enough information'], { q: `In △${t1} and △${t2}: ${facts.join(', ')}. Which rule shows the triangles are congruent?`, steps: [why, `So the answer is ${right}.`] });
+const RULES = ['SSS', 'SAS', 'ASA', 'AAS', 'HL'];
+skill('10-congthm', 10, 'Congruent figures', 'Triangle congruence rules', [
+  KL('Marks show equal parts: the same number of ticks on equal sides, the same number of arcs on equal angles, a small square on a right angle.', twoTri({ T: GH.triFromAngles(62, 50, 4), turn: 25, flip: true, ticks: [[0, 1, 1], [1, 2, 2], [2, 0, 3]] })),
+  KL('SSS: three pairs of equal sides. SAS: two sides and the angle between them.', twoTri({ T: GH.triFromAngles(62, 50, 4), turn: -20, ticks: [[0, 1, 1], [1, 2, 2]], arcs: [[1, 1]] })),
+  KL('ASA: two angles and the side between them. AAS: two angles and a side that is not between them.', twoTri({ T: GH.triFromAngles(62, 50, 4), turn: 160, arcs: [[0, 1], [1, 2]], ticks: [[0, 1, 1]] })),
+  KL('HL: two right triangles with equal hypotenuses and one pair of equal legs.', twoTri({ T: [[0, 0], [4, 0], [0, 3]], flip: true, rights: [0], ticks: [[1, 2, 1], [0, 2, 2]] })),
+  KL('SSA and AAA do NOT prove congruence: AAA gives the same shape but maybe a different size.', twoTri({ T: GH.triFromAngles(62, 50, 4), k: 1.5, arcs: [[0, 1], [1, 2], [2, 3]] })),
+], (r) => {
+  const v = r.int(0, 9), [t1, t2] = r.pick(TRIS), perm = r.shuffle([0, 1, 2]);
+  const N = [...t1, ...t2], [x, y, z] = perm, [X, Y, Z] = perm.map((i) => t1[i]), [X2, Y2, Z2] = perm.map((i) => t2[i]);
+  const turn = r.pick([0, 30, -30, 150, 200]), flip = r.bool();
+  if (v <= 4) {
+    const kind = v <= 1 ? r.pick(['SSS', 'SAS', 'ASA', 'AAS', 'HL', 'SSA', 'AAA']) : r.pick(['SSS', 'SAS', 'ASA', 'AAS', 'HL']);
+    let T = tri(r);
+    if (kind === 'HL') { const a = [0, 0, 0]; a[z] = 90; a[x] = r.int(30, 60); a[y] = 90 - a[x]; T = GH.triFromAngles(a[0], a[1], 4); }
+    const M = { SSS: { ticks: [[x, y, 1], [y, z, 2], [z, x, 3]] }, SAS: { ticks: [[x, y, 1], [y, z, 2]], arcs: [[y, 1]] }, ASA: { arcs: [[x, 1], [y, 2]], ticks: [[x, y, 1]] }, AAS: { arcs: [[x, 1], [y, 2]], ticks: [[y, z, 1]] }, HL: { rights: [z], ticks: [[x, y, 1], [y, z, 2]] }, SSA: { ticks: [[x, y, 1], [y, z, 2]], arcs: [[x, 1]] }, AAA: { arcs: [[x, 1], [y, 2], [z, 3]] } }[kind];
+    const right = kind === 'SSA' || kind === 'AAA' ? 'Not enough information' : kind;
+    const why = { SSS: 'All three pairs of sides are marked equal.', SAS: `The marked angle ${Y} is between the two marked sides ${X}${Y} and ${Y}${Z}.`, ASA: `The marked side ${X}${Y} is between the two marked angles at ${X} and ${Y}.`, AAS: `Two angles are marked, and the marked side ${Y}${Z} is not between them.`, HL: `They are right triangles: the hypotenuses ${X}${Y} and ${X2}${Y2} are equal, and so are the legs ${Y}${Z} and ${Y2}${Z2}.`, SSA: `The marked angle at ${X} is not between the two marked sides, and SSA does not prove congruence.`, AAA: 'Equal angles give the same shape but not always the same size.' }[kind];
+    const opts = [...RULES, 'Not enough information'].filter((o) => o !== right);
+    const choices = right === 'Not enough information' ? r.shuffle(opts).slice(0, 3) : [...r.shuffle(opts.filter((o) => o !== 'Not enough information')).slice(0, 2), 'Not enough information'];
+    const facts = { SSS: [`${X}${Y} = ${X2}${Y2}`, `${Y}${Z} = ${Y2}${Z2}`, `${Z}${X} = ${Z2}${X2}`], SAS: [`${X}${Y} = ${X2}${Y2}`, `∠${Y} = ∠${Y2}`, `${Y}${Z} = ${Y2}${Z2}`], ASA: [`∠${X} = ∠${X2}`, `${X}${Y} = ${X2}${Y2}`, `∠${Y} = ∠${Y2}`], AAS: [`∠${X} = ∠${X2}`, `∠${Y} = ∠${Y2}`, `${Y}${Z} = ${Y2}${Z2}`], HL: [`∠${Z} and ∠${Z2} are right angles`, `${X}${Y} = ${X2}${Y2}`, `${Y}${Z} = ${Y2}${Z2}`], SSA: [`${X}${Y} = ${X2}${Y2}`, `${Y}${Z} = ${Y2}${Z2}`, `∠${X} = ∠${X2}`], AAA: [`∠${X} = ∠${X2}`, `∠${Y} = ∠${Y2}`, `∠${Z} = ∠${Z2}`] }[kind];
+    const pic = twoTri({ T, N, turn, flip, ...M });
+    const hl = { SSS: [[0, x, y], [0, y, z], [0, z, x]], SAS: [[0, x, y], [0, y, z]], ASA: [[0, x, y]], AAS: [[0, y, z]], HL: [[0, x, y], [0, y, z]], SSA: [[0, x, y], [0, y, z]], AAA: [] }[kind];
+    if (v === 4) return mc(r, right, choices, { q: `In △${t1} and △${t2}: ${facts.join(', ')}. Which rule shows the triangles are congruent?`, steps: [St(why, twoTri({ T, N, turn, flip, ...M, hl })), `So the answer is ${right}.`] });
+    return mc(r, right, choices, { q: 'Using only the marked parts, which rule shows these two triangles are congruent?', visual: pic, steps: [St(why, twoTri({ T, N, turn, flip, ...M, hl })), `So the answer is ${right}.`] });
+  }
+  if (v === 5 || v === 6) {
+    const T = tri(r), sas = v === 5;
+    const M = sas ? { ticks: [[x, y, 1], [y, z, 2]] } : { arcs: [[x, 1], [y, 2]] };
+    const right = sas ? `∠${Y} = ∠${Y2}` : `${X}${Y} = ${X2}${Y2}`;
+    const wr = sas ? [`∠${X} = ∠${X2}`, `∠${Z} = ∠${Z2}`, `${Z}${X} = ${Z2}${X2}`] : [`${Y}${Z} = ${Y2}${Z2}`, `${Z}${X} = ${Z2}${X2}`, `∠${Z} = ∠${Z2}`];
+    return mc(r, right, wr, { q: `Which extra fact would prove these triangles congruent by ${sas ? 'SAS' : 'ASA'}?`, visual: twoTri({ T, N, turn, flip, ...M }), steps: [St(sas ? `SAS needs the angle between the two marked sides. The sides ${X}${Y} and ${Y}${Z} meet at ${Y}.` : `ASA needs the side between the two marked angles. The angles are at ${X} and ${Y}, so the side is ${X}${Y}.`, twoTri({ T, N, turn, flip, ...M, ...(sas ? { arcs: [[y, 1]] } : { ticks: [[x, y, 1]] }) })), `So the extra fact is ${right}.`] });
+  }
+  if (v === 7) {
+    // a kite: triangles ABD and CBD share BD
+    const sss = r.bool(), P = { A: [-2, 0], B: [0, 3], C: [2, 0], Dd: [0, -1.6] };
+    const pic = (hl) => GH.scene({ P, W: 260, H: 220, fills: [{ pts: ['A', 'B', 'Dd'] }, { pts: ['C', 'B', 'Dd'] }], segs: hl ? [['B', 'Dd', 'hlline']] : [], ticks: sss ? [['A', 'B', 1], ['C', 'B', 1], ['A', 'Dd', 2], ['C', 'Dd', 2]] : [['A', 'B', 1], ['C', 'B', 1]], angs: sss ? [] : [{ v: 'B', a: 'A', b: 'Dd', r: 26 }, { v: 'B', a: 'Dd', b: 'C', r: 26 }], names: { A: 'A', B: 'B', C: 'C', Dd: 'D' } });
+    const right = sss ? 'SSS' : 'SAS';
+    return mc(r, right, RULES.filter((o) => o !== right).slice(0, 3), { q: 'Triangles ABD and CBD share the side BD. Which rule shows they are congruent?', visual: pic(false), steps: [St('A shared side is equal to itself: BD = BD.', pic(true)), sss ? 'With AB = CB and AD = CD, that makes three pairs of equal sides: SSS.' : 'With AB = CB and ∠ABD = ∠CBD (between AB and BD), that is two sides and the angle between them: SAS.'] });
+  }
+  if (v === 8) {
+    const P = { A: [-3, 2], B: [3, 2.4], C: [3, -2], Dd: [-3, -2.4], E: [0, 0] };
+    const pic = (hl) => GH.scene({ P, W: 280, H: 210, fills: [{ pts: ['A', 'B', 'E'] }, { pts: ['C', 'Dd', 'E'] }], ticks: [['A', 'E', 1], ['E', 'C', 1], ['B', 'E', 2], ['E', 'Dd', 2]], angs: hl ? [{ v: 'E', a: 'A', b: 'B', t: 'hlline', r: 16 }, { v: 'E', a: 'C', b: 'Dd', t: 'hlline', r: 16 }] : [], names: { A: 'A', B: 'B', C: 'C', Dd: 'D', E: 'E' } });
+    return mc(r, 'SAS', ['SSS', 'ASA', 'AAS'], { q: 'Segments AC and BD cross at E. Which rule shows △ABE ≅ △CDE?', visual: pic(false), steps: [St('∠AEB and ∠CED are vertical angles, so they are equal. They are between the marked sides.', pic(true)), 'AE = CE, ∠AEB = ∠CED and BE = DE: two sides and the angle between them, SAS.'] });
+  }
+  const T = tri(r);
+  return mc(r, 'Not enough information', ['SSS', 'ASA', 'AAA'], { q: 'All three pairs of angles of these triangles are equal. Are the triangles congruent, and by which rule?', visual: twoTri({ T, N, k: 1.4, turn, flip, arcs: [[0, 1], [1, 2], [2, 3]] }), steps: [St('Equal angles make the same shape, but one triangle can be a bigger copy of the other.'), 'So there is not enough information: AAA is not a congruence rule.'] });
 });
-skill('10-congparts', 10, 'Congruent figures', 'Corresponding parts and isosceles triangles', ['In △ABC ≅ △DEF, the letters match in order: A ↔ D, B ↔ E, C ↔ F, so AB = DE and ∠C = ∠F.', 'An isosceles triangle has two equal sides, and the angles opposite them (base angles) are equal. An equilateral triangle has all angles 60°.'], (r) => {
-  const v = r.int(0, 3), [t1, t2] = r.pick(TRIS);
+
+skill('10-congparts', 10, 'Congruent figures', 'Corresponding parts and isosceles triangles', [
+  KL('In △ABC ≅ △DEF the letters match in order: A ↔ D, B ↔ E, C ↔ F. So AB = DE, BC = EF, ∠C = ∠F, and so on, even when one triangle is turned or flipped.', twoTri({ T: GH.triFromAngles(64, 48, 4), turn: 140, flip: true, ticks: [[0, 1, 1], [1, 2, 2], [2, 0, 3]], arcs: [[0, 1], [1, 2], [2, 3]] })),
+  KL('An isosceles triangle has two equal sides. The angles opposite them (the base angles) are equal.', GH.scene({ P: { A: [0, 0], B: [4, 0], C: [2, 3.6] }, fills: [{ pts: ['A', 'B', 'C'] }], ticks: [['A', 'C', 1], ['B', 'C', 1]], angs: [{ v: 'A', a: 'B', b: 'C', s: 'x' }, { v: 'B', a: 'C', b: 'A', s: 'x' }] })),
+  KL('An equilateral triangle has three equal sides and three 60° angles.', GH.scene({ P: { A: [0, 0], B: [4, 0], C: [2, 2 * Math.sqrt(3)] }, fills: [{ pts: ['A', 'B', 'C'] }], ticks: [['A', 'B', 1], ['B', 'C', 1], ['C', 'A', 1]], angs: [{ v: 'A', a: 'B', b: 'C', s: '60°' }, { v: 'B', a: 'C', b: 'A', s: '60°' }, { v: 'C', a: 'A', b: 'B', s: '60°' }] })),
+], (r) => {
+  const v = r.int(0, 7), [t1, t2] = r.pick(TRIS), N = [...t1, ...t2], turn = r.pick([0, 120, 200, -40]), flip = r.bool(), T = tri(r);
+  const marks = { ticks: [[0, 1, 1], [1, 2, 2], [2, 0, 3]] };
   if (v === 0) {
-    const i = r.int(0, 2), j = (i + 1 + r.int(0, 1)) % 3, side = r.bool();
-    if (side) { const right = t2[i] + t2[j]; return mc(r, right, [0, 1, 2].filter((k) => k !== 3 - i - j).map((k) => t2[(k + 1) % 3] + t2[(k + 2) % 3]).filter((x) => x !== right && x.split('').reverse().join('') !== right).concat([t1[i] + t1[j] === right ? t2[0] + t2[2] : t1[i] + t2[j]]), { q: `△${t1} ≅ △${t2}. Which side matches ${t1[i]}${t1[j]}?`, steps: [`Match the letters in order: ${t1[i]} ↔ ${t2[i]} and ${t1[j]} ↔ ${t2[j]}.`, `So ${t1[i]}${t1[j]} matches ${right}.`] }); }
-    return mc(r, `∠${t2[i]}`, [0, 1, 2].filter((k) => k !== i).map((k) => `∠${t2[k]}`).concat([`∠${t1[(i + 1) % 3]}`]), { q: `△${t1} ≅ △${t2}. Which angle matches ∠${t1[i]}?`, steps: [`Letters in the same position match: ${t1[i]} is letter ${i + 1}, and so is ${t2[i]}.`, `So ∠${t1[i]} matches ∠${t2[i]}.`] });
+    const i = r.int(0, 2), j = (i + 1 + r.int(0, 1)) % 3, sideOf = (a, b) => (a < b ? [a, b] : [b, a]);
+    const all = [[0, 1], [1, 2], [0, 2]].map(([a, b]) => t2[a] + t2[b]);
+    const [a, b] = sideOf(i, j);
+    return mc(r, t2[a] + t2[b], [...all.filter((s) => s !== t2[a] + t2[b]), t1[i] + t2[j]], { q: `△${t1} ≅ △${t2}. Which side matches ${t1[i]}${t1[j]}?`, visual: twoTri({ T, N, turn, flip, ...marks }), steps: [St(`Match the letters in order: ${t1[i]} ↔ ${t2[i]} and ${t1[j]} ↔ ${t2[j]}. The marks agree: the same number of ticks.`, twoTri({ T, N, turn, flip, ...marks, hl: [[0, i, j], [1, i, j]] })), `So ${t1[i]}${t1[j]} matches ${t2[a]}${t2[b]}.`] });
   }
-  if (v === 1) { const a = r.int(30, 90), b = r.int(20, 150 - a); return num(180 - a - b, [`∠${t2[0]} = ∠${t1[0]} = ${a}° and ∠${t2[1]} = ∠${t1[1]} = ${b}°.`, `The angles of a triangle add to 180°: 180 − ${a} − ${b} = ${180 - a - b}.`, `So ∠${t2[2]} = ${180 - a - b}°.`], { q: `△${t1} ≅ △${t2}. ∠${t1[0]} = ${a}° and ∠${t1[1]} = ${b}°. What is ∠${t2[2]}, in degrees?`, expr: `180-${a}-${b}` }); }
+  if (v === 1) {
+    const i = r.int(0, 2);
+    return mc(r, `∠${t2[i]}`, [0, 1, 2].filter((k) => k !== i).map((k) => `∠${t2[k]}`).concat([`∠${t1[(i + 1) % 3]}`]), { q: `△${t1} ≅ △${t2}. Which angle matches ∠${t1[i]}?`, visual: twoTri({ T, N, turn, flip, ...marks }), steps: [St(`Letters in the same position match: ${t1[i]} is letter ${i + 1} of ${t1}, and ${t2[i]} is letter ${i + 1} of ${t2}.`, twoTri({ T, N, turn, flip, ...marks, angl: [[0, i, '', 'hlline'], [1, i, '', 'hlline']] })), `So ∠${t1[i]} matches ∠${t2[i]}.`] });
+  }
   if (v === 2) {
-    if (r.bool()) { const top = r.int(10, 80) * 2; return num((180 - top) / 2, ['The two base angles of an isosceles triangle are equal.', `(180 − ${top}) ÷ 2 = ${(180 - top) / 2}.`, `So each base angle is ${(180 - top) / 2}°.`], { q: `An isosceles triangle has a vertex angle of ${top}°. What is each base angle, in degrees?`, expr: `(180-${top})/2` }); }
-    const base = r.int(20, 85); return num(180 - 2 * base, ['The two base angles are equal.', `180 − 2 × ${base} = ${180 - 2 * base}.`, `So the vertex angle is ${180 - 2 * base}°.`], { q: `Each base angle of an isosceles triangle is ${base}°. What is the vertex angle, in degrees?`, expr: `180-2*${base}` });
+    const a = r.int(45, 75), b = r.int(40, 70), T2 = GH.triFromAngles(a, b, 4), c = 180 - a - b;
+    const pic = (hl) => twoTri({ T: T2, N, turn, flip, ...marks, angl: [[0, 0, `${a}°`], [0, 1, `${b}°`], [1, 2, hl ? `${c}°` : '?', hl ? 'hlline' : 'mark']] });
+    return num(c, [St(`∠${t2[2]} matches ∠${t1[2]}, so first find ∠${t1[2]}.`), St(`The angles of △${t1} add to 180°: 180 − ${a} − ${b} = ${c}.`, pic(true)), `So ∠${t2[2]} = ${c}°.`], { q: `△${t1} ≅ △${t2}. What is ∠${t2[2]}, in degrees?`, visual: pic(false), expr: `180-${a}-${b}` });
   }
-  const x = r.int(2, 12), p = r.int(2, 4), q = p + r.int(1, 3), c = r.int(1, 15), e = c - (q - p) * x;
-  return num(x, [`In an equilateral triangle all sides are equal: ${px([q, e])} = ${px([p, c])}.`, `Gather the x terms on the left and the numbers on the right: ${q - p}x = ${c - e}.`, `x = ${c - e} ÷ ${q - p} = ${x}.`, `So x = ${x}.`], { q: `Two sides of an equilateral triangle are ${px([q, e])} and ${px([p, c])}. Find x.`, unit: 'x =', expr: `(${c}-(${e}))/(${q - p})` });
+  if (v === 3) {
+    const i = r.int(0, 2), j = (i + 1) % 3, side = (a, b) => Math.round(Math.hypot(T[a][0] - T[b][0], T[a][1] - T[b][1]) * 10) / 10;
+    const L = Math.round(side(i, j) * r.pick([2, 3]));
+    const pic = (hl) => twoTri({ T, N, turn, flip, ...marks, labels: [[0, i, j, `${L} cm`], [1, i, j, hl ? `${L} cm` : '?', 'hl']], hl: hl ? [[0, i, j], [1, i, j]] : [] });
+    return num(L, [St(`${t1[i]}${t1[j]} matches ${t2[i]}${t2[j]}: the letters are in the same positions.`, pic(true)), `Matching sides of congruent triangles are equal: ${t2[i]}${t2[j]} = ${L}.`, `So ${t2[i]}${t2[j]} = ${L} cm.`], { q: `△${t1} ≅ △${t2} and ${t1[i]}${t1[j]} = ${L} cm. How long is ${t2[i]}${t2[j]}, in cm?`, visual: pic(false), expr: String(L) });
+  }
+  const iso = (base, hl, lab) => { const h = 2 * Math.tan((base * Math.PI) / 180); return GH.scene({ P: { A: [0, 0], B: [4, 0], C: [2, h] }, W: 260, H: 220, fills: [{ pts: ['A', 'B', 'C'] }], ticks: [['A', 'C', 1], ['B', 'C', 1]], angs: [{ v: 'A', a: 'B', b: 'C', s: lab[0], t: hl === 'base' ? 'hlline' : 'mark' }, { v: 'B', a: 'C', b: 'A', s: lab[1], t: hl === 'base' ? 'hlline' : 'mark' }, { v: 'C', a: 'A', b: 'B', s: lab[2], r: 18, t: hl === 'top' ? 'hlline' : 'mark' }], names: ['A', 'B', 'C'] }); };
+  if (v === 4) { const top = r.int(10, 75) * 2, b = (180 - top) / 2; return num(b, [St('The two marked sides are equal, so the base angles at A and B are equal.', iso(b, 'base', ['?', '?', `${top}°`])), `The three angles add to 180°: (180 − ${top}) ÷ 2 = ${b}.`, `So each base angle is ${b}°.`], { q: 'This triangle is isosceles. What is ∠A, in degrees?', visual: iso(b, null, ['?', '', `${top}°`]), expr: `(180-${top})/2` }); }
+  if (v === 5) { const b = r.int(25, 80); return num(180 - 2 * b, [St(`The base angles are equal, so ∠B = ∠A = ${b}°.`, iso(b, 'base', [`${b}°`, `${b}°`, '?'])), `180 − 2 × ${b} = ${180 - 2 * b}.`, `So ∠C = ${180 - 2 * b}°.`], { q: 'This triangle is isosceles. What is ∠C, in degrees?', visual: iso(b, null, [`${b}°`, '', '?']), expr: `180-2*${b}` }); }
+  if (v === 6) {
+    const x = r.int(2, 12), p = r.int(2, 4), q = p + r.int(1, 3), c = r.int(1, 15), e = c - (q - p) * x;
+    const pic = GH.scene({ P: { A: [0, 0], B: [4, 0], C: [2, 2 * Math.sqrt(3)] }, W: 260, H: 220, fills: [{ pts: ['A', 'B', 'C'] }], ticks: [['A', 'B', 1], ['B', 'C', 1], ['C', 'A', 1]], sides: [['C', 'A', px([q, e])], ['B', 'C', px([p, c])]] });
+    return num(x, [St(`All the sides of an equilateral triangle are equal: ${px([q, e])} = ${px([p, c])}.`, pic), `Gather the x terms on the left and the numbers on the right: ${q - p}x = ${c - e}.`, `x = ${c - e} ÷ ${q - p} = ${x}.`, `So x = ${x}.`], { q: 'This triangle is equilateral. Find x.', unit: 'x =', visual: pic, expr: `(${c}-(${e}))/(${q - p})` });
+  }
+  let a1, a2, b1, b2, x, val, g = 0; do { x = r.int(5, 20); a1 = r.int(1, 3); a2 = a1 + r.int(1, 2); b1 = r.int(-10, 20); b2 = (a1 - a2) * x + b1; val = a1 * x + b1; } while ((val < 42 || val > 75) && g++ < 200);
+  if (val < 42 || val > 75) { x = 10; a1 = 2; a2 = 3; b1 = 30; b2 = 20; val = 50; }
+  const e1 = `(${px([a1, b1])})°`, e2 = `(${px([a2, b2])})°`;
+  return num(x, [St('The marked sides are equal, so the base angles are equal.', iso(val, 'base', [e1, e2, ''])), `${px([a1, b1])} = ${px([a2, b2])}, so ${a2 - a1}x = ${b1 - b2} and x = ${x}.`, `So x = ${x} (each base angle is ${val}°).`], { q: 'This triangle is isosceles. Find x.', unit: 'x =', visual: iso(val, null, [e1, e2, '']), expr: `(${b1}-(${b2}))/(${a2 - a1})` });
 });
 
 // ───────────── 28. Triangles ─────────────
-skill('10-triangles', 10, 'Triangles', 'Triangle angles and sides', ['The angles of a triangle add to 180°. An exterior angle equals the sum of the two interior angles not next to it.', 'Any two sides must add to more than the third side. The longest side is opposite the largest angle.'], (r) => {
-  const v = r.int(0, 4);
+const triPic = (T, o = {}) => GH.scene({ W: 280, H: 210, ...o, P: { A: T[0], B: T[1], C: T[2], ...(o.P ?? {}) }, fills: [{ pts: ['A', 'B', 'C'] }, ...(o.fills ?? [])], names: o.names ?? ['A', 'B', 'C'] });
+const at = (v, s, t = 'mark', r = 20) => { const o = { A: ['B', 'C'], B: ['C', 'A'], C: ['A', 'B'] }[v]; return { v, a: o[0], b: o[1], s, t, r }; };
+skill('10-triangles', 10, 'Triangles', 'Triangle angles and sides', [
+  KL('The angles of a triangle add to 180°.', triPic(GH.triFromAngles(70, 50, 4), { angs: [at('A', '70°'), at('B', '50°'), at('C', '60°')] })),
+  KL('An exterior angle (made by extending a side) equals the sum of the two inside angles that are not next to it.', triPic(GH.triFromAngles(70, 50, 4), { P: { E: [6, 0] }, segs: [['B', 'E', 'aux']], angs: [at('A', '70°'), at('C', '60°'), { v: 'B', a: 'E', b: 'C', s: '130°', t: 'hlline', r: 18 }], names: [] })),
+  KL('Any two sides must add to more than the third. The longest side is opposite the largest angle.'),
+  KL('A midsegment joins the midpoints of two sides. It is parallel to the third side and half as long.', triPic([[0, 0], [6, 0], [2, 4]], { P: { Dm: [1, 2], Em: [4, 2] }, segs: [['Dm', 'Em', 'hlline']], ticks: [['A', 'Dm', 1], ['Dm', 'C', 1], ['C', 'Em', 2], ['Em', 'B', 2]], par: [['Dm', 'Em', 1], ['A', 'B', 1]], names: { A: 'A', B: 'B', C: 'C', Dm: 'D', Em: 'E' } })),
+], (r) => {
+  const v = r.int(0, 8);
   if (v === 0) {
-    if (r.bool()) { const a = r.int(25, 80), b = r.int(25, 80); return num(a + b, ['An exterior angle equals the sum of the two remote interior angles.', `${a} + ${b} = ${a + b}.`, `So the exterior angle is ${a + b}°.`], { q: `Two angles of a triangle are ${a}° and ${b}°. What is the exterior angle at the third vertex, in degrees?`, expr: `${a}+${b}` }); }
-    const [k, x] = r.pick([[[1, 2, 3], 30], [[2, 3, 4], 20], [[1, 1, 2], 45], [[1, 3, 5], 20], [[3, 4, 5], 15], [[1, 2, 2], 36], [[2, 3, 5], 18], [[1, 4, 7], 15]]);
-    const t = (c) => (c === 1 ? 'x' : `${c}x`);
-    return num(x, [`The angles add to 180°: ${k.map(t).join(' + ')} = 180.`, `${k[0] + k[1] + k[2]}x = 180, so x = 180 ÷ ${k[0] + k[1] + k[2]} = ${x}.`, `So x = ${x}.`], { q: `The angles of a triangle are ${k.map(t).join(', ')} degrees. Find x.`, unit: 'x =', expr: `180/${k[0] + k[1] + k[2]}` });
+    const a = r.int(30, 75), b = r.int(30, 75);
+    const c = 180 - a - b, T2 = GH.triFromAngles(a, c, 4); // put the asked exterior angle at B: remote angles at A and C
+    const pic2 = (hl) => triPic(T2, { P: { E: [6.2, 0] }, segs: [['B', 'E', 'aux']], angs: [at('A', `${a}°`, hl ? 'hlline' : 'mark'), at('C', `${b}°`, hl ? 'hlline' : 'mark'), { v: 'B', a: 'E', b: 'C', s: hl ? `${a + b}°` : '?', t: 'mark', r: 18 }] });
+    return num(a + b, [St('The exterior angle at B equals the sum of the two inside angles not next to it: the angles at A and C.', pic2(true)), `${a} + ${b} = ${a + b}.`, `So the exterior angle is ${a + b}°.`], { q: 'Side AB is extended past B. What is the exterior angle marked ?, in degrees?', visual: pic2(false), expr: `${a}+${b}` });
   }
   if (v === 1) {
-    const a = r.int(3, 15), b = r.int(3, 15);
-    if (r.bool()) return num(a + b - 1, [`The third side must be less than ${a} + ${b} = ${a + b}.`, `The greatest whole number less than ${a + b} is ${a + b - 1}.`, `So the longest possible whole-number side is ${a + b - 1} cm.`], { q: `Two sides of a triangle are ${a} cm and ${b} cm. What is the greatest possible whole-number length of the third side, in cm?`, expr: `${a}+${b}-1` });
-    const c = r.bool() ? r.int(Math.abs(a - b) + 1, a + b - 1) : a + b + r.int(0, 4), ok = c < a + b && a < b + c && b < a + c;
-    return mc(r, ok ? 'Yes' : 'No', [ok ? 'No' : 'Yes'], { q: `Can ${a} cm, ${b} cm and ${c} cm be the sides of a triangle?`, steps: ['Check that the two shorter sides add to more than the longest.', ok ? `They do, so yes.` : `${Math.min(a, b, c) === c ? `${a} + ${b}` : `the two shorter sides`} do not add to more than the longest side, so no.`] });
+    const [k, x] = r.pick([[[1, 2, 3], 30], [[2, 3, 4], 20], [[1, 1, 2], 45], [[1, 3, 5], 20], [[3, 4, 5], 15], [[1, 2, 2], 36], [[2, 3, 5], 18], [[1, 4, 7], 15]]);
+    const t = (c) => (c === 1 ? 'x' : `${c}x`), T = GH.triFromAngles(k[0] * x, k[1] * x, 4);
+    return num(x, [St(`The angles add to 180°: ${k.map(t).join(' + ')} = 180.`, triPic(T, { angs: [at('A', t(k[0]), 'hlline'), at('B', t(k[1]), 'hlline'), at('C', t(k[2]), 'hlline')] })), `${k[0] + k[1] + k[2]}x = 180, so x = 180 ÷ ${k[0] + k[1] + k[2]} = ${x}.`, `So x = ${x}.`], { q: 'The angles of this triangle are marked in terms of x. Find x.', unit: 'x =', visual: triPic(T, { angs: [at('A', t(k[0])), at('B', t(k[1])), at('C', t(k[2]))] }), expr: `180/${k[0] + k[1] + k[2]}` });
   }
   if (v === 2) {
-    if (r.bool()) { const m = r.int(3, 20); return num(2 * m, ['A midsegment joins the midpoints of two sides; it is parallel to the third side and half as long.', `So the third side is 2 × ${m} = ${2 * m}.`, `So BC = ${2 * m} cm.`], { q: `In △ABC, D and E are the midpoints of AB and AC. DE = ${m} cm. How long is BC?`, expr: `2*${m}` }); }
-    const x = r.int(3, 12), p = r.int(1, 4), c = r.int(1, 9), bc = 2 * (x + p), k = r.int(3, 5), d = k * x - bc;
-    return num(x, ['BC = 2 × DE, because DE is a midsegment.', `${px([k, -d])} = 2(x + ${p}) = 2x + ${2 * p}, so ${k - 2}x = ${2 * p + d}.`, `x = ${x}.`, `So x = ${x}.`], { q: `In △ABC, DE joins the midpoints of AB and AC. DE = x + ${p} and BC = ${px([k, -d])}. Find x.`, unit: 'x =', expr: `(${2 * p}+(${d}))/${k - 2}` });
+    const a = r.int(3, 15), b = r.int(3, 15), T = GH.triFromSides(Math.max(a, b), b, a);
+    const pic = triPic(T, { sides: [['A', 'B', `${a} cm`], ['C', 'A', `${b} cm`], ['B', 'C', '?']], names: [] });
+    return num(a + b - 1, [St(`The third side must be shorter than the other two put together: less than ${a} + ${b} = ${a + b}.`, pic), `The greatest whole number less than ${a + b} is ${a + b - 1}.`, `So the longest possible whole-number side is ${a + b - 1} cm.`], { q: 'Two sides of a triangle are shown. What is the greatest possible whole-number length of the third side, in cm?', visual: pic, expr: `${a}+${b}-1` });
   }
   if (v === 3) {
+    const a = r.int(3, 15), b = r.int(3, 15), c = r.bool() ? r.int(Math.abs(a - b) + 1, a + b - 1) : a + b + r.int(0, 4), ok = c < a + b && a < b + c && b < a + c;
+    const big = Math.max(a, b, c), rest = [a, b, c].sort((p, q) => p - q).slice(0, 2);
+    return mc(r, ok ? 'Yes' : 'No', [ok ? 'No' : 'Yes'], { q: `Can ${a} cm, ${b} cm and ${c} cm be the sides of a triangle?`, steps: [`Check that the two shorter sides add to more than the longest: ${rest[0]} + ${rest[1]} = ${rest[0] + rest[1]}, and the longest is ${big}.`, ok ? `${rest[0] + rest[1]} > ${big}, so yes.` : `${rest[0] + rest[1]} is not more than ${big}: the two short sides cannot meet, so no.`] });
+  }
+  const mid = (hl, lab) => triPic([[0, 0], [6, 0], [2.2, 4]], { P: { Dm: [1.1, 2], Em: [4.1, 2] }, segs: [['Dm', 'Em', hl ? 'hlline' : 'ink']], ticks: [['A', 'Dm', 1], ['Dm', 'C', 1], ['C', 'Em', 2], ['Em', 'B', 2]], par: [['Dm', 'Em', 1], ['A', 'B', 1]], sides: [['Dm', 'Em', lab[0], hl ? 'hl' : 'ink', 'C'], ['A', 'B', lab[1]]], names: { A: 'B', B: 'C', C: 'A', Dm: 'D', Em: 'E' } });
+  if (v === 4) { const m = r.int(3, 20); return num(2 * m, [St('D and E are midpoints (the ticks), so DE is a midsegment: parallel to BC and half as long.', mid(true, [`${m} cm`, '?'])), `So BC = 2 × ${m} = ${2 * m}.`, `So BC = ${2 * m} cm.`], { q: 'D and E are the midpoints of AB and AC. How long is BC, in cm?', visual: mid(false, [`${m} cm`, '?']), expr: `2*${m}` }); }
+  if (v === 5) {
+    const x = r.int(3, 12), p = r.int(1, 4), bc = 2 * (x + p), k = r.int(3, 5), d = k * x - bc;
+    return num(x, [St('DE is a midsegment, so BC = 2 × DE.', mid(true, [`x + ${p}`, px([k, -d])])), `${px([k, -d])} = 2(x + ${p}) = 2x + ${2 * p}, so ${k - 2}x = ${2 * p + d}.`, `x = ${2 * p + d} ÷ ${k - 2} = ${x}.`, `So x = ${x}.`], { q: 'D and E are the midpoints of AB and AC. Find x.', unit: 'x =', visual: mid(false, [`x + ${p}`, px([k, -d])]), expr: `(${2 * p}+(${d}))/${k - 2}` });
+  }
+  if (v === 6) {
     let A, B; do { A = r.int(30, 100); B = r.int(30, 100); } while (A === B || A + B >= 170 || 180 - A - B === A || 180 - A - B === B);
     const C = 180 - A - B, big = r.bool(), angs = { A, B, C }, key = Object.keys(angs).sort((u, w) => (big ? angs[w] - angs[u] : angs[u] - angs[w]))[0];
-    const opp = { A: 'BC', B: 'AC', C: 'AB' };
-    return mc(r, opp[key], ['AB', 'BC', 'AC'].filter((x) => x !== opp[key]), { q: `In △ABC, ∠A = ${A}° and ∠B = ${B}°. Which side is the ${big ? 'longest' : 'shortest'}?`, steps: [`∠C = 180 − ${A} − ${B} = ${C}°.`, `The ${big ? 'largest' : 'smallest'} angle is ∠${key}, and the side opposite it is ${opp[key]}.`] });
+    const opp = { A: 'BC', B: 'AC', C: 'AB' }, T = [[0, 0], [4, 0], [2.1, 3.3]];
+    return mc(r, opp[key], ['AB', 'BC', 'AC'].filter((x) => x !== opp[key]), { q: `In this triangle, which side is the ${big ? 'longest' : 'shortest'}? (Not drawn to scale.)`, visual: triPic(T, { angs: [at('A', `${A}°`), at('B', `${B}°`)] }), steps: [`∠C = 180 − ${A} − ${B} = ${C}°.`, St(`The ${big ? 'largest' : 'smallest'} angle is ∠${key}, and the side opposite it is ${opp[key]}.`, triPic(T, { angs: [at('A', `${A}°`, key === 'A' ? 'hlline' : 'mark'), at('B', `${B}°`, key === 'B' ? 'hlline' : 'mark'), at('C', `${C}°`, key === 'C' ? 'hlline' : 'mark')], segs: [[opp[key][0], opp[key][1], 'hlline']] }))] });
   }
-  const V = [['from a vertex to the midpoint of the opposite side', 'Median'], ['from a vertex, meeting the opposite side at a right angle', 'Altitude'], ['from a vertex, splitting its angle into two equal angles', 'Angle bisector'], ['through the midpoint of a side, at a right angle to it', 'Perpendicular bisector']];
-  const [d, right] = r.pick(V);
-  return mc(r, right, V.map((x) => x[1]).filter((x) => x !== right), { q: `In a triangle, what is a segment or line ${d} called?`, steps: [`It goes ${d}.`, `That is the definition of a${/^[AEIOU]/.test(right) ? 'n' : ''} ${right.toLowerCase()}.`] });
+  if (v === 7) {
+    const T = [[0, 0], [6, 0], [2, 4]], kind = r.pick(['Median', 'Altitude', 'Angle bisector', 'Perpendicular bisector']);
+    const why = { Median: 'It goes from a corner to the middle of the opposite side (the ticks show two equal halves).', Altitude: 'It goes from a corner and meets the opposite side at a right angle.', 'Angle bisector': 'It goes from a corner and splits that angle into two equal angles.', 'Perpendicular bisector': 'It goes through the middle of a side (equal ticks) at a right angle, not necessarily through a corner.' }[kind];
+    // the bisector of angle A meets BC where it divides BC in the ratio AB : AC
+    const AB = 6, AC = Math.hypot(2, 4), t = AB / (AB + AC), Fb = [6 + (2 - 6) * t, 0 + 4 * t];
+    const o = { Median: { P: { M: [3, 0] }, segs: [['C', 'M', 'hlline']], ticks: [['A', 'M', 1], ['M', 'B', 1]] }, Altitude: { P: { H: [2, 0] }, segs: [['C', 'H', 'hlline']], rights: [['H', 'B', 'C']] }, 'Angle bisector': { P: { Fb }, segs: [['A', 'Fb', 'hlline']], angs: [{ v: 'A', a: 'B', b: 'Fb', r: 30 }, { v: 'A', a: 'Fb', b: 'C', r: 34 }] }, 'Perpendicular bisector': { P: { M: [3, 0], U: [3, 3.2], Dn: [3, -0.8] }, segs: [['U', 'Dn', 'hlline']], ticks: [['A', 'M', 1], ['M', 'B', 1]], rights: [['M', 'B', 'U']] } }[kind];
+    const pic = triPic(T, { ...o, names: [] });
+    return mc(r, kind, ['Median', 'Altitude', 'Angle bisector', 'Perpendicular bisector'].filter((x) => x !== kind), { q: 'What is the highlighted line in this triangle called?', visual: pic, steps: [St(why, pic), `So it is ${/^[AEIOU]/.test(kind) ? 'an' : 'a'} ${kind.toLowerCase()}.`] });
+  }
+  const a = r.int(30, 90), b = r.int(25, 150 - a), T = GH.triFromAngles(a, b, 4), c = 180 - a - b;
+  const pic = (hl) => triPic(T, { angs: [at('A', `${a}°`), at('B', `${b}°`), at('C', hl ? `${c}°` : '?', hl ? 'hlline' : 'mark')] });
+  return num(c, [St('The three angles of a triangle add to 180°.'), St(`∠C = 180 − ${a} − ${b} = ${c}.`, pic(true)), `So ∠C = ${c}°.`], { q: 'Find ∠C, in degrees.', visual: pic(false), expr: `180-${a}-${b}` });
 });
 
 // ───────────── 29. Similarity ─────────────
-skill('10-simrules', 10, 'Similarity', 'Similar triangle rules', ['AA: two pairs of equal angles. SSS similarity: all three side ratios are equal. SAS similarity: two side ratios are equal and the angles between them are equal.', 'If a line is parallel to one side of a triangle, it cuts the other two sides in the same ratio.'], (r) => {
-  const v = r.int(0, 2);
-  if (v === 0) {
-    const t = r.int(0, 3), k = r.pick([1.5, 2, 2.5, 3]), [a, b, c] = r.pick([[4, 6, 8], [2, 3, 4], [6, 8, 10], [4, 5, 6]]);
-    const A1 = r.int(35, 80), A2 = r.int(30, 70);
-    const desc = [`∠A = ∠D = ${A1}° and ∠B = ∠E = ${A2}°`, `AB = ${a}, BC = ${b}, CA = ${c} and DE = ${dec(a * k)}, EF = ${dec(b * k)}, FD = ${dec(c * k)}`, `AB = ${a}, AC = ${c}, ∠A = ${A1}° and DE = ${dec(a * k)}, DF = ${dec(c * k)}, ∠D = ${A1}°`, `AB = ${a}, BC = ${b}, CA = ${c} and DE = ${dec(a * k)}, EF = ${dec(b * k + 1)}, FD = ${dec(c * k)}`][t];
-    const names = ['AA', 'SSS similarity', 'SAS similarity', 'Not similar'];
-    const why = [`Two pairs of angles are equal.`, `Each ratio is ${dec(k)}.`, `DE/AB = DF/AC = ${dec(k)}, and the angles between those sides are equal.`, `DE/AB = ${dec(k)} but EF/BC = ${dec((b * k + 1) / b, 3)}: the ratios are not equal.`][t];
-    return mc(r, names[t], names.filter((_, i) => i !== t), { q: `In △ABC and △DEF: ${desc}. Which rule shows they are similar?`, steps: [why, `So the answer is ${names[t]}.`] });
+const sideLen = (T, i, j) => Math.hypot(T[i][0] - T[j][0], T[i][1] - T[j][1]);
+// triangle ADE inside ABC with DE ∥ BC (A at the top)
+function nestFig({ t = 0.45, lab = {}, hl = [] }) {
+  const A = [2.2, 4], B = [0, 0], C = [6, 0], D = [A[0] + (B[0] - A[0]) * t, A[1] + (B[1] - A[1]) * t], E = [A[0] + (C[0] - A[0]) * t, A[1] + (C[1] - A[1]) * t];
+  return GH.scene({ P: { A, B, C, D, E }, W: 280, H: 220, fills: [{ pts: ['A', 'B', 'C'] }, { pts: ['A', 'D', 'E'], t: hl.includes('small') ? 'hl2' : 'top' }], par: [['D', 'E', 1], ['B', 'C', 1]], segs: hl.filter((x) => x.length === 2).map(([p, q]) => [p, q, 'hlline']), sides: Object.entries(lab).map(([k, s]) => [k[0], k[1], s, hl.includes(k) ? 'hl' : 'ink']), names: ['A', 'B', 'C', 'D', 'E'] });
+}
+skill('10-simrules', 10, 'Similarity', 'Similar triangle rules', [
+  KL('AA: if two pairs of angles are equal, the triangles are similar (the third pair must match too).', twoTri({ T: GH.triFromAngles(60, 45, 4), k: 1.5, turn: 15, arcs: [[0, 1], [1, 2]] })),
+  KL('SSS similarity: all three pairs of sides are in the same ratio. SAS similarity: two pairs of sides in the same ratio, with equal angles between them.', twoTri({ T: GH.triFromSides(3, 4, 2), k: 1.5, labels: [[0, 0, 1, '2'], [0, 1, 2, '3'], [0, 2, 0, '4'], [1, 0, 1, '3'], [1, 1, 2, '4.5'], [1, 2, 0, '6']] })),
+  KL('Write the similarity in matching order: △ABC ~ △DEF means AB/DE = BC/EF = CA/FD.'),
+  KL('A line parallel to one side of a triangle cuts off a smaller similar triangle, and it cuts the other two sides in the same ratio.', nestFig({ lab: { AD: 'a', DB: 'b', AE: 'c', EC: 'd' } })),
+], (r) => {
+  const v = r.int(0, 7);
+  if (v <= 1 || v === 7) {
+    const t = v === 7 ? r.pick([1, 3]) : r.int(0, 3), k = r.pick([1.5, 2, 2.5, 3]), [a, b, c] = r.pick([[4, 6, 8], [2, 3, 4], [6, 8, 10], [4, 5, 6], [3, 5, 7]]);
+    const A1 = r.int(40, 70), A2 = r.int(40, 70), kd = Math.min(k, 1.7), names = ['AA', 'SSS similarity', 'SAS similarity', 'Not similar'];
+    const sc = (T, f) => T.map(([x, y]) => [x * f, y * f]);
+    let pic, why;
+    if (t === 0) { const T = GH.triFromAngles(A1, A2, 4); pic = twoTri({ T, k: kd, turn: r.pick([0, 20, -20]), angl: [[0, 0, `${A1}°`], [0, 1, `${A2}°`], [1, 0, `${A1}°`], [1, 1, `${A2}°`]] }); why = 'Two pairs of angles are equal.'; }
+    else if (t === 1 || t === 3) {
+      const ef = t === 3 ? b * k + 1 : b * k, T = sc(GH.triFromSides(b, c, a), 0.5), U = sc(GH.triFromSides(ef, c * k, a * k), 0.5 * kd / k);
+      pic = twoTri({ T, T2: U, labels: [[0, 0, 1, `${a}`], [0, 1, 2, `${b}`], [0, 2, 0, `${c}`], [1, 0, 1, dec(a * k)], [1, 1, 2, dec(ef)], [1, 2, 0, dec(c * k)]] });
+      why = t === 1 ? `Divide matching sides: ${dec(a * k)} ÷ ${a} = ${dec(b * k)} ÷ ${b} = ${dec(c * k)} ÷ ${c} = ${dec(k)}. All three ratios are equal.` : `${dec(a * k)} ÷ ${a} = ${dec(k)} but ${dec(ef)} ÷ ${b} = ${dec(ef / b, 3)}: the ratios are not equal.`;
+    } else { const T = [[0, 0], [a, 0], [c * Math.cos((A1 * Math.PI) / 180), c * Math.sin((A1 * Math.PI) / 180)]].map(([x, y]) => [x / 2, y / 2]); pic = twoTri({ T, k: kd, labels: [[0, 0, 1, `${a}`], [0, 2, 0, `${c}`], [1, 0, 1, dec(a * k)], [1, 2, 0, dec(c * k)]], angl: [[0, 0, `${A1}°`], [1, 0, `${A1}°`]] }); why = `${dec(a * k)} ÷ ${a} = ${dec(c * k)} ÷ ${c} = ${dec(k)}, and the angles between those sides are both ${A1}°.`; }
+    const q = v === 7 ? 'Are these two triangles similar? If so, by which rule?' : `Which rule shows that △ABC and △DEF are similar?${kd < k ? ' (Not drawn to scale.)' : ''}`;
+    return mc(r, names[t], names.filter((_, i) => i !== t), { q, visual: pic, steps: [St(why, pic), `So the answer is ${names[t]}.`] });
   }
-  if (v === 1) {
-    const ad = r.int(2, 9), k = r.pick([0.5, 1, 1.5, 2, 3]), db = ad * k, ae = r.int(2, 12) * 2, ec = ae * k;
-    return num(dec(ec), ['DE ∥ BC, so AD/DB = AE/EC (Triangle Proportionality Theorem).', `${ad}/${dec(db)} = ${ae}/EC, so EC = ${ae} × ${dec(db)} ÷ ${ad}.`, `EC = ${dec(ec)}.`, `So EC = ${dec(ec)} cm.`], { q: `In △ABC, D is on AB and E is on AC with DE ∥ BC. AD = ${ad} cm, DB = ${dec(db)} cm and AE = ${ae} cm. Find EC.`, expr: `${ae}*${db}/${ad}` });
+  if (v === 2) {
+    const ad = r.int(2, 9), k = r.pick([0.5, 1, 1.5, 2, 3]), db = ad * k, ae = r.int(2, 12) * 2, ec = ae * k, t = 1 / (1 + k);
+    const pic = (hl, ans) => nestFig({ t, lab: { AD: `${ad}`, DB: dec(db), AE: `${ae}`, EC: ans ? dec(ec) : '?' }, hl });
+    return num(dec(ec), [St('DE ∥ BC, so it cuts AB and AC in the same ratio: AD/DB = AE/EC.', pic(['AD', 'DB'])), `${ad}/${dec(db)} = ${ae}/EC, so EC = ${ae} × ${dec(db)} ÷ ${ad}.`, St(`EC = ${dec(ec)}.`, pic(['AE', 'EC'], true)), `So EC = ${dec(ec)} cm.`], { q: 'DE is parallel to BC. Find EC, in cm. (Not drawn to scale.)', visual: pic([]), expr: `${ae}*${db}/${ad}` });
   }
-  const [t1, t2] = r.pick([['ABC', 'XYZ'], ['PQR', 'LMN'], ['DEF', 'JKL']]), i = r.int(0, 2), j = (i + 1) % 3, k2 = (i + 2) % 3;
-  const right = `${t1[j]}${t1[k2]}/${t2[j]}${t2[k2]}`;
-  return mc(r, right, [`${t1[j]}${t1[k2]}/${t2[i]}${t2[j]}`, `${t2[j]}${t2[k2]}/${t1[i]}${t1[j]}`, `${t1[i]}${t1[k2]}/${t2[i]}${t2[j]}`], { q: `△${t1} ~ △${t2}. Which ratio is equal to ${t1[i]}${t1[j]}/${t2[i]}${t2[j]}?`, steps: [`Match the letters in order: ${t1[0]} ↔ ${t2[0]}, ${t1[1]} ↔ ${t2[1]}, ${t1[2]} ↔ ${t2[2]}.`, `Matching sides are in the same ratio, so ${t1[i]}${t1[j]}/${t2[i]}${t2[j]} = ${right}.`] });
+  if (v === 3) {
+    const [t1, t2] = r.pick([['ABC', 'XYZ'], ['PQR', 'LMN'], ['DEF', 'JKL']]), i = r.int(0, 2), j = (i + 1) % 3, k2 = (i + 2) % 3, T = tri(r);
+    const right = `${t1[j]}${t1[k2]}/${t2[j]}${t2[k2]}`, N = [...t1, ...t2], pic = (hl) => twoTri({ T, N, k: 1.4, turn: r.pick([0, 180, 40]), arcs: [[0, 1], [1, 2], [2, 3]], hl });
+    return mc(r, right, [`${t1[j]}${t1[k2]}/${t2[i]}${t2[j]}`, `${t2[j]}${t2[k2]}/${t1[i]}${t1[j]}`, `${t1[i]}${t1[k2]}/${t2[i]}${t2[j]}`], { q: `△${t1} ~ △${t2}. Which ratio is equal to ${t1[i]}${t1[j]}/${t2[i]}${t2[j]}?`, visual: pic([]), steps: [St(`Match the letters in order: ${t1[0]} ↔ ${t2[0]}, ${t1[1]} ↔ ${t2[1]}, ${t1[2]} ↔ ${t2[2]}. Matching sides join matching corners.`, pic([[0, j, k2], [1, j, k2]])), `Matching sides are in the same ratio, so ${t1[i]}${t1[j]}/${t2[i]}${t2[j]} = ${right}.`] });
+  }
+  if (v === 4) {
+    const ad = r.int(2, 6), k = r.pick([2, 3, 1.5, 2.5]), ab = ad * k, de = r.int(2, 8), bc = de * k;
+    const pic = (hl, ans) => nestFig({ t: 1 / k, lab: { AD: `${ad}`, AB: '', DE: `${de}`, BC: ans ? dec(bc) : '?' }, hl });
+    return num(dec(bc), [St(`DE ∥ BC, so △ADE ~ △ABC (they share ∠A, and the parallel lines make equal corresponding angles: AA).`, pic(['small'])), `Scale factor: AB ÷ AD = ${dec(ab)} ÷ ${ad} = ${dec(k)}.`, St(`BC = ${de} × ${dec(k)} = ${dec(bc)}.`, pic(['BC'], true)), `So BC = ${dec(bc)} cm.`], { q: `DE is parallel to BC. AD = ${ad} cm, AB = ${dec(ab)} cm and DE = ${de} cm. Find BC, in cm.`, visual: pic([]), expr: `${de}*${ab}/${ad}` });
+  }
+  if (v === 5) {
+    const T = tri(r), k = r.pick([1.5, 2, 2.5, 3]), a = r.int(3, 10), L = Math.round(sideLen(T, 1, 2) / sideLen(T, 0, 1) * a) || 4, kd = Math.min(k, 1.7), turn = r.pick([0, 30, -30]), flip = r.bool();
+    const pic = (hl, ans) => twoTri({ T, k: kd, turn, flip, arcs: [[0, 1], [1, 2], [2, 3]], labels: [[0, 0, 1, `${a}`], [0, 1, 2, `${L}`], [1, 0, 1, dec(a * k)], [1, 1, 2, ans ? dec(L * k) : 'x', 'hl']], hl });
+    return num(dec(L * k), [St(`The arcs show △ABC ~ △DEF. AB ↔ DE gives the scale factor ${dec(a * k)} ÷ ${a} = ${dec(k)}.`, pic([[0, 0, 1], [1, 0, 1]])), St(`x matches BC: x = ${L} × ${dec(k)} = ${dec(L * k)}.`, pic([[0, 1, 2], [1, 1, 2]], true)), `So x = ${dec(L * k)}.`], { q: `The triangles are similar. Find x.${kd < k ? ' (Not drawn to scale.)' : ''}`, unit: 'x =', visual: pic([]), expr: `${L}*${a * k}/${a}` });
+  }
+  const [n, d] = r.pick([[3, 2], [2, 1], [5, 2], [4, 3], [1, 2], [2, 3], [3, 4]]), a = d * r.int(2, 5), T = tri(r);
+  const pic = twoTri({ T, k: Math.max(0.6, Math.min(1.7, n / d)), arcs: [[0, 1], [1, 2], [2, 3]], labels: [[0, 0, 1, `${a}`], [1, 0, 1, `${(a * n) / d}`]] });
+  return num(frac(n, d), [St('The scale factor from △ABC to △DEF is DE ÷ AB (new ÷ old).', pic), `${(a * n) / d} ÷ ${a} = ${frac((a * n) / d, a)}.`, `So the scale factor is ${frac(n, d)}.`], { q: '△ABC ~ △DEF. What is the scale factor from △ABC to △DEF? (A fraction or a decimal.)', visual: pic, expr: `${(a * n) / d}/${a}` });
 });
-skill('10-simscale', 10, 'Similarity', 'Scale factors, perimeter and area', ['If similar figures have scale factor k, their perimeters are in the ratio k and their areas in the ratio k².', 'Similar triangles let us measure tall things: a pole and its shadow make the same shape as a tree and its shadow.'], (r) => {
-  const v = r.int(0, 3);
-  if (v === 0) { const k = r.int(2, 5), P = r.int(8, 40); return num(k * P, ['Perimeters grow by the same scale factor as the sides.', `${P} × ${k} = ${k * P}.`, `So the larger perimeter is ${k * P} cm.`], { q: `Two similar polygons have a scale factor of ${k}. The smaller one has a perimeter of ${P} cm. What is the perimeter of the larger one?`, expr: `${k}*${P}` }); }
-  if (v === 1) {
-    const a = r.int(1, 4), b = a + r.int(1, 3), A = r.int(2, 12) * a * a;
-    return num(A * b * b / (a * a), [`The side ratio is ${b}/${a}, so the area ratio is ${b * b}/${a * a}.`, `${A} × ${b * b} ÷ ${a * a} = ${A * b * b / (a * a)}.`, `So the larger area is ${A * b * b / (a * a)} cm².`], { q: `Two similar triangles have matching sides of ${a} cm and ${b} cm. The smaller triangle has an area of ${A} cm². What is the area of the larger one?`, expr: `${A}*(${b}/${a})**2` });
+skill('10-simscale', 10, 'Similarity', 'Scale factors, perimeter and area', [
+  KL('If similar figures have scale factor k, every length (sides, perimeter) is multiplied by k.', twoTri({ T: GH.triFromAngles(60, 50, 4), k: 1.5, labels: [[0, 0, 1, '4'], [1, 0, 1, '6']] })),
+  KL('Areas are multiplied by k²: double the sides and the area is 4 times as big.', { type: 'figs', figs: [G.polygonFig({ pts: [[0, 0], [2, 0], [2, 2], [0, 2]], sides: ['1', '', '', ''], W: 150, H: 140, pad: 45 }), G.polygonFig({ pts: [[0, 0], [2, 0], [2, 2], [0, 2]], sides: ['2', '', '', ''], cuts: [[[1, 0], [1, 2]], [[0, 1], [2, 1]]], W: 150, H: 140, pad: 25 })], captions: ['Area 1', 'Area 4'] }),
+  KL('Similar triangles measure tall things: a post and its shadow make the same shape as a tree and its shadow.', GH.shadowFig({ h1: 1.5, s1: 2, h2: 6, s2: 8, labels: ['1.5 m', '2 m', 'h', '8 m'] })),
+], (r) => {
+  const v = r.int(0, 6), T = tri(r);
+  if (v === 0) {
+    const k = r.int(2, 4), P = r.int(8, 40), pic = twoTri({ T, k: Math.min(k, 1.7), turn: r.pick([0, 25]), arcs: [[0, 1], [1, 2], [2, 3]], labels: [[0, 0, 1, '1'], [1, 0, 1, `${k}`]] });
+    return num(k * P, [St(`Every side of the larger triangle is ${k} times as long, so the perimeter is too.`, pic), `${P} × ${k} = ${k * P}.`, `So the larger perimeter is ${k * P} cm.`], { q: `These similar triangles have a scale factor of ${k} (matching sides 1 and ${k}). The smaller one has a perimeter of ${P} cm. What is the perimeter of the larger one? (Not drawn to scale.)`, visual: pic, expr: `${k}*${P}` });
+  }
+  if (v === 1 || v === 4) {
+    const a = r.int(1, 4), b = a + r.int(1, 3), A = r.int(2, 12) * a * a, B = (A * b * b) / (a * a);
+    const pic = twoTri({ T, k: b / a > 1.8 ? 1.8 : b / a, arcs: [[0, 1], [1, 2], [2, 3]], labels: v === 1 ? [[0, 0, 1, `${a} cm`], [1, 0, 1, `${b} cm`]] : [] });
+    if (v === 4) return num(frac(b, a), [St(`The areas are in the ratio ${B} : ${A}. Areas grow by k², so k² = ${B}/${A} = ${frac(B, A)}.`, pic), `k = √(${frac(B, A)}) = ${frac(b, a)}.`, `So the scale factor is ${frac(b, a)}.`], { q: `Two similar triangles have areas ${A} cm² and ${B} cm². What is the scale factor from the smaller to the larger? (A fraction or a decimal.)`, visual: pic, expr: `Math.sqrt(${B}/${A})` });
+    return num(B, [St(`The side ratio is ${b}/${a}, so the area ratio is (${b}/${a})² = ${b * b}/${a * a}.`, pic), `${A} × ${b * b} ÷ ${a * a} = ${B}.`, `So the larger area is ${B} cm².`], { q: `These similar triangles have matching sides of ${a} cm and ${b} cm. The smaller triangle has an area of ${A} cm². What is the area of the larger one? (Not drawn to scale.)`, visual: pic, expr: `${A}*(${b}/${a})**2` });
   }
   if (v === 2) {
     const h = r.pick([1.5, 1.6, 1.8, 2]), s = r.pick([2, 2.5, 3, 4]), k = r.int(3, 10), H = dec(h * k);
-    return num(H, [`The person and the tree make similar triangles with their shadows: height/shadow is the same.`, `${h}/${s} = H/${dec(s * k)}, so H = ${h} × ${dec(s * k)} ÷ ${s}.`, `H = ${H}.`, `So the tree is ${H} m tall.`], { q: `A person ${h} m tall casts a shadow ${s} m long. At the same time, a tree casts a shadow ${dec(s * k)} m long. How tall is the tree, in metres?`, expr: `${h}*${s * k}/${s}` });
+    const pic = (hl, ans) => GH.shadowFig({ h1: h, s1: s, h2: h * k, s2: s * k, labels: [`${h} m`, `${s} m`, ans ? `${H} m` : 'h', `${dec(s * k)} m`], hl });
+    return num(H, [St('The sun hits the person and the tree at the same angle, so the triangles are similar: height ÷ shadow is the same.', pic(['h1', 's1'])), `${h}/${s} = h/${dec(s * k)}, so h = ${h} × ${dec(s * k)} ÷ ${s}.`, St(`h = ${H}.`, pic(['h2', 's2'], true)), `So the tree is ${H} m tall.`], { q: 'How tall is the tree, in metres? (Not drawn to scale.)', visual: pic([]), expr: `${h}*${s * k}/${s}` });
   }
-  const r1_ = r.int(1, 6); let r2 = r.int(2, 12); if (r2 === r1_) r2++;
-  const area = r.bool();
-  return num(area ? frac(r2 * r2, r1_ * r1_) : frac(r2, r1_), ['All circles are similar; the scale factor is the ratio of the radii.', `${r2}/${r1_}${area ? `, so the areas are in the ratio (${r2}/${r1_})² = ${r2 * r2}/${r1_ * r1_}` : ''}.`, `So the ratio is ${area ? frac(r2 * r2, r1_ * r1_) : frac(r2, r1_)}.`], { q: `Circle A has radius ${r1_} cm and circle B has radius ${r2} cm. What is the ratio of the ${area ? 'area' : 'circumference'} of B to that of A? (as a fraction or number)`, expr: area ? `(${r2}/${r1_})**2` : `${r2}/${r1_}` });
+  if (v === 3) {
+    const ra = r.int(1, 6); let rb = r.int(2, 12); if (rb === ra) rb++;
+    const area = r.bool(), ans = area ? frac(rb * rb, ra * ra) : frac(rb, ra);
+    const sA = 1, sB = Math.min(3, rb / ra), note = rb / ra > 3 ? ' (Not drawn to scale.)' : '';
+    const pic = GH.scene({ P: { Ca: [0, 0], Ea: [sA, 0], Cb: [sA + 0.8 + sB, 0], Eb: [sA + 0.8 + 2 * sB, 0], La: [0, -sA - 0.45], Lb: [sA + 0.8 + sB, -sB - 0.45] }, W: 320, H: 200, pad: 22, circles: [{ c: 'Ca', r: sA, t: 'fig' }, { c: 'Cb', r: sB, t: 'fig' }], segs: [['Ca', 'Ea', 'aux'], ['Cb', 'Eb', 'aux']], dots: ['Ca', 'Cb'], sides: [['Ca', 'Ea', `${ra} cm`, 'ink', [sA / 2, -1]], ['Cb', 'Eb', `${rb} cm`, 'ink', [sA + 0.8 + 1.5 * sB, -1]]], notes: [{ at: [-sA, sA], s: 'A', t: 'muted' }, { at: [sA + 0.8, sB], s: 'B', t: 'muted' }] });
+    return num(ans, [St('All circles are similar. The scale factor from A to B is the ratio of the radii.', pic), `k = ${rb}/${ra}${area ? `, and areas grow by k²: (${rb}/${ra})² = ${rb * rb}/${ra * ra}` : ''}.`, `So the ratio is ${ans}.`], { q: `What is the ratio of the ${area ? 'area' : 'circumference'} of circle B to that of circle A? (A fraction or a number.)${note}`, visual: pic, expr: area ? `(${rb}/${ra})**2` : `${rb}/${ra}` });
+  }
+  if (v === 5) {
+    const h = r.pick([1.5, 1.6, 1.8]), d1 = r.int(2, 5), k = r.int(3, 8), d2 = d1 * k, H = dec(h * k);
+    const kd = Math.min(k, 3.5), P = { E: [0, h], F: [0, 0], M: [d1, 0], B: [d1 + d1 * kd, 0], T: [d1 + d1 * kd, h * kd] };
+    const pic = (hl, ans) => GH.scene({ P, W: 320, H: 200, pad: 30, fills: [{ pts: ['E', 'F', 'M'], t: 'top' }, { pts: ['T', 'B', 'M'], t: 'top' }], segs: [['E', 'M', 'aux'], ['M', 'T', 'aux'], ...(hl ? [['T', 'B', 'hlline']] : [])], rights: [['F', 'E', 'M'], ['B', 'T', 'M']], angs: [{ v: 'M', a: 'E', b: 'F', r: 16 }, { v: 'M', a: 'B', b: 'T', r: 16 }], sides: [['E', 'F', `${h} m`], ['F', 'M', `${d1} m`], ['M', 'B', `${d2} m`], ['T', 'B', ans ? `${H} m` : 'h', hl ? 'hl' : 'ink']], dots: ['M'], names: { M: 'M' }, nameDir: { M: [0, -1] } });
+    return num(H, [St('Light bounces off the mirror at equal angles, so the two right triangles are similar (AA).', pic(false)), `Height ÷ distance is the same: ${h} ÷ ${d1} = h ÷ ${d2}, so h = ${h} × ${d2} ÷ ${d1}.`, St(`h = ${H}.`, pic(true, true)), `So the building is ${H} m tall.`], { q: `A person whose eyes are ${h} m above the ground sees the top of a building in a mirror M on the ground. How tall is the building, in metres? (Not drawn to scale.)`, visual: pic(false), expr: `${h}*${d2}/${d1}` });
+  }
+  const P1 = r.int(4, 10) * 2, k = r.pick([1.5, 2, 2.5, 3]), P2 = P1 * k, s = r.int(2, P1 / 2 - 1);
+  const pic = twoTri({ T, k: Math.min(k, 1.7), arcs: [[0, 1], [1, 2], [2, 3]], labels: [[0, 0, 1, `${s} cm`], [1, 0, 1, 'x', 'hl']] });
+  return num(dec(s * k), [St(`The perimeters give the scale factor: ${dec(P2)} ÷ ${P1} = ${dec(k)}.`, pic), `x = ${s} × ${dec(k)} = ${dec(s * k)}.`, `So x = ${dec(s * k)} cm.`], { q: `These similar triangles have perimeters ${P1} cm and ${dec(P2)} cm. Find x, in cm. (Not drawn to scale.)`, unit: 'x =', visual: pic, expr: `${s}*${P2}/${P1}` });
 });
 
 // ───────────── 30. Right triangles ─────────────
-skill('10-righttri', 10, 'Right triangles', 'Pythagorean theorem and special triangles', ['If a² + b² = c² (c the longest side), the triangle is right. If a² + b² > c² it is acute; if a² + b² < c² it is obtuse.', '45-45-90: hypotenuse = leg × √2. 30-60-90: hypotenuse = 2 × short leg, long leg = short leg × √3.'], (r) => {
-  const v = r.int(0, 3);
+// rt: a right triangle with legs w (across) and h (up); labels across / up / hyp
+const rt = (w, h, lab, o = {}) => GH.rightTri({ w, h, noTheta: true, sides: { adj: lab[0], opp: lab[1], hyp: lab[2] }, hl: o.hl, other: o.other, ...(o.theta ? { noTheta: false, thetaLabel: o.theta } : {}), flip: o.flip });
+skill('10-righttri', 10, 'Right triangles', 'Pythagorean theorem and special triangles', [
+  KL('In a right triangle, a² + b² = c². The hypotenuse c is the longest side, across from the right angle.', rt(4, 3, ['a', 'b', 'c'], { hl: ['hyp'] })),
+  KL('If a² + b² = c² (c the longest side), the triangle is right. If a² + b² > c² it is acute; if a² + b² < c² it is obtuse.'),
+  KL('45-45-90: the legs are equal and the hypotenuse = leg × √2.', rt(1, 1, ['1', '1', '√2'], { theta: '45°', other: '45°' })),
+  KL('30-60-90: hypotenuse = 2 × short leg, long leg = short leg × √3. The short leg is across from the 30° angle.', rt(Math.sqrt(3), 1, ['√3', '1', '2'], { theta: '30°', other: '60°' })),
+], (r) => {
+  const v = r.int(0, 8);
   if (v === 0) {
     const [a, b, c0] = r.pick([[3, 4, 5], [5, 12, 13], [6, 8, 10], [8, 15, 17], [7, 24, 25], [9, 12, 15]]), c = c0 + r.pick([0, 0, 1, -1]);
     const L = a * a + b * b, R = c * c, right = L === R ? 'Right' : L > R ? 'Acute' : 'Obtuse';
-    return mc(r, right, ['Right', 'Acute', 'Obtuse'].filter((x) => x !== right), { q: `A triangle has sides ${a}, ${b} and ${c}. Is it right, acute or obtuse?`, steps: [`a² + b² = ${a * a} + ${b * b} = ${L}, and c² = ${c}² = ${R}.`, `${L} ${L === R ? '=' : L > R ? '>' : '<'} ${R}, so it is ${right.toLowerCase()}.`] });
+    const pic = G.polygonFig({ pts: GH.triFromSides(a, b, c), sides: [`${c}`, `${a}`, `${b}`] });
+    return mc(r, right, ['Right', 'Acute', 'Obtuse'].filter((x) => x !== right), { q: 'Is this triangle right, acute or obtuse? (Not drawn to scale.)', visual: pic, steps: [St(`The longest side is c = ${c}. a² + b² = ${a}² + ${b}² = ${a * a} + ${b * b} = ${L}, and c² = ${R}.`, G.polygonFig({ pts: GH.triFromSides(a, b, c), sides: [`${c}`, `${a}`, `${b}`], hl: [{ side: 0 }] })), `${L} ${L === R ? '=' : L > R ? '>' : '<'} ${R}, so it is ${right.toLowerCase()}.`] });
   }
   const k = r.int(2, 12);
-  if (v === 1) {
-    if (r.bool()) return mc(r, `${k}√2`, [`${2 * k}`, `${k}√3`, `${k * 2}√2`], { q: `A 45-45-90 triangle has legs of ${k} cm. How long is the hypotenuse?`, steps: ['In a 45-45-90 triangle, hypotenuse = leg × √2.', `So the hypotenuse is ${k}√2 cm.`] });
-    return num(k, ['In a 45-45-90 triangle, hypotenuse = leg × √2.', `So leg = ${k}√2 ÷ √2 = ${k}.`, `So each leg is ${k} cm.`], { q: `The hypotenuse of a 45-45-90 triangle is ${k}√2 cm. How long is each leg?`, expr: `${k}*Math.SQRT2/Math.SQRT2` });
+  if (v === 1) return mc(r, `${k}√2`, [`${2 * k}`, `${k}√3`, `${k * 2}√2`], { q: 'How long is the hypotenuse of this 45-45-90 triangle, in cm?', visual: rt(1, 1, [`${k}`, `${k}`, '?'], { theta: '45°', other: '45°' }), steps: [St('In a 45-45-90 triangle, hypotenuse = leg × √2.', rt(1, 1, [`${k}`, `${k}`, `${k}√2`], { theta: '45°', other: '45°', hl: ['hyp'] })), `So the hypotenuse is ${k}√2 cm.`] });
+  if (v === 2) return num(k, [St('In a 45-45-90 triangle, hypotenuse = leg × √2, so leg = hypotenuse ÷ √2.', rt(1, 1, ['x', 'x', `${k}√2`], { theta: '45°', other: '45°', hl: ['hyp'] })), `x = ${k}√2 ÷ √2 = ${k}.`, `So each leg is ${k} cm.`], { q: 'In this 45-45-90 triangle, how long is each leg x, in cm?', unit: 'x =', visual: rt(1, 1, ['x', 'x', `${k}√2`], { theta: '45°', other: '45°' }), expr: `${k}*Math.SQRT2/Math.SQRT2` });
+  const s3 = Math.sqrt(3), t30 = (lab, hl) => rt(s3, 1, lab, { theta: '30°', other: '60°', hl });
+  if (v === 3) return num(2 * k, [St('In a 30-60-90 triangle the short leg is across from 30°, and hypotenuse = 2 × short leg.', t30(['', `${k}`, '?'], ['opp'])), `2 × ${k} = ${2 * k}.`, `So the hypotenuse is ${2 * k} cm.`], { q: 'How long is the hypotenuse of this 30-60-90 triangle, in cm?', visual: t30(['', `${k}`, '?']), expr: `2*${k}` });
+  if (v === 4) return mc(r, `${k}√3`, [`${k}√2`, `${2 * k}`, `${2 * k}√3`], { q: 'How long is the side marked ? in this 30-60-90 triangle, in cm?', visual: t30(['?', `${k}`, '']), steps: [St('The long leg is across from 60°. In a 30-60-90 triangle, long leg = short leg × √3.', t30([`${k}√3`, `${k}`, ''], ['adj'])), `So it is ${k}√3 cm.`] });
+  if (v === 5) return num(k, [St('The hypotenuse is twice the short leg (across from 30°), so the short leg is half of it.', t30(['', 'x', `${2 * k}`], ['hyp'])), `x = ${2 * k} ÷ 2 = ${k}.`, `So x = ${k} cm.`], { q: 'In this 30-60-90 triangle, find the short leg x, in cm.', unit: 'x =', visual: t30(['', 'x', `${2 * k}`]), expr: `${2 * k}/2` });
+  if (v === 6) {
+    let a, b; do { a = r.int(2, 15); b = r.int(2, 15); } while (Number.isInteger(Math.hypot(a, b)));
+    const c = dec(r1(Math.hypot(a, b))), pic = (hl, ans) => rt(a, b, [`${a} cm`, `${b} cm`, ans ? `≈ ${c} cm` : 'c'], { hl });
+    return num(c, [St(`The legs are ${a} and ${b}: a² + b² = ${a * a} + ${b * b} = ${a * a + b * b}.`, pic(['adj', 'opp'])), St(`c = √${a * a + b * b} ≈ ${dec(Math.hypot(a, b), 3)}.`, pic(['hyp'], true)), `Rounded to the nearest tenth: ${c}.`, `So the hypotenuse is about ${c} cm.`], { q: 'Find the hypotenuse c, rounded to the nearest tenth of a cm.', visual: pic([]), tol: 0.05001, expr: `Math.hypot(${a},${b})` });
   }
-  if (v === 2) {
-    if (r.bool()) return num(2 * k, ['In a 30-60-90 triangle, hypotenuse = 2 × short leg.', `2 × ${k} = ${2 * k}.`, `So the hypotenuse is ${2 * k} cm.`], { q: `In a 30-60-90 triangle the shortest side is ${k} cm. How long is the hypotenuse?`, expr: `2*${k}` });
-    return mc(r, `${k}√3`, [`${k}√2`, `${2 * k}`, `${2 * k}√3`], { q: `In a 30-60-90 triangle the shortest side is ${k} cm. How long is the other leg (opposite the 60° angle)?`, steps: ['In a 30-60-90 triangle, long leg = short leg × √3.', `So it is ${k}√3 cm.`] });
+  if (v === 7) {
+    const [p, q, h] = r.pick([[3, 4, 5], [5, 12, 13], [8, 15, 17], [7, 24, 25], [20, 21, 29]]), m = r.int(1, 3), a = p * m, b = q * m, c = h * m, flip = r.bool();
+    const pic = (hl, ans) => rt(a, b, [`${a}`, ans ? `${b}` : 'b', `${c}`], { hl, flip });
+    return num(b, [St(`The hypotenuse is ${c}, so b² = c² − a² = ${c}² − ${a}² = ${c * c} − ${a * a} = ${b * b}.`, pic(['hyp', 'adj'])), St(`b = √${b * b} = ${b}.`, pic(['opp'], true)), `So b = ${b}.`], { q: 'Find the missing leg b.', unit: 'b =', visual: pic([]), expr: `Math.sqrt(${c}**2-${a}**2)` });
   }
-  let a, b; do { a = r.int(2, 15); b = r.int(2, 15); } while (Number.isInteger(Math.hypot(a, b)));
-  const c = dec(r1(Math.hypot(a, b)));
-  return num(c, [`c² = ${a}² + ${b}² = ${a * a} + ${b * b} = ${a * a + b * b}.`, `c = √${a * a + b * b} ≈ ${dec(Math.hypot(a, b), 3)}.`, `Rounded to the nearest tenth: ${c}.`, `So the hypotenuse is about ${c} cm.`], { q: `A right triangle has legs ${a} cm and ${b} cm. Find the hypotenuse, rounded to the nearest tenth.`, visual: { type: 'righttri', a, b, c: '?' }, tol: 0.05001, expr: `Math.hypot(${a},${b})` });
+  const [p, q, h] = r.pick([[3, 4, 5], [5, 12, 13], [6, 8, 10], [8, 15, 17], [7, 24, 25]]);
+  const pic = (hl, ans) => GH.rightTri({ w: p, h: q, noTheta: true, flip: true, sides: { adj: `${p} m`, opp: ans ? `${q} m` : '?', hyp: `${h} m` }, hl });
+  return num(q, [St(`The ladder is the hypotenuse (${h} m); the ground from the wall is one leg (${p} m).`, pic(['hyp', 'adj'])), St(`height² = ${h}² − ${p}² = ${h * h - p * p}, so height = ${q}.`, pic(['opp'], true)), `The ladder reaches ${q} m up the wall.`], { q: `A ${h} m ladder leans against a wall with its foot ${p} m from the wall. How high up the wall does it reach, in metres?`, visual: pic([]), expr: `Math.sqrt(${h}**2-${p}**2)` });
 });
 
 // ───────────── 31. Trigonometry ─────────────
 const RAD = Math.PI / 180;
-skill('10-trigangle', 10, 'Trigonometry', 'Find angles and solve problems', ['To find an angle, use the inverse: θ = tan⁻¹(opposite ÷ adjacent), and the same for sin⁻¹ and cos⁻¹.', 'csc = 1/sin = hyp/opp, sec = 1/cos = hyp/adj, cot = 1/tan = adj/opp.'], (r) => {
-  const v = r.int(0, 3);
+const ROLE = { opp: 'opposite', adj: 'adjacent', hyp: 'hypotenuse' };
+const FUN = { sin: ['opp', 'hyp'], cos: ['adj', 'hyp'], tan: ['opp', 'adj'] };
+const SOH = { sin: 'SOH: sin = opposite ÷ hypotenuse', cos: 'CAH: cos = adjacent ÷ hypotenuse', tan: 'TOA: tan = opposite ÷ adjacent' };
+// a trig triangle: real side lengths opp, adj (for the shape); labels; roles shown
+const trig = (opp, adj, sides, o = {}) => GH.rightTri({ w: o.theta === 'A' ? opp : adj, h: o.theta === 'A' ? adj : opp, theta: o.theta ?? 'B', flip: o.flip, sides, roles: o.roles ?? true, hl: o.hl, thetaLabel: o.thetaLabel });
+skill('10-trigangle', 10, 'Trigonometry', 'Find angles and solve problems', [
+  KL('Name the sides from the angle θ: the hypotenuse is across from the right angle, the opposite side is across from θ, and the adjacent side is next to θ.', trig(3, 4, {}, { roles: true })),
+  KL('SOH CAH TOA: sin θ = opposite ÷ hypotenuse, cos θ = adjacent ÷ hypotenuse, tan θ = opposite ÷ adjacent.', trig(3, 4, { opp: '3', adj: '4', hyp: '5' }, { hl: ['opp', 'adj'] })),
+  KL('To find a side, write the ratio with the side you want and the one you know, then solve. To find an angle, use the inverse: θ = tan⁻¹(opposite ÷ adjacent), and the same for sin⁻¹ and cos⁻¹.'),
+  KL('csc = 1/sin = hyp/opp, sec = 1/cos = hyp/adj, cot = 1/tan = adj/opp.'),
+], (r) => {
+  const v = r.int(0, 8), flip = r.bool(), th = r.pick(['B', 'A']);
   if (v === 0) {
     const f = r.pick(['tan', 'sin', 'cos']), o = r.int(2, 12), x = f === 'tan' ? r.int(2, 12) : o + r.int(1, 10);
-    const ang = f === 'tan' ? Math.atan(o / x) / RAD : f === 'sin' ? Math.asin(o / x) / RAD : Math.acos(o / x) / RAD, ans = Math.round(ang);
-    const desc = f === 'tan' ? `the side opposite θ is ${o} cm and the side adjacent to θ is ${x} cm` : f === 'sin' ? `the side opposite θ is ${o} cm and the hypotenuse is ${x} cm` : `the side adjacent to θ is ${o} cm and the hypotenuse is ${x} cm`;
-    return num(ans, [`${f} θ = ${o}/${x}.`, `θ = ${f}⁻¹(${o}/${x}) ≈ ${dec(ang, 2)}°.`, `Rounded to the nearest degree: ${ans}°.`, `So θ is about ${ans}°.`], { q: `In a right triangle, ${desc}. Find θ to the nearest degree.`, tol: 0.5001, expr: f === 'tan' ? `Math.atan(${o}/${x})*180/Math.PI` : f === 'sin' ? `Math.asin(${o}/${x})*180/Math.PI` : `Math.acos(${o}/${x})*180/Math.PI` });
+    const ang = Math[`a${f}`](o / x) / RAD, ans = Math.round(ang), [s1, s2] = FUN[f];
+    const real = f === 'tan' ? [o, x] : f === 'sin' ? [o, Math.sqrt(x * x - o * o)] : [Math.sqrt(x * x - o * o), o];
+    const sides = { [s1]: `${o}`, [s2]: `${x}` };
+    return num(ans, [St(`From θ, the side marked ${o} is the ${ROLE[s1]} and the side marked ${x} is the ${ROLE[s2]}. ${SOH[f]}.`, trig(real[0], real[1], sides, { flip, theta: th, hl: [s1, s2] })), `${f} θ = ${o}/${x}, so θ = ${f}⁻¹(${o}/${x}) ≈ ${dec(ang, 2)}°.`, `Rounded to the nearest degree: ${ans}°.`, `So θ is about ${ans}°.`], { q: 'Find the angle θ, to the nearest degree.', visual: trig(real[0], real[1], sides, { flip, theta: th, roles: false }), tol: 0.5001, expr: `Math.a${f}(${o}/${x})*180/Math.PI` });
   }
+  const [a, b, c] = r.pick([[3, 4, 5], [5, 12, 13], [8, 15, 17], [7, 24, 25], [20, 21, 29], [4, 3, 5], [12, 5, 13]]);
   if (v === 1) {
-    const [a, b, c] = r.pick([[3, 4, 5], [5, 12, 13], [8, 15, 17], [7, 24, 25], [20, 21, 29]]), f = r.pick(['csc', 'sec', 'cot']);
-    const val = f === 'csc' ? frac(c, a) : f === 'sec' ? frac(c, b) : frac(b, a);
-    return num(val, [`${f} θ = ${f === 'csc' ? 'hypotenuse ÷ opposite' : f === 'sec' ? 'hypotenuse ÷ adjacent' : 'adjacent ÷ opposite'}.`, `= ${f === 'csc' ? `${c}/${a}` : f === 'sec' ? `${c}/${b}` : `${b}/${a}`}.`, `So ${f} θ = ${val}.`], { q: `A right triangle has the side opposite θ equal to ${a}, the side adjacent to θ equal to ${b}, and hypotenuse ${c}. What is ${f} θ?`, expr: f === 'csc' ? `${c}/${a}` : f === 'sec' ? `${c}/${b}` : `${b}/${a}` });
+    const f = r.pick(['csc', 'sec', 'cot']), val = f === 'csc' ? frac(c, a) : f === 'sec' ? frac(c, b) : frac(b, a), uses = { csc: ['hyp', 'opp'], sec: ['hyp', 'adj'], cot: ['adj', 'opp'] }[f];
+    const sides = { opp: `${a}`, adj: `${b}`, hyp: `${c}` };
+    return num(val, [St(`${f} θ = ${ROLE[uses[0]]} ÷ ${ROLE[uses[1]]}.`, trig(a, b, sides, { flip, theta: th, hl: uses })), `= ${f === 'csc' ? `${c}/${a}` : f === 'sec' ? `${c}/${b}` : `${b}/${a}`}.`, `So ${f} θ = ${val}.`], { q: `What is ${f} θ for this triangle?`, visual: trig(a, b, sides, { flip, theta: th, roles: false }), expr: f === 'csc' ? `${c}/${a}` : f === 'sec' ? `${c}/${b}` : `${b}/${a}` });
   }
   if (v === 2) {
-    if (r.bool()) { const d = r.int(10, 60), t = r.int(20, 65), h = d * Math.tan(t * RAD), ans = dec(r1(h)); return num(ans, [`The height is opposite the angle and the distance is adjacent: tan ${t}° = h ÷ ${d}.`, `h = ${d} × tan ${t}° ≈ ${d} × ${dec(Math.tan(t * RAD), 4)} ≈ ${dec(h, 3)}.`, `Rounded to the nearest tenth: ${ans}.`, `So the building is about ${ans} m tall.`], { q: `From a point ${d} m from the base of a building, the angle of elevation to the top is ${t}°. How tall is the building, to the nearest tenth of a metre?`, tol: 0.05001, expr: `${d}*Math.tan(${t}*Math.PI/180)` }); }
-    const L = r.int(3, 10), t = r.int(55, 80), h = L * Math.sin(t * RAD), ans = dec(r1(h));
-    return num(ans, [`The ladder is the hypotenuse and the height is opposite the angle: sin ${t}° = h ÷ ${L}.`, `h = ${L} × sin ${t}° ≈ ${dec(h, 3)}.`, `Rounded to the nearest tenth: ${ans}.`, `So the ladder reaches about ${ans} m up the wall.`], { q: `A ${L} m ladder leans against a wall, making an angle of ${t}° with the ground. How high up the wall does it reach, to the nearest tenth of a metre?`, tol: 0.05001, expr: `${L}*Math.sin(${t}*Math.PI/180)` });
+    const d = r.int(10, 60), t = r.int(20, 65), h = d * Math.tan(t * RAD), ans = dec(r1(h));
+    const pic = (hl, an) => GH.rightTri({ w: 1.6, h: Math.tan(t * RAD) * 1.6, sides: { adj: `${d} m`, opp: an ? `≈ ${ans} m` : 'h' }, thetaLabel: `${t}°`, hl, roles: !!hl.length });
+    return num(ans, [St(`The height is opposite the ${t}° angle and the distance along the ground is adjacent. TOA: tan ${t}° = h ÷ ${d}.`, pic(['opp', 'adj'])), `h = ${d} × tan ${t}° ≈ ${d} × ${dec(Math.tan(t * RAD), 4)} ≈ ${dec(h, 3)}.`, St(`Rounded to the nearest tenth: ${ans}.`, pic(['opp'], true)), `So the building is about ${ans} m tall.`], { q: `From a point ${d} m from the base of a building, the angle of elevation to the top is ${t}°. How tall is the building h, to the nearest tenth of a metre?`, visual: pic([]), tol: 0.05001, expr: `${d}*Math.tan(${t}*Math.PI/180)` });
   }
-  const f = r.pick(['sin', 'cos', 'tan']), t = r.int(5, 85), val = Math[f](t * RAD), ans = dec(Math.round(val * 1000) / 1000);
-  return num(ans, [`Make sure the calculator is in degree mode.`, `${f} ${t}° ≈ ${dec(val, 6)}.`, `Rounded to the nearest thousandth: ${ans}.`, `So ${f} ${t}° ≈ ${ans}.`], { q: `Use a calculator: what is ${f} ${t}°, to the nearest thousandth?`, tol: 0.0005001, expr: `Math.${f}(${t}*Math.PI/180)` });
+  if (v === 3) {
+    const L = r.int(3, 10), t = r.int(55, 80), h = L * Math.sin(t * RAD), ans = dec(r1(h));
+    const pic = (hl, an) => GH.rightTri({ w: Math.cos(t * RAD), h: Math.sin(t * RAD), flip: true, sides: { hyp: `${L} m`, opp: an ? `≈ ${ans} m` : 'h' }, thetaLabel: `${t}°`, hl, roles: !!hl.length });
+    return num(ans, [St(`The ladder is the hypotenuse and the height is opposite the ${t}° angle. SOH: sin ${t}° = h ÷ ${L}.`, pic(['opp', 'hyp'])), `h = ${L} × sin ${t}° ≈ ${dec(h, 3)}.`, St(`Rounded to the nearest tenth: ${ans}.`, pic(['opp'], true)), `So the ladder reaches about ${ans} m up the wall.`], { q: `A ${L} m ladder leans against a wall, making an angle of ${t}° with the ground. How high up the wall does it reach, to the nearest tenth of a metre?`, visual: pic([]), tol: 0.05001, expr: `${L}*Math.sin(${t}*Math.PI/180)` });
+  }
+  if (v === 4) {
+    const f = r.pick(['sin', 'cos', 'tan']), t = r.int(5, 85), val = Math[f](t * RAD), ans = dec(Math.round(val * 1000) / 1000);
+    return num(ans, ['Make sure the calculator is in degree mode.', `${f} ${t}° ≈ ${dec(val, 6)}.`, `Rounded to the nearest thousandth: ${ans}.`, `So ${f} ${t}° ≈ ${ans}.`], { q: `Use a calculator: what is ${f} ${t}°, to the nearest thousandth?`, tol: 0.0005001, expr: `Math.${f}(${t}*Math.PI/180)` });
+  }
+  if (v === 5) {
+    const t = r.int(20, 70), known = r.pick(['hyp', 'adj', 'opp']), L = r.int(4, 25), want = r.pick(['hyp', 'adj', 'opp'].filter((s) => s !== known));
+    const f = [known, want].includes('hyp') ? ([known, want].includes('opp') ? 'sin' : 'cos') : 'tan', [top, bot] = FUN[f];
+    const val = Math[f](t * RAD), x = want === top ? L * val : L / val, ans = dec(r1(x));
+    if (x > 200) return list.find((s) => s.id === 'math-10-trigangle').gen(r);
+    const sides = { [known]: `${L}`, [want]: 'x' }, real = { opp: Math.sin(t * RAD), adj: Math.cos(t * RAD) };
+    const pic = (hl, ro) => trig(real.opp, real.adj, sides, { flip, theta: th, thetaLabel: `${t}°`, hl, roles: ro });
+    return num(ans, [St(`From the ${t}° angle, x is the ${ROLE[want]} and ${L} is the ${ROLE[known]}. ${SOH[f]}.`, pic([known, want], true)), want === top ? `${f} ${t}° = x ÷ ${L}, so x = ${L} × ${f} ${t}° ≈ ${L} × ${dec(val, 4)} = ${dec(x, 3)}.` : `${f} ${t}° = ${L} ÷ x, so x = ${L} ÷ ${f} ${t}° ≈ ${L} ÷ ${dec(val, 4)} = ${dec(x, 3)}.`, `Rounded to the nearest tenth: ${ans}.`, `So x ≈ ${ans}.`], { q: 'Find x, to the nearest tenth.', unit: 'x =', visual: pic([], false), tol: 0.05001, expr: want === top ? `${L}*Math.${f}(${t}*Math.PI/180)` : `${L}/Math.${f}(${t}*Math.PI/180)` });
+  }
+  if (v === 6) {
+    const f = r.pick(['sin', 'cos', 'tan']), [top, bot] = FUN[f], vals = { opp: a, adj: b, hyp: c }, val = frac(vals[top], vals[bot]);
+    const sides = { opp: `${a}`, adj: `${b}`, hyp: `${c}` };
+    return num(val, [St(`${SOH[f]}. From θ: the ${ROLE[top]} is ${vals[top]} and the ${ROLE[bot]} is ${vals[bot]}.`, trig(a, b, sides, { flip, theta: th, hl: [top, bot] })), `${f} θ = ${vals[top]}/${vals[bot]}.`, `So ${f} θ = ${val}.`], { q: `What is ${f} θ? Give a fraction.`, visual: trig(a, b, sides, { flip, theta: th, roles: false }), expr: `${vals[top]}/${vals[bot]}` });
+  }
+  const f = r.pick(['sin', 'cos', 'tan']), [top, bot] = FUN[f], t = r.int(25, 65);
+  const sides = { [top]: top === 'opp' ? 'x' : '12', [bot]: bot === 'hyp' ? '12' : top === 'opp' ? '12' : 'x' };
+  if (f === 'cos') { sides.adj = 'x'; sides.hyp = '12'; }
+  const real = { opp: Math.sin(t * RAD), adj: Math.cos(t * RAD) };
+  return mc(r, f, ['sin', 'cos', 'tan'].filter((x) => x !== f), { q: `To find x from the ${t}° angle, which ratio should you use?`, visual: trig(real.opp, real.adj, sides, { flip, theta: th, thetaLabel: `${t}°`, roles: false }), steps: [St(`From the ${t}° angle, the two sides used are the ${ROLE[top]} and the ${ROLE[bot]}.`, trig(real.opp, real.adj, sides, { flip, theta: th, thetaLabel: `${t}°`, hl: [top, bot] })), `${SOH[f]}, so use ${f}.`] });
 });
 
 // ───────────── 32. Transformations ─────────────
-skill('10-translate', 10, 'Transformations', 'Translations and reflections', ['A translation slides every point the same way: (x, y) → (x + a, y + b).', 'Reflect in the x-axis: (x, −y). In the y-axis: (−x, y). In y = x: (y, x). In y = −x: (−y, −x).'], (r) => {
-  const v = r.int(0, 3), x = r.int(-5, 5), y = r.int(-5, 5), a = r.nonzero(-5, 5), b = r.nonzero(-5, 5);
+const W6 = { x0: -7, x1: 7, y0: -7, y1: 7 };
+const tri3 = (r, lo = -5, hi = 5) => { let A; do { A = []; while (A.length < 3) { const p = [r.int(lo, hi), r.int(lo, hi)]; if ((p[0] || p[1]) && !A.some((q) => q[0] === p[0] && q[1] === p[1])) A.push(p); } } while ((A[0][0] - A[1][0]) * (A[2][1] - A[1][1]) === (A[0][1] - A[1][1]) * (A[2][0] - A[1][0])); return A; };
+const imgPic = (A, B, o = {}) => GH.gridFig({ ...(o.win ?? gw([...A, ...B], 1, 5)), polys: [{ pts: B, t: 'hl2' }, { pts: A }], pts: (o.names ?? ['A', 'B', 'C']).map((n, i) => [A[i][0], A[i][1], n]).concat(o.primes === false ? [] : (o.names ?? ['A', 'B', 'C']).map((n, i) => [B[i][0], B[i][1], `${n}′`, 'hl2'])), segs: o.segs, arrows: o.arrows, rights: o.rights });
+const REF = [['the x-axis', (p, q) => [p, -q], 'The x-coordinate stays; the y-coordinate changes sign.', [[-7, 0], [7, 0]]], ['the y-axis', (p, q) => [-p, q], 'The y-coordinate stays; the x-coordinate changes sign.', [[0, -7], [0, 7]]], ['the line y = x', (p, q) => [q, p], 'Swap the coordinates.', [[-7, -7], [7, 7]]], ['the line y = −x', (p, q) => [-q, -p], 'Swap the coordinates and change both signs.', [[-7, 7], [7, -7]]]];
+skill('10-translate', 10, 'Transformations', 'Translations and reflections', [
+  KL('A translation slides every point the same way: (x, y) → (x + a, y + b).', imgPic([[-4, -1], [-1, -1], [-3, 2]], [[1, 1], [4, 1], [2, 4]], { arrows: [[[-3, 2], [2, 4], 'aux']], primes: false })),
+  KL('A reflection flips over a mirror line. Each point and its image are the same distance from the line, on opposite sides.', imgPic([[1, 1], [4, 1], [2, 4]], [[-1, 1], [-4, 1], [-2, 4]], { segs: [[[0, -2], [0, 6], 'hlline']], primes: false })),
+  KL('In the x-axis: (x, −y). In the y-axis: (−x, y). In y = x: (y, x). In y = −x: (−y, −x).', GH.gridFig({ ...W6, pts: [[4, 1, 'P'], [1, 4, 'P′', 'hl']], segs: [[[-7, -7], [7, 7], 'hlline'], [[4, 1], [1, 4], 'aux']] })),
+], (r) => {
+  const v = r.int(0, 6), x = r.int(-5, 5), y = r.int(-5, 5);
+  let a, b; do { a = r.nonzero(-5, 5); b = r.nonzero(-5, 5); } while (Math.abs(x + a) > 7 || Math.abs(y + b) > 7);
   const words = (dx, dy) => `${Math.abs(dx)} unit${Math.abs(dx) === 1 ? '' : 's'} ${dx > 0 ? 'right' : 'left'} and ${Math.abs(dy)} unit${Math.abs(dy) === 1 ? '' : 's'} ${dy > 0 ? 'up' : 'down'}`;
-  const REF = [['the x-axis', (p, q) => [p, -q], 'The x-coordinate stays; the y-coordinate changes sign.'], ['the y-axis', (p, q) => [-p, q], 'The y-coordinate stays; the x-coordinate changes sign.'], ['the line y = x', (p, q) => [q, p], 'Swap the coordinates.'], ['the line y = −x', (p, q) => [-q, -p], 'Swap the coordinates and change both signs.']];
-  if (v === 0) return ptItem(x + a, y + b, [`Moving ${words(a, b)} adds ${neg(a)} to x and ${neg(b)} to y.`, `x: ${neg(x)} ${sgn(a)} = ${neg(x + a)}; y: ${neg(y)} ${sgn(b)} = ${neg(y + b)}.`, `So the image is ${P(x + a, y + b)}.`], { q: `Point A${P(x, y)} is translated ${words(a, b)}. What are the coordinates of the image A′? Write them as (x, y).`, visual: { type: 'plane', points: [[x, y, 'A']], range: 6 } });
-  if (v === 1) { const [nm, f, why] = r.pick(REF), [x2, y2] = f(x, y); return ptItem(x2, y2, [why, `${P(x, y)} becomes ${P(x2, y2)}.`, `So the image is ${P(x2, y2)}.`], { q: `Point B${P(x, y)} is reflected in ${nm}. What are the coordinates of the image? Write them as (x, y).`, visual: { type: 'plane', points: [[x, y, 'B']], range: 6 } }); }
-  if (v === 2) { const rule = (p, q) => `(x, y) → (${lin([[1, 'x'], [p, '']])}, ${lin([[1, 'y'], [q, '']])})`; return mc(r, rule(a, b), [rule(-a, -b), rule(b, a), rule(a, -b)].filter((t) => t !== rule(a, b)), { q: `A translation maps ${P(x, y)} to ${P(x + a, y + b)}. Which rule describes it?`, steps: [`x changes by ${neg(x + a)} − ${par(x)} = ${neg(a)}; y changes by ${neg(y + b)} − ${par(y)} = ${neg(b)}.`, `So the rule is ${rule(a, b)}.`] }); }
-  const [nm, f] = r.pick(REF.slice(0, 2)), [x2, y2] = f(x + a, y + b);
-  return ptItem(x2, y2, [`First translate: ${P(x, y)} → ${P(x + a, y + b)}.`, `Then reflect in ${nm}: ${P(x + a, y + b)} → ${P(x2, y2)}.`, `So the final image is ${P(x2, y2)}.`], { q: `Point C${P(x, y)} is translated ${words(a, b)}, then reflected in ${nm}. Where does it end up? Write it as (x, y).` });
-});
-skill('10-rotate', 10, 'Transformations', 'Rotations and symmetry', ['About the origin: 90° anticlockwise (x, y) → (−y, x); 180° (x, y) → (−x, −y); 90° clockwise (x, y) → (y, −x).', 'Translations, reflections and rotations keep size and shape: they are congruence transformations.'], (r) => {
-  const v = r.int(0, 3), x = r.nonzero(-5, 5), y = r.nonzero(-5, 5);
-  if (v === 0) {
-    const [nm, f, rule] = r.pick([['90° anticlockwise', (p, q) => [-q, p], '(x, y) → (−y, x)'], ['180°', (p, q) => [-p, -q], '(x, y) → (−x, −y)'], ['90° clockwise', (p, q) => [q, -p], '(x, y) → (y, −x)']]), [x2, y2] = f(x, y);
-    return ptItem(x2, y2, [`A rotation of ${nm} about the origin follows ${rule}.`, `${P(x, y)} → ${P(x2, y2)}.`, `So the image is ${P(x2, y2)}.`], { q: `Point D${P(x, y)} is rotated ${nm} about the origin. What are the coordinates of the image? Write them as (x, y).`, visual: { type: 'plane', points: [[x, y, 'D']], range: 6 } });
-  }
-  if (v === 1) {
-    const n = r.pick([3, 4, 5, 6, 8, 9, 10, 12]);
-    if (r.bool()) return num(360 / n, [`A regular polygon with ${n} sides looks the same after turning 1/${n} of a full turn.`, `360 ÷ ${n} = ${360 / n}.`, `So the smallest angle is ${360 / n}°.`], { q: `What is the smallest angle of rotation (more than 0°) that carries a regular polygon with ${n} sides onto itself, in degrees?`, expr: `360/${n}` });
-    return num(n, ['A regular polygon has one line of symmetry for each side.', `It has ${n} sides.`, `So it has ${n} lines of symmetry.`], { q: `How many lines of symmetry does a regular polygon with ${n} sides have?`, expr: String(n) });
-  }
+  if (v === 0) return ptItem(x + a, y + b, [`Moving ${words(a, b)} adds ${neg(a)} to x and ${neg(b)} to y.`, St(`x: ${neg(x)} ${sgn(a)} = ${neg(x + a)}; y: ${neg(y)} ${sgn(b)} = ${neg(y + b)}.`, GH.gridFig({ ...W6, pts: [[x, y, 'A'], [x + a, y + b, 'A′', 'hl']], segs: [[[x, y], [x + a, y], 'hlline'], [[x + a, y], [x + a, y + b], 'hlline']] })), `So the image is ${P(x + a, y + b)}.`], { q: `Point A${P(x, y)} is translated ${words(a, b)}. What are the coordinates of the image A′? Write them as (x, y).`, visual: GH.gridFig({ ...W6, pts: [[x, y, 'A']] }) });
+  if (v === 1) { const [nm, f, why, ln] = r.pick(REF), [x2, y2] = f(x, y); return ptItem(x2 + 0, y2 + 0, [St(why), St(`${P(x, y)} becomes ${P(x2 + 0, y2 + 0)}: the same distance from the mirror, on the other side.`, GH.gridFig({ ...W6, pts: [[x, y, 'B'], [x2, y2, 'B′', 'hl']], segs: [[...ln, 'hlline'], [[x, y], [x2, y2], 'aux']] })), `So the image is ${P(x2 + 0, y2 + 0)}.`], { q: `Point B${P(x, y)} is reflected in ${nm}. What are the coordinates of the image? Write them as (x, y).`, visual: GH.gridFig({ ...W6, pts: [[x, y, 'B']], segs: [[...ln, 'hidden']] }) }); }
   if (v === 2) {
+    const rule = (p, q) => `(x, y) → (${lin([[1, 'x'], [p, '']])}, ${lin([[1, 'y'], [q, '']])})`;
+    const pic = (ar) => GH.gridFig({ ...W6, pts: [[x, y, 'A'], [x + a, y + b, 'A′', 'hl2']], arrows: ar ? [[[x, y], [x + a, y + b], 'aux']] : [] });
+    return mc(r, rule(a, b), [rule(-a, -b), rule(b, a), rule(a, -b)].filter((t) => t !== rule(a, b)), { q: 'A translation maps A to A′. Which rule describes it?', visual: pic(false), steps: [St(`x changes by ${neg(x + a)} − ${par(x)} = ${neg(a)}; y changes by ${neg(y + b)} − ${par(y)} = ${neg(b)}.`, pic(true)), `So the rule is ${rule(a, b)}.`] });
+  }
+  if (v === 3) {
+    const [nm, f, , ln] = r.pick(REF.slice(0, 2)), [x2, y2] = f(x + a, y + b);
+    return ptItem(x2 + 0, y2 + 0, [St(`First translate: ${P(x, y)} → ${P(x + a, y + b)}.`, GH.gridFig({ ...W6, pts: [[x, y, 'C'], [x + a, y + b, 'C′']], arrows: [[[x, y], [x + a, y + b], 'aux']] })), St(`Then reflect in ${nm}: ${P(x + a, y + b)} → ${P(x2 + 0, y2 + 0)}.`, GH.gridFig({ ...W6, pts: [[x + a, y + b, 'C′'], [x2, y2, 'C″', 'hl']], segs: [[...ln, 'hlline'], [[x + a, y + b], [x2, y2], 'aux']] })), `So the final image is ${P(x2 + 0, y2 + 0)}.`], { q: `Point C${P(x, y)} is translated ${words(a, b)}, then reflected in ${nm}. Where does it end up? Write it as (x, y).`, visual: GH.gridFig({ ...W6, pts: [[x, y, 'C']] }) });
+  }
+  if (v === 4) {
+    const A = tri3(r, -4, 3), dx = r.nonzero(-3, 3), dy = r.nonzero(-3, 3), B = A.map(([p, q]) => [p + dx, q + dy]), i = r.int(0, 2), L = 'ABC'[i];
+    return ptItem(B[i][0], B[i][1], [`The rule adds ${neg(dx)} to every x and ${neg(dy)} to every y.`, St(`${L}${P(...A[i])} → ${L}′${P(...B[i])}.`, imgPic(A, B, { arrows: [[A[i], B[i], 'aux']] })), `So ${L}′ = ${P(...B[i])}.`], { q: `Triangle ABC is translated by (x, y) → (${lin([[1, 'x'], [dx, '']])}, ${lin([[1, 'y'], [dy, '']])}). Where does ${L} go? Write it as (x, y).`, visual: GH.gridFig({ ...gw([...A, ...B]), polys: [{ pts: A }], pts: A.map((p, k) => [p[0], p[1], 'ABC'[k]]) }) });
+  }
+  if (v === 5) {
+    let A, k, B; do { A = tri3(r, -5, 5); k = r.int(0, 3); B = A.map(([p, q]) => REF[k][1](p, q)); } while (B.some((p, j) => p[0] === A[j][0] && p[1] === A[j][1]));
+    const right = `In ${REF[k][0]}`;
+    return mc(r, right, REF.filter((_, j) => j !== k).map((x) => `In ${x[0]}`), { q: 'The green triangle is the reflection of the blue one. In which line was it reflected?', visual: imgPic(A, B, { win: W6 }), steps: [St(`Compare A with A′: ${P(...A[0])} → ${P(...B[0])}. ${REF[k][2]}`, imgPic(A, B, { win: W6, segs: [[...REF[k][3], 'hlline']] })), `So it was reflected ${right.toLowerCase()}.`] });
+  }
+  const m = r.nonzero(-3, 3), x0 = r.int(-6, 6), y0 = r.int(-5, 5), x2 = 2 * m - x0;
+  if (Math.abs(x2) > 9 || x0 === m) return list.find((s) => s.id === 'math-10-translate').gen(r);
+  const w = gw([[x0, y0], [x2, y0], [m, 0]]);
+  return ptItem(x2, y0, [St(`P is ${Math.abs(x0 - m)} units ${x0 > m ? 'right' : 'left'} of the line x = ${neg(m)}. Its image is the same distance on the other side.`, GH.gridFig({ ...w, pts: [[x0, y0, 'P'], [x2, y0, 'P′', 'hl']], segs: [[[m, w.y0], [m, w.y1], 'hlline'], [[x0, y0], [x2, y0], 'aux']] })), `x = ${neg(m)} ${x0 > m ? '−' : '+'} ${Math.abs(x0 - m)} = ${neg(x2)}; y stays ${neg(y0)}.`, `So P′ = ${P(x2, y0)}.`], { q: `Point P${P(x0, y0)} is reflected in the vertical line x = ${neg(m)}. Where is its image? Write it as (x, y).`, visual: GH.gridFig({ ...w, pts: [[x0, y0, 'P']], segs: [[[m, w.y0], [m, w.y1], 'hidden']] }) });
+});
+const ROT = [['90° anticlockwise', (p, q) => [-q, p], '(x, y) → (−y, x)'], ['180°', (p, q) => [-p, -q], '(x, y) → (−x, −y)'], ['90° clockwise', (p, q) => [q, -p], '(x, y) → (y, −x)']];
+skill('10-rotate', 10, 'Transformations', 'Rotations and symmetry', [
+  KL('A rotation turns every point about a centre by the same angle. About the origin: 90° anticlockwise (x, y) → (−y, x); 180° (x, y) → (−x, −y); 90° clockwise (x, y) → (y, −x).', GH.gridFig({ x0: -5, x1: 5, y0: -2, y1: 5, pts: [[4, 1, 'P'], [-1, 4, 'P′', 'hl']], segs: [[[0, 0], [4, 1], 'aux'], [[0, 0], [-1, 4], 'aux']], rights: [[[0, 0], [4, 1], [-1, 4]]] })),
+  KL('A shape has rotational symmetry if a turn of less than 360° fits it onto itself. A regular n-gon fits after 360° ÷ n.', G.polygonFig({ pts: G.regular(6), ticks: Array(6).fill(1), notes: [{ at: [0, 0], s: '60°', t: 'hl' }] })),
+  KL('Translations, reflections and rotations keep size and shape: they are congruence transformations. Dilations change the size.'),
+], (r) => {
+  const v = r.int(0, 6), x = r.nonzero(-5, 5), y = r.nonzero(-5, 5);
+  if (v === 0) {
+    const [nm, f, rule] = r.pick(ROT), [x2, y2] = f(x, y);
+    return ptItem(x2 + 0, y2 + 0, [St(`A rotation of ${nm} about the origin follows ${rule}.`), St(`${P(x, y)} → ${P(x2 + 0, y2 + 0)}. The segment from the origin turns ${nm === '180°' ? 'half a turn' : 'a quarter turn'}.`, GH.gridFig({ ...W6, pts: [[x, y, 'D'], [x2, y2, 'D′', 'hl']], segs: [[[0, 0], [x, y], 'aux'], [[0, 0], [x2, y2], 'aux']], rights: nm === '180°' ? [] : [[[0, 0], [x, y], [x2, y2]]] })), `So the image is ${P(x2 + 0, y2 + 0)}.`], { q: `Point D${P(x, y)} is rotated ${nm} about the origin. What are the coordinates of the image? Write them as (x, y).`, visual: GH.gridFig({ ...W6, pts: [[x, y, 'D']] }) });
+  }
+  if (v === 1 || v === 2) {
+    const n = r.pick([3, 4, 5, 6, 8, 9, 10, 12]), pic = G.polygonFig({ pts: G.regular(n), ticks: Array(n).fill(1) });
+    if (v === 1) return num(360 / n, [St(`A regular polygon with ${n} sides fits onto itself after turning 1/${n} of a full turn.`, pic), `360 ÷ ${n} = ${360 / n}.`, `So the smallest angle is ${360 / n}°.`], { q: `What is the smallest angle of rotation (more than 0°) that carries this regular ${n}-sided polygon onto itself, in degrees?`, visual: pic, expr: `360/${n}` });
+    const R = G.regular(n), mid = (i) => [(R[i][0] + R[(i + 1) % n][0]) / 2, (R[i][1] + R[(i + 1) % n][1]) / 2];
+    const cuts = []; for (let i = 0; i < n; i++) { const p = n % 2 ? [R[i], mid((i + (n - 1) / 2) % n)] : i < n / 2 ? [R[i], R[i + n / 2]] : [mid(i - n / 2), mid(i)]; cuts.push(p); }
+    return num(n, [St(`Each fold line goes through a corner or the middle of a side, and through the centre. There is one for each side.`, G.polygonFig({ pts: R, ticks: Array(n).fill(1), cuts })), `It has ${n} sides.`, `So it has ${n} lines of symmetry.`], { q: `How many lines of symmetry does this regular ${n}-sided polygon have?`, visual: pic, expr: String(n) });
+  }
+  if (v === 3) {
     const M = [['(x, y) → (−x, y)', 'Reflection', 'Only the sign of x changes: a reflection in the y-axis.'], ['(x, y) → (x, −y)', 'Reflection', 'Only the sign of y changes: a reflection in the x-axis.'], ['(x, y) → (−y, x)', 'Rotation', 'This is a 90° anticlockwise rotation about the origin.'], ['(x, y) → (−x, −y)', 'Rotation', 'Both signs change: a 180° rotation about the origin.'], ['(x, y) → (x + 4, y − 1)', 'Translation', 'Every point slides 4 right and 1 down.'], ['(x, y) → (3x, 3y)', 'Dilation', 'Every coordinate is multiplied by 3: a dilation (not a congruence transformation).']];
     const [rule, right, why] = r.pick(M);
     return mc(r, right, ['Translation', 'Reflection', 'Rotation', 'Dilation'].filter((t) => t !== right), { q: `Which kind of transformation is ${rule}?`, steps: [why, `So it is a ${right.toLowerCase()}.`] });
   }
-  const a = r.int(-3, 3), b = r.int(-3, 3), x2 = 2 * a - x, y2 = 2 * b - y;
-  return ptItem(x2, y2, [`A 180° turn about ${P(a, b)} sends each point to the other side of the centre, the same distance away.`, `x: 2 × ${par(a)} − ${par(x)} = ${neg(x2)}; y: 2 × ${par(b)} − ${par(y)} = ${neg(y2)}.`, `So the image is ${P(x2, y2)}.`], { q: `Point E${P(x, y)} is rotated 180° about the point ${P(a, b)}. Where does it go? Write it as (x, y).` });
+  if (v === 4) {
+    const a = r.int(-3, 3), b = r.int(-3, 3), x2 = 2 * a - x, y2 = 2 * b - y, w = gw([[x, y], [x2, y2]]);
+    return ptItem(x2, y2, [St(`A 180° turn about ${P(a, b)} sends each point straight through the centre to the other side, the same distance away.`, GH.gridFig({ ...w, pts: [[x, y, 'E'], [a, b, 'C'], [x2, y2, 'E′', 'hl']], segs: [[[x, y], [x2, y2], 'aux']] })), `x: 2 × ${par(a)} − ${par(x)} = ${neg(x2)}; y: 2 × ${par(b)} − ${par(y)} = ${neg(y2)}.`, `So the image is ${P(x2, y2)}.`], { q: `Point E${P(x, y)} is rotated 180° about the point C${P(a, b)}. Where does it go? Write it as (x, y).`, visual: GH.gridFig({ ...w, pts: [[x, y, 'E'], [a, b, 'C']] }) });
+  }
+  if (v === 5) {
+    const k = r.int(0, 2), A = tri3(r, -5, 5), B = A.map(([p, q]) => ROT[k][1](p, q)), right = ROT[k][0];
+    return mc(r, right, ROT.filter((_, j) => j !== k).map((t) => t[0]).concat(['A reflection in the y-axis']), { q: 'The green triangle is the blue one rotated about the origin. Through which angle, and which way?', visual: imgPic(A, B), steps: [St(`Follow A: ${P(...A[0])} → ${P(...B[0])}. ${ROT[k][2]} fits every corner.`, imgPic(A, B, { segs: [[[0, 0], A[0], 'aux'], [[0, 0], B[0], 'aux']] })), `So it is a rotation of ${right}.`] });
+  }
+  const S = r.pick([['a rectangle (not a square)', [[0, 0], [6, 0], [6, 3.5], [0, 3.5]], 2], ['a square', [[0, 0], [4, 0], [4, 4], [0, 4]], 4], ['an equilateral triangle', G.regular(3), 3], ['a regular hexagon', G.regular(6), 6], ['a parallelogram (not a rectangle)', [[0, 0], [5, 0], [6.5, 3], [1.5, 3]], 2], ['a regular pentagon', G.regular(5), 5]]);
+  const pic = G.polygonFig({ pts: S[1] });
+  return num(S[2], [St(`Turn ${S[0]} about its centre and count how many times it fits onto itself in one full turn (360°).`, pic), `It fits every ${360 / S[2]}°: 360 ÷ ${360 / S[2]} = ${S[2]} times.`, `So its order of rotational symmetry is ${S[2]}.`], { q: `What is the order of rotational symmetry of ${S[0]} (how many times it fits onto itself in one full turn)?`, visual: pic, expr: String(S[2]) });
 });
-skill('10-dilate', 10, 'Transformations', 'Dilations', ['A dilation about the origin with scale factor k sends (x, y) to (kx, ky).', 'If k > 1 the figure gets bigger; if 0 < k < 1 it gets smaller. Lengths are multiplied by k, and lines stay parallel to their images.'], (r) => {
-  const v = r.int(0, 3);
+skill('10-dilate', 10, 'Transformations', 'Dilations', [
+  KL('A dilation about the origin with scale factor k sends (x, y) to (kx, ky). Each image point is on the line from the centre through the point.', GH.gridFig({ x0: -1, x1: 7, y0: -1, y1: 7, polys: [{ pts: [[2, 2], [6, 2], [2, 6]], t: 'hl2' }, { pts: [[1, 1], [3, 1], [1, 3]] }], segs: [[[0, 0], [6, 2], 'aux'], [[0, 0], [2, 6], 'aux']] })),
+  KL('If k > 1 the figure gets bigger; if 0 < k < 1 it gets smaller. Every length is multiplied by k, so k = image length ÷ original length.'),
+  KL('Angles stay the same and lines stay parallel to their images, so the image is similar to the original. Areas are multiplied by k².'),
+], (r) => {
+  const v = r.int(0, 7);
   if (v === 0) {
-    const k = r.pick([2, 3, 0.5, 1.5]), x = r.int(-4, 4) * 2, y = r.int(-4, 4) * 2, x2 = k * x, y2 = k * y;
-    return ptItem(x2, y2, [`Multiply both coordinates by ${k}.`, `${neg(x)} × ${k} = ${neg(x2)} and ${neg(y)} × ${k} = ${neg(y2)}.`, `So the image is ${P(x2, y2)}.`], { q: `Point F${P(x, y)} is dilated by a scale factor of ${k} about the origin. What are the coordinates of the image? Write them as (x, y).` });
+    const k = r.pick([2, 3, 0.5, 1.5]), x = r.int(-3, 3) * 2, y = r.nonzero(-3, 3) * 2, x2 = k * x, y2 = k * y, w = gw([[x, y], [x2, y2]]);
+    return ptItem(x2, y2, [`Multiply both coordinates by ${k}.`, St(`${neg(x)} × ${k} = ${neg(x2)} and ${neg(y)} × ${k} = ${neg(y2)}. F′ is on the line from the origin through F.`, GH.gridFig({ ...w, pts: [[x, y, 'F'], [x2, y2, 'F′', 'hl']], segs: [[[0, 0], k > 1 ? [x2, y2] : [x, y], 'aux']] })), `So the image is ${P(x2, y2)}.`], { q: `Point F${P(x, y)} is dilated by a scale factor of ${k} about the origin. What are the coordinates of the image? Write them as (x, y).`, visual: GH.gridFig({ ...w, pts: [[x, y, 'F']] }) });
   }
   if (v === 1) {
-    const [n, d] = r.pick([[2, 1], [3, 1], [1, 2], [3, 2], [1, 3], [5, 2], [4, 1]]), x = r.nonzero(-3, 3) * d, y = r.int(-3, 3) * d;
-    return num(frac(n, d), [`Compare the x-coordinates: ${neg(x * n / d)} ÷ ${par(x)}.`, `= ${F(n, d)}.`, `So the scale factor is ${F(n, d)}.`], { q: `A dilation about the origin maps ${P(x, y)} to ${P(x * n / d, y * n / d)}. What is the scale factor?`, expr: `${x * n / d}/(${x})` });
+    const [n, d] = r.pick([[2, 1], [3, 1], [1, 2], [3, 2], [1, 3], [5, 2], [4, 1]]), x = r.nonzero(-3, 3) * d, y = r.int(-3, 3) * d, X = (x * n) / d, Y = (y * n) / d, w = gw([[x, y], [X, Y]]);
+    return num(frac(n, d), [St(`Compare the x-coordinates: ${neg(X)} ÷ ${par(x)}.`, GH.gridFig({ ...w, pts: [[x, y, 'G'], [X, Y, 'G′', 'hl']], segs: [[[0, 0], n > d ? [X, Y] : [x, y], 'aux']] })), `= ${F(n, d)}.`, `So the scale factor is ${F(n, d)}.`], { q: `A dilation about the origin maps G${P(x, y)} to G′${P(X, Y)}. What is the scale factor?`, visual: GH.gridFig({ ...w, pts: [[x, y, 'G'], [X, Y, 'G′']] }), expr: `${X}/(${x})` });
   }
   if (v === 2) {
     const L = r.int(2, 15), k = r.pick([2, 3, 4, 0.5, 1.5, 2.5]), ans = dec(L * k);
-    return num(ans, ['A dilation multiplies every length by the scale factor.', `${L} × ${k} = ${ans}.`, `So the image is ${ans} cm long.`], { q: `A segment is ${L} cm long. It is dilated by a scale factor of ${k}. How long is the image?`, expr: `${L}*${k}` });
+    const pic = GH.scene({ P: { A: [0, 1], B: [3, 1], C: [0, 0], Dd: [3 * Math.min(k, 2.6), 0] }, W: 300, H: 120, pad: 26, segs: [['A', 'B'], ['C', 'Dd', 'hlline']], dots: ['A', 'B', 'C', 'Dd'], sides: [['A', 'B', `${L} cm`, 'ink', [1.5, 0]], ['C', 'Dd', '?', 'hl', [1.5, 1]]] });
+    return num(ans, [St('A dilation multiplies every length by the scale factor.', pic), `${L} × ${k} = ${ans}.`, `So the image is ${ans} cm long.`], { q: `A segment ${L} cm long is dilated by a scale factor of ${k}. How long is the image?`, visual: pic, expr: `${L}*${k}` });
   }
-  if (r.bool()) {
+  if (v === 3) {
     const k = r.pick([0.25, 0.5, 0.75, 1.5, 2, 3]), right = k > 1 ? 'An enlargement' : 'A reduction';
     return mc(r, right, [k > 1 ? 'A reduction' : 'An enlargement', 'A congruent copy'], { q: `A dilation has scale factor ${k}. Is the image an enlargement, a reduction, or a congruent copy?`, steps: [`The scale factor is ${k > 1 ? 'greater than 1' : 'between 0 and 1'}.`, `So the image is ${right.toLowerCase()}.`] });
   }
-  return mc(r, 'A line parallel to the original line', ['A line perpendicular to the original line', 'A line through the centre of dilation', 'A curve'], { q: 'A line that does not pass through the centre of dilation is dilated with scale factor 2. What is its image?', steps: ['A dilation keeps the direction of lines; only lines through the centre map onto themselves.', 'So the image is a line parallel to the original.'] });
+  if (v === 4) {
+    const pic = GH.gridFig({ x0: -1, x1: 7, y0: -1, y1: 7, segs: [[[0, 3], [3, 0], 'ink'], [[0, 6], [6, 0], 'hlline'], [[0, 0], [3, 3], 'aux']], pts: [[0, 0, 'O']] });
+    return mc(r, 'A line parallel to the original line', ['A line perpendicular to the original line', 'A line through the centre of dilation', 'A curve'], { q: 'A line that does not pass through the centre of dilation is dilated with scale factor 2. What is its image?', steps: [St('A dilation keeps the direction of lines; only lines through the centre map onto themselves. Here the blue line becomes the pink one.', pic), 'So the image is a line parallel to the original.'] });
+  }
+  if (v === 5) {
+    const k = r.pick([2, 3, 0.5]), sx = r.pick([1, -1]), sy = r.pick([1, -1]), base = (k === 0.5 ? r.pick([[[2, 2], [6, 2], [2, 4]], [[2, 2], [4, 2], [4, 6]]]) : r.pick([[[1, 1], [2, 1], [1, 2]], [[1, 1], [3, 1], [1, 2]], [[1, 1], [2, 1], [2, 2]]])).map(([p, q]) => [sx * p, sy * q]);
+    const img = base.map(([p, q]) => [p * k, q * k]), a = Math.abs(base[1][0] - base[0][0]);
+    return num(dec(k), [St(`Compare a matching pair of sides: AB is ${a} units long and A′B′ is ${dec(a * k)} units long.`, imgPic(base, img, { segs: [[base[0], base[1], 'hlline'], [img[0], img[1], 'hlline']] })), `k = ${dec(a * k)} ÷ ${a} = ${dec(k)}.`, `So the scale factor is ${dec(k)}.`], { q: 'The green triangle is a dilation of the blue triangle about the origin. What is the scale factor?', visual: imgPic(base, img), expr: `${a * k}/${a}` });
+  }
+  if (v === 6) {
+    const k = r.pick([2, 3]), c = [r.int(-3, 2), r.int(-3, 2)], d = [r.nonzero(-2, 2), r.nonzero(-2, 2)], p = [c[0] + d[0], c[1] + d[1]], q = [c[0] + k * d[0], c[1] + k * d[1]], w = gw([c, p, q]);
+    return ptItem(q[0], q[1], [St(`From the centre C to H: across ${neg(d[0])}, up ${neg(d[1])}.`, GH.gridFig({ ...w, pts: [[...c, 'C'], [...p, 'H']], arrows: [[c, p, 'aux']] })), St(`Multiply that step by ${k}: across ${neg(k * d[0])}, up ${neg(k * d[1])} from C gives ${P(q[0], q[1])}.`, GH.gridFig({ ...w, pts: [[...c, 'C'], [...p, 'H'], [...q, 'H′', 'hl']], arrows: [[c, q, 'aux']] })), `So H′ = ${P(q[0], q[1])}.`], { q: `Point H${P(...p)} is dilated by a scale factor of ${k} with centre C${P(...c)}. Where is its image? Write it as (x, y).`, visual: GH.gridFig({ ...w, pts: [[...c, 'C'], [...p, 'H']] }) });
+  }
+  const k = r.pick([2, 3, 0.5, 4]), area = r.bool(), val = area ? r.int(2, 20) * 4 : r.int(3, 20) * 2, ans = area ? val * k * k : val * k;
+  const base = [[1, 1], [4, 1], [1, 3]], img = base.map(([p, q]) => [p * Math.min(k, 2), q * Math.min(k, 2)]);
+  return num(dec(ans), [St(area ? `Every length is multiplied by ${k}, so the area is multiplied by k² = ${dec(k * k)}.` : `Every length is multiplied by ${k}, so the perimeter is too.`, imgPic(base, img, { primes: false })), `${val} × ${dec(area ? k * k : k)} = ${dec(ans)}.`, `So the image has ${area ? 'area' : 'perimeter'} ${dec(ans)} ${area ? 'cm²' : 'cm'}.`], { q: `A triangle with ${area ? `area ${val} cm²` : `perimeter ${val} cm`} is dilated by a scale factor of ${k}. What is the ${area ? 'area' : 'perimeter'} of the image?`, expr: `${val}*${k}**${area ? 2 : 1}` });
 });
 
 // ───────────── 33. Probability ─────────────

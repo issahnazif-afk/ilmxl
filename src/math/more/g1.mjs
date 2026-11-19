@@ -1,5 +1,6 @@
 // Grade 1 maths: more skills, one or more for each topic of the grade (see src/math/kit.mjs for the helpers).
 import { grade, mc, near, num, txt, OBJ, plural, NAMES, comma, par, gcd, lcm, simplify, frac, isPrime, dec, sgn, neg, St, columnAdd, columnSub, columnMul, longDivision, numberLine, fractionBars, eqnLines, areaModel, multiplesOf, PLACE } from '../kit.mjs';
+import * as GK from './geo-k3.mjs';
 const { skill, list } = grade();
 
 // ── small helpers ──
@@ -627,20 +628,7 @@ skill('1-metric', 1, 'Measurement', 'Metric units and temperature', ['Centimetre
 });
 
 // ───── Area ─────
-skill('1-area', 1, 'Area', 'Cover shapes with squares', ['Area is how many squares cover a shape, with no gaps and no overlaps.', 'Count the squares row by row.'], (r) => {
-  const v = r.int(0, 2);
-  if (v === 0) {
-    const rows = r.int(2, 4), cols = r.int(2, 5);
-    return num(rows * cols, [`There are ${rows} rows of ${cols} squares.`, `Count by rows: ${upto(cols, rows * cols, cols).join(', ')}. That is ${rows * cols} squares.`], { q: 'How many squares cover this rectangle?', visual: { type: 'grid', rows, cols }, expr: `${rows}*${cols}` });
-  }
-  if (v === 1) {
-    const w = r.int(3, 6), h = r.int(3, 6), w2 = r.int(1, w - 1), h1 = r.int(1, h - 1), A = w * h1 + w2 * (h - h1);
-    return num(A, [`The bottom part has ${h1} ${h1 === 1 ? 'row' : 'rows'} of ${w}: ${w * h1} squares.`, `The top part has ${h - h1} ${h - h1 === 1 ? 'row' : 'rows'} of ${w2}: ${w2 * (h - h1)} ${w2 * (h - h1) === 1 ? 'square' : 'squares'}.`, `${w * h1} + ${w2 * (h - h1)} = ${A} squares.`], { q: 'Each small square is 1 unit. How many squares are inside the shape?', visual: { type: 'poly', points: [[0, 0], [w, 0], [w, h1], [w2, h1], [w2, h], [0, h]], grid: true }, expr: `${w}*${h1}+${w2}*${h - h1}` });
-  }
-  const opts = [[1, 4], [2, 3], [2, 4], [3, 3], [2, 5], [3, 4], [2, 6], [4, 4], [3, 5]], [R, C] = r.pick(opts), A = R * C;
-  const wr = r.shuffle(opts.filter(([x, y]) => x * y !== A)).slice(0, 3).map(([x, y]) => `${x} ${x === 1 ? 'row' : 'rows'} of ${y} squares`);
-  return mc(r, `${R} ${R === 1 ? 'row' : 'rows'} of ${C} squares`, wr, { q: `Which rectangle has an area of ${A} squares?`, steps: ['Count the squares in each one: rows times squares in a row.', `${R} ${R === 1 ? 'row' : 'rows'} of ${C} is ${A} squares.`] });
-});
+skill('1-area', 1, 'Area', 'Cover shapes with squares', GK.LESSONS['1-area'], (r) => GK.areaCount(r, 1));
 
 // ───── Time ─────
 const tstr = (h, m) => `${h}:${String(m).padStart(2, '0')}`;
@@ -785,111 +773,15 @@ skill('1-growing', 1, 'Patterns', 'Growing patterns', ['In a growing pattern, ea
 });
 
 // ───── Two-dimensional shapes ─────
-const ngon = (k, rot = 90) => Array.from({ length: k }, (_, i) => { const a = ((rot + (i * 360) / k) * Math.PI) / 180; return [+(5 + 4.5 * Math.cos(a)).toFixed(2), +(5 + 4.5 * Math.sin(a)).toFixed(2)]; });
-const SH = [
-  { name: 'triangle', sides: 3, vis: { type: 'shape', name: 'triangle' } },
-  { name: 'square', sides: 4, vis: { type: 'shape', name: 'square' } },
-  { name: 'rectangle', sides: 4, vis: { type: 'shape', name: 'rectangle' } },
-  { name: 'rhombus', sides: 4, vis: { type: 'shape', name: 'diamond' } },
-  { name: 'circle', sides: 0, vis: { type: 'shape', name: 'circle' } },
-  { name: 'pentagon', sides: 5, vis: { type: 'poly', points: ngon(5) } },
-  { name: 'hexagon', sides: 6, vis: { type: 'poly', points: ngon(6) } },
-  { name: 'octagon', sides: 8, vis: { type: 'poly', points: ngon(8, 112.5) } },
-];
-skill('1-shape-sides', 1, 'Two-dimensional shapes', 'Name shapes, sides and vertices', ['A side is a straight line on the edge of a shape. A vertex is a corner where two sides meet.', 'A triangle has 3 sides, a square 4, a pentagon 5, a hexagon 6 and an octagon 8. A circle has none.'], (r) => {
-  const v = r.int(0, 3), s = r.pick(SH);
-  if (v === 0) {
-    const bad = s.name === 'square' ? ['rhombus', 'rectangle'] : [];
-    return mc(r, s.name, r.shuffle(SH.map((x) => x.name).filter((x) => x !== s.name && !bad.includes(x))).slice(0, 3), { q: 'What is the name of this shape?', visual: s.vis, steps: [s.sides ? `It has ${s.sides} straight sides.` : 'It is round, with no straight sides.', `It is ${art(s.name)}.`] });
-  }
-  if (v === 1 || v === 2) {
-    const what = v === 1 ? 'sides' : 'vertices';
-    return num(s.sides, [s.sides ? `Count the ${what} as you go around the shape.` : 'A circle is round: it has no straight sides and no corners.', `${cap(art(s.name))} has ${s.sides} ${what}.`], { q: `How many ${what} does this shape have?`, visual: s.vis });
-  }
-  const [a, b] = r.shuffle(SH.filter((x) => x.sides !== 4 || x.name === 'square')).slice(0, 2), more = r.bool();
-  if (a.sides === b.sides) return num(a.sides, [`Count the sides of ${art(a.name)}.`, `${cap(art(a.name))} has ${a.sides} sides.`], { q: `How many sides does ${art(a.name)} have?` });
-  const right = (more ? a.sides > b.sides : a.sides < b.sides) ? a.name : b.name;
-  return mc(r, right, [a.name, b.name], { q: `Which has ${more ? 'more' : 'fewer'} sides: ${art(a.name)} or ${art(b.name)}?`, steps: [`${cap(art(a.name))} has ${a.sides} sides. ${cap(art(b.name))} has ${b.sides} sides.`, `The ${right} has ${more ? 'more' : 'fewer'}.`] });
-});
-const ATTR = { square: 'It has 4 equal sides and 4 square corners.', rectangle: 'It has 4 square corners, with 2 long sides and 2 short sides.', triangle: 'It has 3 sides and 3 vertices.', rhombus: 'It has 4 equal sides but no square corners.', circle: 'It is round, with no sides and no vertices.', pentagon: 'It has 5 sides and 5 vertices.', hexagon: 'It has 6 sides and 6 vertices.' };
-const RIDDLES = [
-  ['I have 4 equal sides and 4 square corners. What am I?', 'square', ['rhombus', 'triangle', 'circle']],
-  ['I have 3 sides and 3 vertices. What am I?', 'triangle', ['square', 'circle', 'pentagon']],
-  ['I have no sides and no vertices. What am I?', 'circle', ['triangle', 'square', 'hexagon']],
-  ['I have 4 equal sides but no square corners. What am I?', 'rhombus', ['square', 'triangle', 'hexagon']],
-  ['I have 4 square corners, 2 long sides and 2 short sides. What am I?', 'rectangle', ['square', 'rhombus', 'triangle']],
-  ['I have 6 sides and 6 vertices. What am I?', 'hexagon', ['pentagon', 'octagon', 'square']],
-  ['I have 5 sides and 5 vertices. What am I?', 'pentagon', ['hexagon', 'square', 'triangle']],
-];
-skill('1-shape-attr', 1, 'Two-dimensional shapes', 'Shape attributes', ['Look at the sides: how many, and are they equal?', 'Look at the corners: are they square corners? A closed shape has no gaps.'], (r) => {
-  const v = r.int(0, 3);
-  if (v === 0) { const [q, a, w] = r.pick(RIDDLES); return mc(r, a, w, { q, steps: ['Check the number of sides, then the corners.', `The shape is ${art(a)}.`] }); }
-  if (v === 1) {
-    const name = r.pick(Object.keys(ATTR)), s = SH.find((x) => x.name === name);
-    return mc(r, ATTR[name], r.shuffle(Object.keys(ATTR).filter((x) => x !== name).map((x) => ATTR[x])).slice(0, 3), { q: 'Which is true about this shape?', visual: s.vis, steps: [`This shape is ${art(name)}.`, ATTR[name]] });
-  }
-  if (v === 2) {
-    const qs = [['A shape whose sides all join up with no gaps is called', 'a closed shape', 'an open shape'], ['A shape with a gap, where the sides do not all meet, is called', 'an open shape', 'a closed shape'], ['Is a triangle an open shape or a closed shape? A triangle is', 'a closed shape', 'an open shape']];
-    const [q, a, w] = r.pick(qs);
-    return mc(r, a, [w], { q: `${q} ___.`, steps: ['Closed shapes have no gaps. Open shapes have a gap.', `The answer is ${a}.`] });
-  }
-  const fours = r.shuffle(['square', 'rectangle', 'rhombus']), odd = r.pick(['triangle', 'circle', 'pentagon', 'hexagon']), shown = r.shuffle([...fours, odd]);
-  return mc(r, odd, fours, { q: `Which shape does not belong? ${shown.join(', ')}`, steps: ['A square, a rectangle and a rhombus all have 4 sides.', `${cap(art(odd))} does not have 4 sides, so it does not belong.`] });
-});
-const REAL2D = [['the face of a coin', 'circle'], ['a door', 'rectangle'], ['a yield sign', 'triangle'], ['a stop sign', 'octagon'], ['the face of a round clock', 'circle'], ['a sheet of paper', 'rectangle'], ['a square floor tile', 'square'], ['a honeycomb cell', 'hexagon'], ['a slice of pizza', 'triangle'], ['a chessboard', 'square']];
+skill('1-shape-sides', 1, 'Two-dimensional shapes', 'Name shapes, sides and vertices', GK.LESSONS['1-shape-sides'], GK.g1ShapeSides);
+skill('1-shape-attr', 1, 'Two-dimensional shapes', 'Shape attributes', GK.LESSONS['1-shape-attr'], GK.g1ShapeAttr);
 const SYM = ['A', 'H', 'M', 'O', 'T', 'U', 'V', 'W', 'X', 'Y'], NOSYM = ['F', 'G', 'J', 'L', 'N', 'P', 'Q', 'R', 'S', 'Z'];
-const MOVES = [['The shape moves to a new place without turning or flipping over.', 'slide'], ['The shape spins around a point, like the hands of a clock.', 'turn'], ['The shape flips over, like a pancake, and makes a mirror image.', 'flip']];
-const COMPOSE = [['Two squares put side by side make which shape?', 'rectangle', ['triangle', 'circle', 'hexagon']], ['Six triangles can fit together to make which shape?', 'hexagon', ['circle', 'square', 'oval']], ['Two half circles put together make which shape?', 'circle', ['triangle', 'square', 'rectangle']], ['Shapes that are the same shape and the same size are called ___.', 'congruent', ['open', 'round', 'tall']]];
-skill('1-shape-world', 1, 'Two-dimensional shapes', 'Shapes around us', ['Flat shapes are all around us: a door is a rectangle and a coin is a circle.', 'A line of symmetry folds a shape into two matching halves.', 'Shapes can slide, turn or flip.'], (r) => {
-  const v = r.int(0, 3);
-  if (v === 0) {
-    const [obj, s] = r.pick(REAL2D);
-    return mc(r, s, r.shuffle(['circle', 'square', 'rectangle', 'triangle', 'hexagon', 'octagon'].filter((x) => x !== s)).slice(0, 3), { q: `What shape is ${obj}?`, steps: ['Think of its outline.', `${cap(obj)} is shaped like ${art(s)}.`] });
-  }
-  if (v === 1) { const right = r.pick(SYM); return mc(r, right, r.shuffle(NOSYM).slice(0, 3), { q: 'Which letter has a line of symmetry? (It can fold into two matching halves.)', steps: [`Fold ${right} down the middle.`, `Both halves of ${right} match.`] }); }
-  if (v === 2) { const [d, a] = r.pick(MOVES); return mc(r, a, ['slide', 'turn', 'flip'], { q: `${d} Is this a slide, a turn or a flip?`, steps: ['A slide moves, a turn spins, a flip makes a mirror image.', `This is ${art(a)}.`] }); }
-  const [q, a, w] = r.pick(COMPOSE);
-  return mc(r, a, w, { q, steps: ['Picture the shapes put together.', `The answer is ${a}.`] });
-});
+skill('1-shape-world', 1, 'Two-dimensional shapes', 'Shapes around us', GK.LESSONS['1-shape-world'], GK.g1ShapeWorld);
 
 // ───── Three-dimensional shapes ─────
-const SOLIDS = ['cube', 'rectangular prism', 'cylinder', 'cone', 'sphere', 'square pyramid', 'triangular prism'];
-const REAL3D = [['a soup can', 'cylinder'], ['a basketball', 'sphere'], ['a number cube', 'cube'], ['a cereal box', 'rectangular prism'], ['an ice cream cone', 'cone'], ['a party hat', 'cone'], ['an orange', 'sphere'], ['an ice cube', 'cube'], ['a brick', 'rectangular prism'], ['a roll of paper towel', 'cylinder']];
-const DESC3D = [['I have 6 faces that are all squares.', 'cube'], ['I have 2 flat faces that are circles, and I can roll.', 'cylinder'], ['I am round all over and have no flat faces.', 'sphere'], ['I have 1 flat face that is a circle, and 1 point.', 'cone'], ['I have a square base and 4 triangle faces that meet at a point.', 'square pyramid'], ['I have 6 faces that are rectangles.', 'rectangular prism'], ['I have 2 triangle faces and 3 rectangle faces.', 'triangular prism']];
-skill('1-solid-name', 1, 'Three-dimensional shapes', 'Name solid shapes', ['Solid (three-dimensional) shapes are not flat: cube, rectangular prism, cylinder, cone, sphere and pyramid.', 'Flat (two-dimensional) shapes are like drawings: circle, square, triangle.'], (r) => {
-  const v = r.int(0, 2);
-  if (v === 0) { const [o, s] = r.pick(REAL3D); return mc(r, s, r.shuffle(SOLIDS.filter((x) => x !== s)).slice(0, 3), { q: `${cap(o)} is shaped like which solid?`, steps: ['Think of the whole object, not just one face.', `${cap(o)} is shaped like ${art(s)}.`] }); }
-  if (v === 1) { const [d, s] = r.pick(DESC3D); return mc(r, s, r.shuffle(SOLIDS.filter((x) => x !== s)).slice(0, 3), { q: `${d} What am I?`, steps: ['Match the faces and points to a solid.', `It is ${art(s)}.`] }); }
-  const flat = r.bool(), right = r.pick(flat ? ['circle', 'square', 'triangle', 'rectangle'] : ['cube', 'sphere', 'cone', 'cylinder']);
-  return mc(r, right, r.shuffle(flat ? ['cube', 'sphere', 'cone', 'cylinder'] : ['circle', 'square', 'triangle', 'rectangle']).slice(0, 3), { q: `Which one is ${art(flat ? 'flat (two-dimensional)' : 'solid (three-dimensional)')} shape?`, steps: ['Flat shapes: circle, square, triangle, rectangle. Solids: cube, sphere, cone, cylinder.', `${cap(art(right))} is ${flat ? 'flat' : 'solid'}.`] });
-});
-const FEV = { cube: [6, 12, 8, '6 square faces', '4 on top, 4 on the bottom and 4 going up', '4 on top and 4 on the bottom'], 'rectangular prism': [6, 12, 8, 'top, bottom and 4 sides', '4 on top, 4 on the bottom and 4 going up', '4 on top and 4 on the bottom'], 'square pyramid': [5, 8, 5, '1 square base and 4 triangles', '4 around the base and 4 going up to the top', '4 around the base and 1 at the top'], 'triangular prism': [5, 9, 6, '2 triangles and 3 rectangles', '3 on each triangle end and 3 joining them', '3 on each triangle end'] };
-skill('1-solid-count', 1, 'Three-dimensional shapes', 'Faces, edges and vertices', ['A face is a flat surface. An edge is where two faces meet. A vertex is a corner.', 'A cube has 6 faces, 12 edges and 8 vertices.'], (r) => {
-  const v = r.int(0, 2);
-  if (v === 0) {
-    const s = r.pick(Object.keys(FEV)), w = r.int(0, 2), what = ['faces', 'edges', 'vertices'][w], n = FEV[s][w];
-    return num(n, [`Count them: ${FEV[s][3 + w]}.`, `${cap(art(s))} has ${n} ${what}.`], { q: `How many ${what} does ${art(s)} have?` });
-  }
-  if (v === 1) {
-    const [s, n] = r.pick([['cylinder', 2], ['cone', 1], ['sphere', 0]]);
-    return num(n, [{ cylinder: 'A cylinder has a flat circle on the top and on the bottom.', cone: 'A cone has one flat circle at the bottom.', sphere: 'A sphere is curved all over.' }[s], `${cap(art(s))} has ${n} flat ${n === 1 ? 'face' : 'faces'}.`], { q: `How many flat faces does ${art(s)} have?` });
-  }
-  const [a, b] = r.shuffle(['cube', 'square pyramid', 'triangular prism']).slice(0, 2), w = r.pick([0, 2]), what = ['faces', 'edges', 'vertices'][w];
-  if (FEV[a][w] === FEV[b][w]) return num(FEV[a][w], [`Count them: ${FEV[a][3 + w]}.`, `${cap(art(a))} has ${FEV[a][w]} ${what}.`], { q: `How many ${what} does ${art(a)} have?` });
-  const right = FEV[a][w] > FEV[b][w] ? a : b;
-  return mc(r, right, [a, b], { q: `Which has more ${what}: ${art(a)} or ${art(b)}?`, steps: [`${cap(art(a))} has ${FEV[a][w]}. ${cap(art(b))} has ${FEV[b][w]}.`, `The ${right} has more ${what}.`] });
-});
-const TRACE = [['the bottom of a cylinder', 'circle'], ['a face of a cube', 'square'], ['the bottom of a cone', 'circle'], ['the base of a square pyramid', 'square'], ['a side face of a square pyramid', 'triangle'], ['an end of a triangular prism', 'triangle'], ['the front of a cereal box', 'rectangle']];
-skill('1-solid-attr', 1, 'Three-dimensional shapes', 'What solids can do', ['Trace a flat face of a solid to see a flat shape.', 'Curved solids can roll. Solids with flat faces can stack and slide.'], (r) => {
-  const v = r.int(0, 2);
-  if (v === 0) { const [x, s] = r.pick(TRACE); return mc(r, s, ['circle', 'square', 'triangle', 'rectangle'].filter((y) => y !== s), { q: `If you trace around ${x}, what shape do you draw?`, steps: ['The face you trace is flat.', `Tracing ${x} makes ${art(s)}.`] }); }
-  if (v === 1) {
-    const [q, a, w] = r.pick([['Which solid can roll but cannot be stacked?', 'sphere', ['cube', 'rectangular prism']], ['Which solid can roll and can also be stacked?', 'cylinder', ['sphere', 'cube']], ['Which solid can be stacked and slide, but cannot roll?', 'cube', ['sphere', 'cylinder']]]);
-    return mc(r, a, w, { q, steps: ['Curved surfaces roll. Flat faces stack and slide.', `The answer is ${art(a)}.`] });
-  }
-  const [q, a, w] = r.pick([['Two cubes stuck together side by side make which solid?', 'rectangular prism', ['sphere', 'cone', 'cylinder']], ['Three cans stacked on top of each other make which solid?', 'cylinder', ['cube', 'cone', 'sphere']], ['Eight small cubes put together in 2 layers of 4 make which solid?', 'cube', ['cone', 'cylinder', 'sphere']]]);
-  return mc(r, a, w, { q, steps: ['Picture the solids put together.', `They make ${art(a)}.`] });
-});
+skill('1-solid-name', 1, 'Three-dimensional shapes', 'Name solid shapes', GK.LESSONS['1-solid-name'], (r) => GK.solidName(r));
+skill('1-solid-count', 1, 'Three-dimensional shapes', 'Faces, edges and vertices', GK.LESSONS['1-solid-count'], (r) => GK.solidCount(r));
+skill('1-solid-attr', 1, 'Three-dimensional shapes', 'What solids can do', GK.LESSONS['1-solid-attr'], GK.g1SolidAttr);
 
 // ───── Spatial sense ─────
 const STUFF = ['cat', 'ball', 'book', 'cup', 'hat', 'drum', 'kite', 'sock', 'bell'];

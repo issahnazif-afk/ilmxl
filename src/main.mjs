@@ -29,8 +29,9 @@ const views = {
   play: () => import('./views/play.mjs'), trace: () => import('./views/trace.mjs'),
   parents: () => import('./views/parents.mjs'),
   about: () => import('./views/about.mjs'),
+  exam: () => import('./views/exam.mjs'), worksheet: () => import('./views/worksheet.mjs'),
 };
-const PUBLIC = new Set(['welcome', 'signin', 'signup', 'about', 'subject', 'fluency']);   // anyone can browse the skills and try a sprint
+const PUBLIC = new Set(['welcome', 'signin', 'signup', 'about', 'subject', 'fluency', 'worksheet']);   // anyone can browse the skills and try a sprint
 const NO_LEARNER = new Set(['who', 'new', 'parents']);
 const BARE = new Set(['signin', 'signup']);          // full-screen pages with their own header
 

@@ -1,5 +1,6 @@
 // Grade 3 maths: more skills, one or more for each topic of the grade (see src/math/kit.mjs for the helpers).
 import { grade, mc, near, num, txt, OBJ, plural, NAMES, comma, par, gcd, lcm, simplify, frac, isPrime, dec, sgn, neg, St, columnAdd, columnSub, columnMul, longDivision, numberLine, fractionBars, eqnLines, areaModel, multiplesOf, PLACE } from '../kit.mjs';
+import * as GK from './geo-k3.mjs';
 const { skill, list } = grade();
 
 // ── small helpers for this grade ──
@@ -1007,124 +1008,18 @@ skill('3-lines', 3, 'Lines and angles', 'Lines, rays, segments and angles', ['A 
 });
 
 // ───────────── Two-dimensional shapes ─────────────
-const regular = (k) => Array.from({ length: k }, (_, i) => { const a = Math.PI / 2 + Math.PI / k + (2 * Math.PI * i) / k; return [+(5 + 4.5 * Math.cos(a)).toFixed(2), +(5 + 4.5 * Math.sin(a)).toFixed(2)]; });
-const PNAME = { 3: 'triangle', 4: 'quadrilateral', 5: 'pentagon', 6: 'hexagon', 8: 'octagon' };
-skill('3-polygons', 3, 'Two-dimensional shapes', 'Polygons, sides and vertices', ['A polygon is a closed shape with straight sides.', 'Triangle 3 sides, quadrilateral 4, pentagon 5, hexagon 6, octagon 8.', 'A vertex is a corner where two sides meet.'], (r) => {
-  const v = r.int(0, 3), k = r.pick([3, 4, 5, 6, 8]), vis = { type: 'poly', points: regular(k) };
-  if (v === 0) { const part = r.pick(['sides', 'vertices']); return num(k, [`Count the ${part} one by one around the shape.`, `There are ${k} ${part}.`, `So the answer is ${k}.`], { q: `How many ${part} does this shape have?`, visual: vis, expr: String(k) }); }
-  if (v === 1) return mc(r, PNAME[k], r.shuffle(Object.values(PNAME).filter((x) => x !== PNAME[k])).slice(0, 3), { q: 'What is the name of this polygon?', visual: vis, steps: [`It has ${k} sides.`, `A polygon with ${k} sides is ${an(PNAME[k])}.`] });
-  if (v === 2) {
-    const curved = r.bool(), s = r.pick(['circle', 'oval', 'heart']);
-    return mc(r, curved ? 'No' : 'Yes', [curved ? 'Yes' : 'No'], { q: 'Is this shape a polygon?', visual: curved ? { type: 'shape', name: s } : vis, steps: ['A polygon is closed and has only straight sides.', curved ? 'This shape has a curved side, so it is not a polygon.' : `This shape is closed with ${k} straight sides, so it is a polygon.`] });
-  }
-  const [a, b] = r.shuffle([3, 4, 5, 6, 8]).slice(0, 2), big = Math.max(a, b), small = Math.min(a, b);
-  return num(big - small, [`${cap(an(PNAME[big]))} has ${big} sides. ${cap(an(PNAME[small]))} has ${small} sides.`, `${big} − ${small} = ${big - small}.`, `So the answer is ${big - small}.`], { q: `How many more sides does ${an(PNAME[big])} have than ${an(PNAME[small])}?`, expr: `${big}-${small}` });
-});
-const QUADS = {
-  square: { pts: [[2, 2], [7, 2], [7, 7], [2, 7]], wrong: ['trapezoid', 'kite', 'triangle'] },
-  rectangle: { pts: [[1, 2], [9, 2], [9, 6], [1, 6]], wrong: ['rhombus', 'trapezoid', 'kite'] },
-  rhombus: { pts: [[5, 1], [8, 5], [5, 9], [2, 5]], wrong: ['rectangle', 'trapezoid', 'square'] },
-  parallelogram: { pts: [[1, 2], [7, 2], [9, 7], [3, 7]], wrong: ['rectangle', 'square', 'kite'] },
-  trapezoid: { pts: [[1, 2], [9, 2], [7, 7], [3, 7]], wrong: ['rectangle', 'square', 'rhombus'] },
-};
-skill('3-triquad', 3, 'Two-dimensional shapes', 'Quadrilaterals and triangles', ['Square: 4 equal sides and 4 right angles. Rectangle: 4 right angles.', 'Rhombus: 4 equal sides. Parallelogram: 2 pairs of parallel sides. Trapezoid: 1 pair of parallel sides.', 'Triangles: equilateral (3 equal sides), isosceles (2 equal), scalene (none equal).'], (r) => {
-  const v = r.int(0, 3);
-  if (v === 0) {
-    const name = r.pick(Object.keys(QUADS)), Q = QUADS[name];
-    const why = { square: '4 equal sides and 4 right angles', rectangle: '4 right angles, but the sides are not all equal', rhombus: '4 equal sides, but no right angles', parallelogram: '2 pairs of parallel sides, but no right angles and the sides are not all equal', trapezoid: 'exactly 1 pair of parallel sides' }[name];
-    return mc(r, name, Q.wrong, { q: 'What is the best name for this quadrilateral?', visual: { type: 'poly', points: Q.pts, grid: true }, steps: [`It has ${why}.`, `So the best name is ${name}.`] });
-  }
-  if (v === 1) {
-    const kind = r.pick(['equilateral', 'isosceles', 'scalene']), s = r.int(3, 9);
-    const pts = kind === 'equilateral' ? [[1, 1], [9, 1], [5, 7.93]] : kind === 'isosceles' ? [[2, 1], [8, 1], [5, 8]] : [[1, 1], [9, 1], [3, 6]];
-    const labels = kind === 'isosceles' ? [`${s} cm`, `${s + 2} cm`, `${s + 2} cm`] : kind === 'scalene' ? [`${s + 2} cm`, `${s + 1} cm`, `${s} cm`] : [`${s} cm`, `${s} cm`, `${s} cm`];
-    return mc(r, kind, ['equilateral', 'isosceles', 'scalene'].filter((x) => x !== kind), { q: 'What kind of triangle is this, by its sides?', visual: { type: 'poly', points: pts, labels }, steps: [`The sides are ${labels.join(', ')}.`, kind === 'equilateral' ? 'All three sides are equal: equilateral.' : kind === 'isosceles' ? 'Exactly two sides are equal: isosceles.' : 'No sides are equal: scalene.'] });
-  }
-  if (v === 2) {
-    const kind = r.pick(['acute', 'right', 'obtuse']);
-    let a, b; if (kind === 'right') { a = 90; b = r.int(20, 70); } else if (kind === 'obtuse') { a = r.int(100, 140); b = r.int(15, 165 - a); } else { a = r.int(50, 80); b = r.int(Math.max(50, 101 - a), 80); }
-    const angles = r.shuffle([a, b, 180 - a - b]);
-    return mc(r, kind, ['acute', 'right', 'obtuse'].filter((x) => x !== kind), { q: `A triangle has angles of ${angles.join('°, ')}°. What kind of triangle is it?`, steps: ['Right: one angle is 90°. Obtuse: one angle is more than 90°. Acute: all angles are less than 90°.', kind === 'right' ? 'One angle is 90°, so it is a right triangle.' : kind === 'obtuse' ? `${Math.max(...angles)}° is more than 90°, so it is obtuse.` : 'Every angle is less than 90°, so it is acute.'] });
-  }
-  const name = r.pick(['square', 'rectangle', 'rhombus', 'parallelogram']), ask = (r.bool() || name === 'rhombus' || name === 'parallelogram') ? 'parallel' : 'right';
-  const ans = ask === 'parallel' ? 2 : 4;
-  return num(ans, [ask === 'parallel' ? `Opposite sides of a ${name} are parallel.` : `Every corner of a ${name} is a square corner.`, ask === 'parallel' ? `That makes ${ans} pairs of parallel sides.` : `It has ${ans} right angles.`, `So the answer is ${ans}.`], { q: ask === 'parallel' ? `How many pairs of parallel sides does a ${name} have?` : `How many right angles does a ${name} have?`, visual: { type: 'poly', points: QUADS[name].pts, grid: true }, expr: String(ans) });
-});
-skill('3-transform', 3, 'Two-dimensional shapes', 'Slides, flips, turns, symmetry and congruence', ['A slide moves a shape without turning it. A flip makes a mirror image. A turn spins it around a point.', 'A line of symmetry folds a shape into two matching halves.', 'Congruent shapes have the same size and the same shape.'], (r) => {
-  const v = r.int(0, 3);
-  if (v === 0) {
-    const [d, ans] = r.pick([['moves 3 squares to the right without turning or flipping', 'slide (translation)'], ['is flipped over a line so it becomes a mirror image', 'flip (reflection)'], ['spins a quarter turn around one corner', 'turn (rotation)'], ['moves 2 squares down and stays facing the same way', 'slide (translation)']]);
-    return mc(r, ans, ['slide (translation)', 'flip (reflection)', 'turn (rotation)'].filter((x) => x !== ans), { q: `A shape ${d}. What kind of move is it?`, steps: ['Slide: same way, new place. Flip: mirror image. Turn: spun around a point.', `So it is a ${ans}.`] });
-  }
-  if (v === 1) {
-    const [name, pts, n] = r.pick([['square', QUADS.square.pts, 4], ['rectangle', QUADS.rectangle.pts, 2], ['equilateral triangle', [[1, 1], [9, 1], [5, 7.93]], 3], ['regular hexagon', regular(6), 6], ['rhombus', QUADS.rhombus.pts, 2], ['isosceles triangle', [[2, 1], [8, 1], [5, 8]], 1]]);
-    return num(n, [`Look for every fold line that makes two matching halves of the ${name}.`, `A ${name} has ${n} line${n === 1 ? '' : 's'} of symmetry.`, `So the answer is ${n}.`], { q: `How many lines of symmetry does this ${name} have?`, visual: { type: 'poly', points: pts }, expr: String(n) });
-  }
-  if (v === 2) {
-    const yes = r.pick(['A', 'H', 'M', 'O', 'T', 'U', 'V', 'W', 'X', 'Y']), no = r.shuffle(['F', 'G', 'J', 'L', 'N', 'P', 'Q', 'R', 'S', 'Z']).slice(0, 3);
-    return mc(r, yes, no, { q: 'Which letter has a line of symmetry?', steps: ['Imagine folding each letter down the middle.', `${yes} folds into two matching halves, so it has a line of symmetry.`] });
-  }
-  const s = r.int(3, 8), shape = r.pick(['square', 'equilateral triangle']);
-  return mc(r, `${an(shape)} with ${s} cm sides`, [`${an(shape)} with ${s + 2} cm sides`, `${an(shape)} with ${s - 1} cm sides`, `a rectangle ${s} cm by ${s + 3} cm`], { q: `Which shape is congruent to ${an(shape)} with ${s} cm sides?`, steps: ['Congruent shapes are exactly the same shape and size.', `Only ${an(shape)} with ${s} cm sides matches.`] });
-});
+skill('3-polygons', 3, 'Two-dimensional shapes', 'Polygons, sides and vertices', GK.LESSONS['3-polygons'], GK.g3Polygons);
+skill('3-triquad', 3, 'Two-dimensional shapes', 'Quadrilaterals and triangles', GK.LESSONS['3-triquad'], GK.g3TriQuad);
+skill('3-transform', 3, 'Two-dimensional shapes', 'Slides, flips, turns, symmetry and congruence', GK.LESSONS['3-transform'], GK.g3Transform);
 
 // ───────────── Three-dimensional shapes ─────────────
-const SOLID = { cube: [6, 12, 8], 'rectangular prism': [6, 12, 8], 'triangular prism': [5, 9, 6], 'square-based pyramid': [5, 8, 5], 'triangular pyramid': [4, 6, 4] };
-const SOLID_D = [['6 square faces that are all the same size', 'cube'], ['6 rectangle faces, not all squares', 'rectangular prism'], ['2 triangle faces and 3 rectangle faces', 'triangular prism'], ['a square base and 4 triangle faces that meet at a point', 'square-based pyramid'], ['2 flat circle faces and one curved surface', 'cylinder'], ['1 flat circle face, a curved surface and a point at the top', 'cone'], ['only a curved surface, like a ball', 'sphere']];
-function solidGen(r, v) {
-  const all = ['cube', 'rectangular prism', 'triangular prism', 'square-based pyramid', 'cylinder', 'cone', 'sphere'];
-  if (v === 0) { const [d, ans] = r.pick(SOLID_D); return mc(r, ans, r.shuffle(all.filter((x) => x !== ans)).slice(0, 3), { q: `Which 3-D shape has ${d}?`, steps: [`Picture a shape with ${d}.`, `That is a ${ans}.`] }); }
-  if (v === 1) {
-    const name = r.pick(Object.keys(SOLID)), i = r.int(0, 2), part = ['faces', 'edges', 'vertices'][i], n = SOLID[name][i];
-    return num(n, [`A ${name} has ${SOLID[name][0]} faces, ${SOLID[name][1]} edges and ${SOLID[name][2]} vertices.`, `We want the ${part}: ${n}.`, `So the answer is ${n}.`], { q: `How many ${part} does a ${name} have?`, expr: String(n) });
-  }
-  if (v === 2) {
-    const [obj, ans] = r.pick([['a soup can', 'cylinder'], ['a basketball', 'sphere'], ['a number cube from a board game', 'cube'], ['an ice cream cone', 'cone'], ['a cereal box', 'rectangular prism'], ['a party hat', 'cone'], ['a roll of paper towels', 'cylinder'], ['a globe', 'sphere']]);
-    return mc(r, ans, r.shuffle(all.filter((x) => x !== ans)).slice(0, 3), { q: `What 3-D shape is ${obj} most like?`, steps: [`Think about the faces and curves of ${obj}.`, `It is shaped like a ${ans}.`] });
-  }
-  const [net, ans] = r.pick([['6 squares', 'cube'], ['2 circles and a rectangle', 'cylinder'], ['1 square and 4 triangles', 'square-based pyramid'], ['2 triangles and 3 rectangles', 'triangular prism'], ['4 triangles', 'triangular pyramid']]);
-  return mc(r, ans, r.shuffle(['cube', 'cylinder', 'square-based pyramid', 'triangular prism', 'triangular pyramid'].filter((x) => x !== ans)).slice(0, 3), { q: `A net is made of ${net}. What shape does it fold into?`, steps: ['Each flat piece of the net becomes one face.', `${cap(net)} fold into a ${ans}.`] });
-}
-skill('3-solids', 3, 'Three-dimensional shapes', 'Name 3-D shapes', ['Prisms have two matching ends; pyramids have faces that meet at a point.', 'Cylinders, cones and spheres have curved surfaces.'], (r) => solidGen(r, r.pick([0, 2])));
-skill('3-solidparts', 3, 'Three-dimensional shapes', 'Faces, edges, vertices and nets', ['A face is a flat surface, an edge is where two faces meet, and a vertex is a corner.', 'A net is a flat pattern that folds into a 3-D shape.'], (r) => solidGen(r, r.pick([1, 3])));
+skill('3-solids', 3, 'Three-dimensional shapes', 'Name 3-D shapes', GK.LESSONS['3-solids'], GK.g3Solids);
+skill('3-solidparts', 3, 'Three-dimensional shapes', 'Faces, edges, vertices and nets', GK.LESSONS['3-solidparts'], GK.g3SolidParts);
 
 // ───────────── Perimeter, area and volume ─────────────
-const lShape = (W, H, w2, h1) => [[0.5, 0.5], [W + 0.5, 0.5], [W + 0.5, h1 + 0.5], [w2 + 0.5, h1 + 0.5], [w2 + 0.5, H + 0.5], [0.5, H + 0.5]];
-skill('3-perim2', 3, 'Perimeter, area and volume', 'Perimeter of polygons and missing sides', ['Perimeter is the distance all the way around: add every side.', 'If you know the perimeter, subtract the known sides to find a missing one.'], (r) => {
-  const v = r.int(0, 3);
-  if (v === 0) {
-    const k = r.pick([3, 4, 5, 6]), sides = Array.from({ length: k }, () => r.int(2, 12)), P = sides.reduce((a, b) => a + b, 0);
-    return num(P, [`Add all ${k} sides: ${sides.join(' + ')}.`, `${sides.join(' + ')} = ${P}.`, `So the perimeter is ${P} cm.`], { q: 'What is the perimeter of this shape, in centimetres? (not drawn to scale)', visual: { type: 'poly', points: regular(k), labels: sides.map((s) => `${s} cm`) }, expr: sides.join('+') });
-  }
-  if (v === 1) {
-    const l = r.int(3, 15), w = r.int(2, 12), P = 2 * (l + w);
-    if (r.bool()) return num(w, [`Two lengths: ${l} + ${l} = ${2 * l}. That leaves ${P} − ${2 * l} = ${2 * w} for the two widths.`, `${2 * w} ÷ 2 = ${w}.`, `So the width is ${w} m.`], { q: `A rectangle has a perimeter of ${P} m. Its length is ${l} m. What is its width, in metres?`, expr: `(${P}-2*${l})/2` });
-    const s = r.int(2, 15);
-    return num(s, ['A square has 4 equal sides.', `${4 * s} ÷ 4 = ${s}.`, `So each side is ${s} cm.`], { q: `A square has a perimeter of ${4 * s} cm. How long is each side, in centimetres?`, expr: `${4 * s}/4` });
-  }
-  if (v === 2) {
-    const W = r.int(4, 9), H = r.int(4, 9), w2 = r.int(1, W - 2), h1 = r.int(1, H - 2), sides = [W, h1, W - w2, H - h1, w2, H], P = 2 * (W + H);
-    return num(P, [`Add every side: ${sides.join(' + ')}.`, `${sides.join(' + ')} = ${P}.`, `So the perimeter is ${P} m.`], { q: 'What is the perimeter of this shape, in metres?', visual: { type: 'poly', points: lShape(W, H, w2, h1), labels: sides.map((x) => `${x} m`) }, expr: sides.join('+') });
-  }
-  const l = r.int(4, 20), w = r.int(2, 15), w0 = r.pick(NAMES);
-  return num(2 * (l + w), [`The fence goes all the way around: ${l} + ${w} + ${l} + ${w}.`, `${l} + ${w} + ${l} + ${w} = ${2 * (l + w)}.`, `So ${w0} needs ${2 * (l + w)} m of fence.`], { q: `${w0} puts a fence around a garden ${l} m long and ${w} m wide. How many metres of fence are needed?`, expr: `2*(${l}+${w})` });
-});
-skill('3-area2', 3, 'Perimeter, area and volume', 'Area of rectangles and other shapes', ['Area counts the unit squares inside a shape.', 'For a rectangle, multiply length × width.', 'Split other shapes into rectangles and add their areas.'], (r) => {
-  const v = r.int(0, 3);
-  if (v === 0) { const rows = r.int(2, 6), cols = r.int(2, 8); return num(rows * cols, [`There are ${rows} rows of ${cols} squares.`, `${rows} × ${cols} = ${rows * cols}.`, `So the area is ${rows * cols} square units.`], { q: 'What is the area of this rectangle, in square units?', visual: { type: 'grid', rows, cols }, expr: `${rows}*${cols}` }); }
-  if (v === 1) { const l = r.int(2, 10), w = r.int(2, 10); return num(w, [`Area = length × width, so ${l} × ? = ${l * w}.`, `${l * w} ÷ ${l} = ${w}.`, `So the missing side is ${w} cm.`], { q: `A rectangle has an area of ${l * w} square centimetres. One side is ${l} cm. How long is the other side, in centimetres?`, expr: `${l * w}/${l}` }); }
-  if (v === 2) {
-    const W = r.int(4, 9), H = r.int(4, 9), w2 = r.int(1, W - 2), h1 = r.int(1, H - 2), A = W * h1 + w2 * (H - h1);
-    return num(A, [`Split the shape into two rectangles: a bottom one ${W} × ${h1} and a top one ${w2} × ${H - h1}.`, `${W} × ${h1} = ${W * h1} and ${w2} × ${H - h1} = ${w2 * (H - h1)}.`, `Add: ${W * h1} + ${w2 * (H - h1)} = ${A}.`, `So the area is ${A} square units.`], { q: 'Count or split: what is the area of this shape, in square units?', visual: { type: 'poly', points: lShape(W, H, w2, h1), grid: true }, expr: `${W}*${h1}+${w2}*(${H}-${h1})` });
-  }
-  const l = r.int(3, 9), w = r.int(2, 8), A = l * w;
-  return mc(r, `${l} cm by ${w} cm`, [`${l + 1} cm by ${w} cm`, `${l} cm by ${w + 2} cm`, `${l + w} cm by 2 cm`].filter((x) => { const [p, q] = x.split(' cm by ').map(parseFloat); return p * q !== A; }), { q: `Which rectangle has an area of ${A} square centimetres?`, steps: ['Multiply length × width for each one.', `${l} × ${w} = ${A}, so ${l} cm by ${w} cm is the one.`] });
-});
-skill('3-volume', 3, 'Perimeter, area and volume', 'Volume with cubes', ['Volume is how many unit cubes fill a box.', 'Find the cubes in one layer, then multiply by the number of layers.'], (r) => {
-  const l = r.int(2, 6), w = r.int(2, 5), h = r.int(1, 4);
-  if (r.bool()) return num(l * w * h, [St(`One layer has ${l} × ${w} = ${l * w} cubes.`, { type: 'grid', rows: w, cols: l }), `There ${h === 1 ? 'is 1 layer' : `are ${h} layers`}: ${l * w} × ${h} = ${l * w * h}.`, `So the volume is ${l * w * h} cubic units.`], { q: `A box is ${l} cubes long, ${w} cubes wide and ${h} cube${h === 1 ? '' : 's'} high. How many unit cubes fill it?`, expr: `${l}*${w}*${h}` });
-  return num(l * w * h, [`Each layer has ${l * w} cubes.`, `${l * w} × ${h} = ${l * w * h}.`, `So there are ${l * w * h} cubes.`], { q: `${r.pick(NAMES)} builds a stack of ${h} layer${h === 1 ? '' : 's'}. Each layer is the grid below, one cube on each square. What is the volume, in cubes?`, visual: { type: 'grid', rows: w, cols: l }, expr: `${l * w}*${h}` });
-});
+skill('3-perim2', 3, 'Perimeter, area and volume', 'Perimeter of polygons and missing sides', GK.LESSONS['3-perim2'], GK.g3Perim);
+skill('3-area2', 3, 'Perimeter, area and volume', 'Area of rectangles and other shapes', GK.LESSONS['3-area2'], GK.g3Area);
+skill('3-volume', 3, 'Perimeter, area and volume', 'Volume with cubes', GK.LESSONS['3-volume'], GK.g3Volume);
 
 // ───────────── Understand fractions ─────────────
 const FNAME = { 2: ['half', 'halves'], 3: ['third', 'thirds'], 4: ['fourth', 'fourths'], 5: ['fifth', 'fifths'], 6: ['sixth', 'sixths'], 8: ['eighth', 'eighths'], 10: ['tenth', 'tenths'] };

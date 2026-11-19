@@ -1,5 +1,7 @@
 // Grade 9 maths: more skills, one or more for each topic of the grade (see src/math/kit.mjs for the helpers).
 import { grade, mc, near, num, txt, OBJ, plural, NAMES, comma, par, gcd, lcm, simplify, frac, isPrime, dec, sgn, neg, St, columnAdd, columnSub, columnMul, longDivision, numberLine, fractionBars, eqnLines, areaModel, multiplesOf, PLACE } from '../kit.mjs';
+import * as G from '../figs.mjs';
+import * as H9 from './geo-hs.mjs';
 const { skill, list } = grade();
 
 // ── small helpers for this grade ──
@@ -293,91 +295,370 @@ skill('9-angles', 9, 'Geometry', 'Angles, polygons and symmetry', ['The interior
   return num(n, [`Look for every fold that lands the shape on itself: ${why}.`, `So ${shape} has ${n} line${n === 1 ? '' : 's'} of symmetry.`], { q: `How many lines of symmetry does ${shape} have?` });
 });
 
-skill('9-volume', 9, 'Geometry', 'Volume of solids', ['Prism or cylinder: V = area of the base × height.', 'Pyramid or cone: V = (1/3) × area of the base × height.', 'Sphere: V = (4/3) × π × r^3.'], (r) => {
-  if (r.bool()) {
-    const t = r.int(0, 2);
-    if (t === 0) { const l = r.int(2, 12), w = r.int(2, 12), h = r.int(2, 12); return num(l * w * h, [`V = l × w × h.`, `${l} × ${w} × ${h} = ${l * w * h}.`, `The volume is ${l * w * h} cm³.`], { q: `A rectangular prism is ${l} cm long, ${w} cm wide and ${h} cm high. Find its volume.`, unit: 'cm³', expr: `${l}*${w}*${h}` }); }
-    if (t === 1) { const b = 2 * r.int(2, 6), h = r.int(3, 10), L = r.int(4, 15), B = b * h / 2; return num(B * L, [`Base triangle: ${b} × ${h} ÷ 2 = ${B} cm².`, `V = base × length = ${B} × ${L} = ${B * L}.`, `The volume is ${B * L} cm³.`], { q: `A triangular prism has a triangle base with base ${b} cm and height ${h} cm. The prism is ${L} cm long. Find its volume.`, unit: 'cm³', expr: `${b}*${h}/2*${L}` }); }
-    const s = r.int(2, 12), h = 3 * r.int(1, 6); return num(s * s * h / 3, [`Base: ${s} × ${s} = ${s * s} cm².`, `V = (1/3) × ${s * s} × ${h} = ${s * s * h / 3}.`, `The volume is ${s * s * h / 3} cm³.`], { q: `A square pyramid has a base with sides of ${s} cm and a height of ${h} cm. Find its volume.`, unit: 'cm³', expr: `${s}**2*${h}/3` });
-  }
-  const t = r.int(0, 2), rad = r.int(1, 10), h = r.int(2, 20), tail = ' Use 3.14 for π and round to the nearest tenth.';
-  if (t === 0) { const { answer, tol } = piAns(3.14 * rad * rad * h, Math.PI * rad * rad * h); return num(answer, [`V = π × r^2 × h.`, `3.14 × ${rad}^2 × ${h} = 3.14 × ${rad * rad} × ${h}.`, `≈ ${answer}. The volume is about ${answer} cm³.`], { q: `A cylinder has a radius of ${rad} cm and a height of ${h} cm. Find its volume.${tail}`, unit: 'cm³', tol, expr: `Math.round(3.14*${rad * rad}*${h}*10+1e-6)/10` }); }
-  if (t === 1) { const { answer, tol } = piAns(3.14 * rad * rad * h / 3, Math.PI * rad * rad * h / 3); return num(answer, [`V = (1/3) × π × r^2 × h.`, `(1/3) × 3.14 × ${rad * rad} × ${h}.`, `≈ ${answer}. The volume is about ${answer} cm³.`], { q: `A cone has a radius of ${rad} cm and a height of ${h} cm. Find its volume.${tail}`, unit: 'cm³', tol, expr: `Math.round(3.14*${rad * rad}*${h}/3*10+1e-6)/10` }); }
-  const { answer, tol } = piAns(4 / 3 * 3.14 * rad ** 3, 4 / 3 * Math.PI * rad ** 3);
-  return num(answer, [`V = (4/3) × π × r^3.`, `(4/3) × 3.14 × ${rad}^3 = (4/3) × 3.14 × ${rad ** 3}.`, `≈ ${answer}. The volume is about ${answer} cm³.`], { q: `A sphere has a radius of ${rad} cm. Find its volume.${tail}`, unit: 'cm³', tol, expr: `Math.round(4/3*3.14*${rad ** 3}*10+1e-6)/10` });
-});
-
-skill('9-surface', 9, 'Geometry', 'Surface area and nets', ['Surface area is the total area of all the faces: unfold the solid into a net and add the pieces.', 'Cylinder: SA = 2πr^2 + 2πrh. Cone: SA = πr^2 + πrs (s is the slant height). Sphere: SA = 4πr^2.'], (r) => {
-  const v = r.int(0, 2);
-  if (v === 0) {
-    const t = r.int(0, 2);
-    if (t === 0) { const l = r.int(2, 12), w = r.int(2, 12), h = r.int(2, 12), S = 2 * (l * w + l * h + w * h); return num(S, ['There are three pairs of matching faces.', `2 × (${l} × ${w} + ${l} × ${h} + ${w} × ${h}) = 2 × ${l * w + l * h + w * h}.`, `= ${S}. The surface area is ${S} cm².`], { q: `Find the surface area of a rectangular prism that is ${l} cm by ${w} cm by ${h} cm.`, unit: 'cm²', expr: `2*(${l}*${w}+${l}*${h}+${w}*${h})` }); }
-    if (t === 1) { const s = r.int(2, 15); return num(6 * s * s, ['A cube has 6 equal square faces.', `One face: ${s} × ${s} = ${s * s}. Six faces: 6 × ${s * s} = ${6 * s * s}.`, `The surface area is ${6 * s * s} cm².`], { q: `Find the surface area of a cube with edges of ${s} cm.`, unit: 'cm²', expr: `6*${s}**2` }); }
-    const s = r.int(2, 12), l = r.int(s, 15), S = s * s + 2 * s * l;
-    return num(S, [`Base: ${s} × ${s} = ${s * s}.`, `Four triangles: 4 × (${s} × ${l} ÷ 2) = ${2 * s * l}.`, `${s * s} + ${2 * s * l} = ${S}. The surface area is ${S} cm².`], { q: `A square pyramid has base sides of ${s} cm. Each triangle face has a slant height of ${l} cm. Find the surface area.`, unit: 'cm²', expr: `${s}**2+4*${s}*${l}/2` });
-  }
-  if (v === 1) {
-    const t = r.int(0, 2), rad = r.int(1, 10), h = r.int(2, 15), tail = ' Use 3.14 for π and round to the nearest tenth.';
-    if (t === 0) { const { answer, tol } = piAns(2 * 3.14 * rad * rad + 2 * 3.14 * rad * h, 2 * Math.PI * rad * (rad + h)); return num(answer, ['SA = 2πr^2 + 2πrh (two circles and a rectangle).', `2 × 3.14 × ${rad * rad} + 2 × 3.14 × ${rad} × ${h}.`, `≈ ${answer}. The surface area is about ${answer} cm².`], { q: `Find the surface area of a cylinder with radius ${rad} cm and height ${h} cm.${tail}`, unit: 'cm²', tol, expr: `Math.round((2*3.14*${rad * rad}+2*3.14*${rad}*${h})*10+1e-6)/10` }); }
-    if (t === 1) { const s = rad + r.int(1, 10), { answer, tol } = piAns(3.14 * rad * rad + 3.14 * rad * s, Math.PI * rad * (rad + s)); return num(answer, ['SA = πr^2 + πrs (the base circle and the curved side).', `3.14 × ${rad * rad} + 3.14 × ${rad} × ${s}.`, `≈ ${answer}. The surface area is about ${answer} cm².`], { q: `A cone has a radius of ${rad} cm and a slant height of ${s} cm. Find its surface area.${tail}`, unit: 'cm²', tol, expr: `Math.round((3.14*${rad * rad}+3.14*${rad}*${s})*10+1e-6)/10` }); }
-    const { answer, tol } = piAns(4 * 3.14 * rad * rad, 4 * Math.PI * rad * rad);
-    return num(answer, ['SA = 4πr^2.', `4 × 3.14 × ${rad}^2 = 4 × 3.14 × ${rad * rad}.`, `≈ ${answer}. The surface area is about ${answer} cm².`], { q: `Find the surface area of a sphere with radius ${rad} cm.${tail}`, unit: 'cm²', tol, expr: `Math.round(4*3.14*${rad * rad}*10+1e-6)/10` });
-  }
-  const NETS = [['6 equal squares', 'cube'], ['2 triangles and 3 rectangles', 'triangular prism'], ['1 square and 4 triangles', 'square pyramid'], ['2 circles and 1 rectangle', 'cylinder'], ['1 circle and 1 curved sector', 'cone'], ['4 equal triangles', 'triangular pyramid'], ['6 rectangles, in 3 matching pairs', 'rectangular prism'], ['2 hexagons and 6 rectangles', 'hexagonal prism']];
-  const [desc, solid] = r.pick(NETS);
-  return mc(r, solid, r.shuffle(NETS.filter((n) => n[1] !== solid).map((n) => n[1])).slice(0, 3), { q: `A net is made of ${desc}. What solid does it fold into?`, steps: [`Match the faces: ${desc}.`, `That folds into a ${solid}.`] });
-});
-
-skill('9-similar', 9, 'Geometry', 'Similar figures and solids', ['Similar figures have equal angles, and every length is multiplied by the same scale factor k.', 'Perimeters multiply by k, areas by k^2 and volumes by k^3.', 'Similar triangles let us measure tall things with shadows.'], (r) => {
-  const v = r.int(0, 3);
-  if (v === 0) {
-    const k = r.pick([2, 3, 1.5, 0.5, 2.5]), a = 2 * r.int(2, 8), b = 2 * r.int(2, 8);
-    if (r.bool(0.25)) { const x = r.int(30, 100); return num(x, ['Similar figures have equal corresponding angles.', `∠E matches ∠B, so ∠E = ${x}°.`], { q: `Triangle ABC is similar to triangle DEF. ∠B = ${x}°. What is ∠E?`, unit: '°' }); }
-    return num(dec(b * k), [`Scale factor: DE ÷ AB = ${D(a * k)} ÷ ${a} = ${D(k)}.`, `EF = BC × ${D(k)} = ${b} × ${D(k)} = ${D(b * k)}.`, `So EF = ${D(b * k)} cm.`], { q: `Triangle ABC is similar to triangle DEF. AB = ${a} cm, BC = ${b} cm and DE = ${D(a * k)} cm. Find EF.`, unit: 'cm', expr: `${b}*${a * k}/${a}` });
+// ── solids, similar figures and transformations, taught with pictures (figures: ../figs.mjs and ./geo-hs.mjs) ──
+const KL = (text, visual) => ({ text, visual });
+const cm = (x, u = 'cm') => `${D(x)} ${u}`;
+const PIT = ' Use 3.14 for π and round to the nearest tenth.';
+skill('9-volume', 9, 'Geometry', 'Volume of solids', [
+  KL('Volume is the space inside a solid, counted in unit cubes (cm³, m³). This box holds 4 × 3 × 2 = 24 cubes.', G.boxFig({ l: 4, w: 3, h: 2, cubes: true })),
+  KL('Prism or cylinder: V = area of the base × height. The base is one layer; the height tells how many layers.', G.boxFig({ l: 6, w: 3, h: 4, labels: ['l', 'w', 'h'], hl: ['base', 'height'] })),
+  KL('A cylinder has a circle for its base, so V = πr² × h.', G.cylinderFig({ r: 3, h: 5, labels: ['r', 'h'], hl: ['base'] })),
+  KL('Pyramid or cone: V = (1/3) × area of the base × height. It holds one third of the prism or cylinder around it.', { type: 'figs', figs: [G.pyramidFig({ a: 5, h: 6, labels: ['', 'h', ''], hl: 'height' }), G.coneFig({ r: 3, h: 6, labels: ['r', 'h', ''], hl: 'height' })], captions: ['Pyramid', 'Cone'] }),
+  KL('Sphere: V = (4/3) × π × r³, where r is the radius.', G.sphereFig({ labels: ['r'], hl: 'radius' })),
+], (r) => {
+  const v = r.int(0, 9);
+  if (v === 0 || v === 6) {
+    const l = r.int(2, 12), w = r.int(2, 12), h = r.int(2, 12), V = l * w * h;
+    const pic = (hl, hide) => G.boxFig({ l, w, h, labels: [cm(l), cm(w), hide ? 'h' : cm(h)], hl });
+    if (v === 6) return num(h, [
+      St(`V = area of the base × height. The base is ${l} × ${w} = ${l * w} cm².`, pic(['base', 'length', 'width'], true)),
+      St(`So the height is V ÷ base = ${V} ÷ ${l * w} = ${h}.`, pic(['height'], true)),
+      St(`So h = ${h} cm.`),
+    ], { q: `This box has a volume of ${V} cm³. How tall is it?`, unit: 'cm', visual: pic(null, true), expr: `${V}/(${l}*${w})` });
+    return num(V, [
+      St(`The base is a rectangle: ${l} × ${w} = ${l * w} cm². That is one layer of ${l * w} unit cubes.`, pic(['base', 'length', 'width'])),
+      St(`The height says how many layers: ${l * w} × ${h} = ${V}.`, pic(['height'])),
+      St(`So the volume is ${V} cm³.`),
+    ], { q: 'Find the volume of this rectangular prism.', unit: 'cm³', visual: pic(), expr: `${l}*${w}*${h}` });
   }
   if (v === 1) {
-    const [h, s] = r.pick([[1.5, 2], [1.5, 3], [1.6, 2], [1.8, 1.5], [1.8, 1.2], [1.6, 4], [1.2, 1.5]]), S = r.int(4, 30), T = rnd(S * h / s, 4), nm = r.pick(NAMES);
-    return num(dec(T), [`The triangles are similar, so height ÷ shadow is the same: ${D(h)} ÷ ${D(s)} = ${D(h / s)}.`, `Tree: ${S} × ${D(h / s)} = ${D(T)}.`, `The tree is ${D(T)} m tall.`], { q: `${nm} is ${D(h)} m tall and casts a ${D(s)} m shadow. At the same time a tree casts a ${S} m shadow. How tall is the tree?`, unit: 'm', expr: `${S}*${h}/${s}` });
+    const b = 2 * r.int(2, 6), th = r.int(3, 10), L = r.int(4, 15), B = (b * th) / 2;
+    const Hd = Math.min(5, Math.max(1.8, (4 * th) / b));
+    const pic = (hl) => G.prismFig({ base: [[0, 0], [4, 0], [1.6, Hd]], depth: 3 + Math.min(3, L / 4), sides: [cm(b), '', ''], height: { from: 2, side: 0, label: cm(th) }, depthLabel: cm(L), hl });
+    return num(B * L, [
+      St(`The base is the triangle at the end: ${b} × ${th} ÷ 2 = ${B} cm².`, pic(['base', 'height'])),
+      St(`The prism is ${L} cm long, so V = ${B} × ${L} = ${B * L}.`, pic(['depth'])),
+      St(`So the volume is ${B * L} cm³.`),
+    ], { q: 'Find the volume of this triangular prism. (Not drawn to scale.)', unit: 'cm³', visual: pic(), expr: `${b}*${th}/2*${L}` });
   }
   if (v === 2) {
-    const k = r.int(2, 5), A = r.int(3, 20), P = r.int(10, 40);
-    if (r.bool()) return num(A * k * k, [`Areas grow by k^2 = ${k}^2 = ${k * k}.`, `${A} × ${k * k} = ${A * k * k}.`, `The larger area is ${A * k * k} cm².`], { q: `Two similar figures have a scale factor of ${k}. The smaller one has an area of ${A} cm². What is the area of the larger one?`, unit: 'cm²', expr: `${A}*${k}**2` });
-    return num(P * k, [`Perimeters grow by k = ${k}.`, `${P} × ${k} = ${P * k}.`, `The larger perimeter is ${P * k} cm.`], { q: `Two similar figures have a scale factor of ${k}. The smaller one has a perimeter of ${P} cm. What is the perimeter of the larger one?`, unit: 'cm', expr: `${P}*${k}` });
+    const s = r.int(2, 12), h = 3 * r.int(1, 6), V = (s * s * h) / 3;
+    const pic = (hl) => G.pyramidFig({ a: s, h, labels: [cm(s), cm(h), ''], hl });
+    return num(V, [
+      St(`The base is a square: ${s} × ${s} = ${s * s} cm².`, pic(['base'])),
+      St(`The height goes straight up from the base to the top: ${h} cm. A prism would hold ${s * s} × ${h} = ${s * s * h}.`, pic(['height'])),
+      St(`A pyramid holds one third of that: ${s * s * h} ÷ 3 = ${V}.`),
+      St(`So the volume is ${V} cm³.`),
+    ], { q: 'Find the volume of this square pyramid.', unit: 'cm³', visual: pic(), expr: `${s}**2*${h}/3` });
   }
-  const k = r.int(2, 4), word = { 2: 'doubled', 3: 'tripled', 4: 'multiplied by 4' }[k];
-  if (r.bool()) { const V = r.int(2, 30); return num(V * k ** 3, [`Volumes grow by k^3 = ${k}^3 = ${k ** 3}.`, `${V} × ${k ** 3} = ${V * k ** 3}.`, `The larger volume is ${V * k ** 3} cm³.`], { q: `Two similar solids have a scale factor of ${k}. The smaller one has a volume of ${V} cm³. What is the volume of the larger one?`, unit: 'cm³', expr: `${V}*${k}**3` }); }
-  const isV = r.bool();
-  return num(isV ? k ** 3 : k * k, [`Every length is ${word}, so k = ${k}.`, isV ? `Volume is multiplied by k^3 = ${k ** 3}.` : `Surface area is multiplied by k^2 = ${k * k}.`, `It is multiplied by ${isV ? k ** 3 : k * k}.`], { q: `Every edge of a box is ${word}. By what number is its ${isV ? 'volume' : 'surface area'} multiplied?`, expr: isV ? `${k}**3` : `${k}**2` });
+  if (v === 3 || v === 4) {
+    const rad = r.int(1, 10), h = r.int(2, 20), cone = v === 4, base = 3.14 * rad * rad;
+    const val = cone ? (base * h) / 3 : base * h, { answer, tol } = piAns(val, cone ? (Math.PI * rad * rad * h) / 3 : Math.PI * rad * rad * h);
+    const pic = (hl) => (cone ? G.coneFig({ r: rad, h, labels: [cm(rad), cm(h), ''], hl }) : G.cylinderFig({ r: rad, h, labels: [cm(rad), cm(h)], hl }));
+    return num(answer, [
+      St(`The base is a circle: πr² ≈ 3.14 × ${rad}² = 3.14 × ${rad * rad} = ${D(base)} cm².`, pic(['base', 'radius'])),
+      St(cone ? `Multiply by the height and take one third: ${D(base)} × ${h} ÷ 3 = ${D(val)}.` : `Multiply by the height: ${D(base)} × ${h} = ${D(val)}.`, pic(['height'])),
+      St(`Rounded to the nearest tenth: ${answer}.`),
+      St(`So the volume is about ${answer} cm³.`),
+    ], { q: `Find the volume of this ${cone ? 'cone' : 'cylinder'}.${PIT}`, unit: 'cm³', visual: pic(), tol, expr: `3.14*${rad * rad}*${h}${cone ? '/3' : ''}` });
+  }
+  if (v === 5 || v === 9) {
+    const rad = r.int(1, 10), hemi = v === 9, cube = rad ** 3, val = (4 / 3) * 3.14 * cube / (hemi ? 2 : 1);
+    const { answer, tol } = piAns(val, (4 / 3) * Math.PI * cube / (hemi ? 2 : 1));
+    const pic = (hl) => G.sphereFig({ labels: [cm(rad)], hl, hemi });
+    return num(answer, [
+      St(`The radius goes from the centre to the surface: r = ${rad} cm, so r³ = ${rad} × ${rad} × ${rad} = ${cube}.`, pic('radius')),
+      St(hemi ? `A hemisphere is half a sphere: (4/3) × 3.14 × ${cube} ÷ 2 = ${D(val, 4)}.` : `V = (4/3) × π × r³ ≈ (4/3) × 3.14 × ${cube} = ${D(val, 4)}.`),
+      St(`Rounded to the nearest tenth: ${answer}.`),
+      St(`So the volume is about ${answer} cm³.`),
+    ], { q: `Find the volume of this ${hemi ? 'hemisphere (half a sphere)' : 'sphere'}.${PIT}`, unit: 'cm³', visual: pic(), tol, expr: `4/3*3.14*${cube}${hemi ? '/2' : ''}` });
+  }
+  if (v === 7) {
+    const s = r.int(2, 10), V = s ** 3;
+    const pic = (hl) => G.boxFig({ l: s, w: s, h: s, labels: [hl ? cm(s) : '?', '', ''], hl });
+    return num(s, [
+      St(`A cube has equal edges, so V = s × s × s = s³.`, pic(null)),
+      St(`Which number times itself three times makes ${V}? ${s} × ${s} × ${s} = ${V}.`, pic(['length'])),
+      St(`So each edge is ${s} cm.`),
+    ], { q: `This cube has a volume of ${V} cm³. How long is each edge?`, unit: 'cm', visual: pic(null), expr: `Math.cbrt(${V})` });
+  }
+  const V = 3 * r.int(5, 120), rad = r.int(2, 6), h = r.int(4, 10);
+  const two = { type: 'figs', figs: [G.cylinderFig({ r: rad, h, labels: ['r', 'h'] }), G.coneFig({ r: rad, h, labels: ['r', 'h', ''] })], captions: ['Cylinder', 'Cone'] };
+  return num(V / 3, [
+    St('The cone has the same base and the same height as the cylinder. A cone holds exactly one third of the cylinder around it.', two),
+    St(`${V} ÷ 3 = ${V / 3}.`),
+    St(`So the cone holds ${V / 3} cm³.`),
+  ], { q: `A cylinder and a cone have the same radius and the same height. The cylinder holds ${V} cm³. How much does the cone hold?`, unit: 'cm³', visual: two, expr: `${V}/3` });
 });
 
-skill('9-transform', 9, 'Geometry', 'Transformations', ['A translation slides, a reflection flips, a rotation turns, and a dilation enlarges or shrinks.', 'Reflect in the x-axis: (x, y) → (x, −y). In the y-axis: (x, y) → (−x, y).', 'Rotate 90° counterclockwise: (x, y) → (−y, x). Rotate 180°: (x, y) → (−x, −y).'], (r) => {
-  const v = r.int(0, 2);
+const NET_SOLIDS = [
+  ['cube', () => G.netFig({ cells: G.CUBE_NETS[5] }), '6 equal squares'],
+  ['rectangular prism', () => G.boxNet({ l: 6, w: 3, h: 4 }), '6 rectangles in 3 matching pairs'],
+  ['triangular prism', () => G.triPrismNet(), '2 triangles and 3 rectangles'],
+  ['square pyramid', () => G.pyramidNet(), '1 square and 4 triangles'],
+  ['cylinder', () => G.cylinderNet(), '2 circles and 1 rectangle'],
+  ['cone', () => G.coneNet(), '1 circle and 1 curved sector'],
+];
+skill('9-surface', 9, 'Geometry', 'Surface area and nets', [
+  KL('Surface area is the total area of all the faces. Unfold the solid into a net and add the area of every piece.', G.boxNet({ l: 6, w: 3, h: 4, labels: ['l', 'w', 'h'] })),
+  KL('A box has three matching pairs of faces: SA = 2lw + 2lh + 2wh.', G.boxNet({ l: 6, w: 3, h: 4, labels: ['l', 'w', 'h'], hl: 'tb' })),
+  KL('Cylinder: two circles and a rectangle that wraps round them. Its length is the circumference, so SA = 2πr² + 2πrh.', G.cylinderNet({ labels: ['r', 'h', '2πr'], hl: 'rect' })),
+  KL('Square pyramid: the base plus 4 triangles, each base × slant height ÷ 2. Cone: SA = πr² + πrs, with s the slant height.', { type: 'figs', figs: [G.pyramidNet({ labels: ['', 's'], hl: 'faces' }), G.coneFig({ r: 3, h: 6, labels: ['r', '', 's'], hl: 'slant' })], captions: ['Pyramid net', 'Cone'] }),
+  KL('Sphere: SA = 4πr², four times the area of a circle through its centre.', G.sphereFig({ labels: ['r'] })),
+], (r) => {
+  const v = r.int(0, 8);
   if (v === 0) {
-    const x = r.nonzero(-5, 5), y = r.nonzero(-5, 5), t = r.int(0, 5);
-    let X, Y, desc, rule;
-    if (t === 0) { const dx = r.nonzero(-4, 4), dy = r.nonzero(-4, 4); [X, Y] = [x + dx, y + dy]; desc = `a translation ${Math.abs(dx)} unit${Math.abs(dx) > 1 ? 's' : ''} ${dx > 0 ? 'right' : 'left'} and ${Math.abs(dy)} unit${Math.abs(dy) > 1 ? 's' : ''} ${dy > 0 ? 'up' : 'down'}`; rule = `(x, y) → (x ${sgn(dx)}, y ${sgn(dy)})`; }
-    else [X, Y, desc, rule] = [[x, -y, 'a reflection in the x-axis', '(x, y) → (x, −y)'], [-x, y, 'a reflection in the y-axis', '(x, y) → (−x, y)'], [-y, x, 'a rotation of 90° counterclockwise about the origin', '(x, y) → (−y, x)'], [y, -x, 'a rotation of 90° clockwise about the origin', '(x, y) → (y, −x)'], [-x, -y, 'a rotation of 180° about the origin', '(x, y) → (−x, −y)']][t - 1];
-    return pt(X + 0, Y + 0, [`The rule for ${desc} is ${rule}.`, `${xy(x, y)} → ${xy(X + 0, Y + 0)}.`, `So P′ is ${xy(X + 0, Y + 0)}.`], { q: `Point P${xy(x, y)} is moved by ${desc}. What are the coordinates of its image P′? Write them as (x, y).`, visual: { type: 'plane', points: [[x, y, 'P']] } });
+    const l = r.int(2, 12), w = r.int(2, 12), h = r.int(2, 12), a = l * w, b = l * h, c = w * h, S = 2 * (a + b + c);
+    const net = (hl) => G.boxNet({ l, w, h, labels: [`${l}`, `${w}`, `${h}`], hl });
+    return num(S, [
+      St('Unfold the box: six rectangles in three matching pairs.', net(null)),
+      St(`Top and bottom: 2 × ${l} × ${w} = ${2 * a}.`, net('tb')),
+      St(`Front and back: 2 × ${l} × ${h} = ${2 * b}.`, net('fb')),
+      St(`The two ends: 2 × ${w} × ${h} = ${2 * c}.`, net('lr')),
+      St(`Add them: ${2 * a} + ${2 * b} + ${2 * c} = ${S}.`),
+      St(`So the surface area is ${S} cm².`),
+    ], { q: 'Find the surface area of this rectangular prism.', unit: 'cm²', visual: G.boxFig({ l, w, h, labels: [cm(l), cm(w), cm(h)] }), expr: `2*(${l}*${w}+${l}*${h}+${w}*${h})` });
   }
   if (v === 1) {
-    let A, img, kind, why;
-    do {
-      const t = r.int(0, 3), sm = t === 3;
-      A = []; while (A.length < 3) { const p = [r.int(sm ? -3 : -5, sm ? 3 : 5), r.int(sm ? -3 : -5, sm ? 3 : 5)]; if (!A.some((q) => q[0] === p[0] && q[1] === p[1]) && (p[0] || p[1])) A.push(p); }
-      if (t === 0) { const dx = r.nonzero(-3, 3), dy = r.int(-3, 3); img = A.map(([x, y]) => [x + dx, y + dy]); kind = 'a translation'; why = `every point moved ${dx > 0 ? 'right' : 'left'} ${Math.abs(dx)}${dy ? ` and ${dy > 0 ? 'up' : 'down'} ${Math.abs(dy)}` : ''}`; }
-      else if (t === 1) { const xa = r.bool(); img = A.map(([x, y]) => (xa ? [x, -y] : [-x, y])); kind = 'a reflection'; why = `every ${xa ? 'y' : 'x'}-coordinate changed sign: a flip in the ${xa ? 'x' : 'y'}-axis`; }
-      else if (t === 2) { img = A.map(([x, y]) => [-x, -y]); kind = 'a rotation'; why = 'both coordinates changed sign: a turn of 180° about the origin'; }
-      else { img = A.map(([x, y]) => [2 * x, 2 * y]); kind = 'a dilation'; why = 'every coordinate was multiplied by 2: an enlargement'; }
-    } while ((A[0][0] - A[1][0]) * (A[2][1] - A[1][1]) === (A[0][1] - A[1][1]) * (A[2][0] - A[1][0]) || img.every(([x, y]) => A.some((p) => p[0] === x && p[1] === y)));
-    const L = ['A', 'B', 'C'], show = (pts, pr) => pts.map(([x, y], i) => `${L[i]}${pr}${xy(x + 0, y + 0)}`).join(', ');
-    return mc(r, kind, ['a translation', 'a reflection', 'a rotation', 'a dilation'].filter((k) => k !== kind), { q: `Triangle ABC has ${show(A, '')}. Its image has ${show(img, '′')}. What kind of transformation is this?`, steps: [`Compare each point with its image: ${why}.`, `So it is ${kind}.`] });
+    const s = r.int(2, 15), cells = r.pick(G.CUBE_NETS);
+    return num(6 * s * s, [
+      St('Unfold the cube: 6 equal squares.', G.netFig({ cells })),
+      St(`One face: ${s} × ${s} = ${s * s}. Six faces: 6 × ${s * s} = ${6 * s * s}.`, G.netFig({ cells, hl: [0, 1, 2, 3, 4, 5] })),
+      St(`So the surface area is ${6 * s * s} cm².`),
+    ], { q: 'Find the surface area of this cube.', unit: 'cm²', visual: G.boxFig({ l: s, w: s, h: s, labels: [cm(s), '', ''] }), expr: `6*${s}**2` });
   }
-  if (r.bool()) {
-    const k = r.pick([2, 3, 0.5]), x = 2 * r.int(-3, 3), y = 2 * r.nonzero(-3, 3);
-    return pt(x * k + 0, y * k + 0, [`A dilation about the origin multiplies both coordinates by ${D(k)}.`, `(${neg(x)} × ${D(k)}, ${neg(y)} × ${D(k)}) = ${xy(x * k + 0, y * k + 0)}.`, `So the image is ${xy(x * k + 0, y * k + 0)}.`], { q: `Point Q${xy(x, y)} is dilated by a scale factor of ${D(k)} about the origin. What is its image? Write it as (x, y).` });
+  if (v === 2) {
+    const s = r.int(2, 12), l = r.int(s, 15), S = s * s + 2 * s * l;
+    return num(S, [
+      St(`Unfold the pyramid: the square base is ${s} × ${s} = ${s * s}.`, G.pyramidNet({ labels: [`${s}`, `${l}`], hl: 'base' })),
+      St(`Each triangle is ${s} × ${l} ÷ 2 = ${(s * l) / 2}; four of them: 4 × ${D((s * l) / 2)} = ${2 * s * l}.`, G.pyramidNet({ labels: [`${s}`, `${l}`], hl: 'faces' })),
+      St(`${s * s} + ${2 * s * l} = ${S}.`),
+      St(`So the surface area is ${S} cm².`),
+    ], { q: 'This square pyramid has a slant height (the height of each triangle face) as shown. Find its surface area.', unit: 'cm²', visual: G.pyramidFig({ a: s, h: Math.sqrt(l * l - (s * s) / 4), labels: [cm(s), '', cm(l)] }), expr: `${s}**2+4*${s}*${l}/2` });
+  }
+  if (v === 3) {
+    const rad = r.int(1, 10), h = r.int(2, 15), circ = 2 * 3.14 * rad * rad, side = 2 * 3.14 * rad * h, { answer, tol } = piAns(circ + side, 2 * Math.PI * rad * (rad + h));
+    const net = (hl) => G.cylinderNet({ labels: [`${rad}`, `${h}`, '2πr'], hl });
+    return num(answer, [
+      St('Unfold the cylinder: two circles and a rectangle. The rectangle wraps round the circle, so its length is the circumference, 2πr.', net(null)),
+      St(`The two circles: 2 × 3.14 × ${rad}² = ${D(circ)}.`, net('circles')),
+      St(`The rectangle: 2 × 3.14 × ${rad} × ${h} = ${D(side)}.`, net('rect')),
+      St(`${D(circ)} + ${D(side)} = ${D(circ + side)}, which is ${answer} to the nearest tenth.`),
+      St(`So the surface area is about ${answer} cm².`),
+    ], { q: `Find the surface area of this cylinder.${PIT}`, unit: 'cm²', visual: G.cylinderFig({ r: rad, h, labels: [cm(rad), cm(h)] }), tol, expr: `2*3.14*${rad * rad}+2*3.14*${rad}*${h}` });
+  }
+  if (v === 4) {
+    const rad = r.int(1, 10), s = rad + r.int(1, 10), base = 3.14 * rad * rad, side = 3.14 * rad * s, { answer, tol } = piAns(base + side, Math.PI * rad * (rad + s));
+    const pic = (hl) => G.coneFig({ r: rad, h: Math.sqrt(s * s - rad * rad), labels: [cm(rad), '', cm(s)], hl });
+    return num(answer, [
+      St(`The base is a circle: πr² ≈ 3.14 × ${rad}² = ${D(base)}.`, G.coneNet({ hl: 'base' })),
+      St(`The curved side unrolls into a sector with area πrs ≈ 3.14 × ${rad} × ${s} = ${D(side)}. s is the slant height.`, G.coneNet({ hl: 'sector' })),
+      St(`${D(base)} + ${D(side)} = ${D(base + side)}, which is ${answer} to the nearest tenth.`),
+      St(`So the surface area is about ${answer} cm².`),
+    ], { q: `Find the surface area of this cone.${PIT}`, unit: 'cm²', visual: pic(null), tol, expr: `3.14*${rad * rad}+3.14*${rad}*${s}` });
+  }
+  if (v === 5) {
+    const rad = r.int(1, 10), val = 4 * 3.14 * rad * rad, { answer, tol } = piAns(val, 4 * Math.PI * rad * rad);
+    return num(answer, [
+      St(`SA = 4πr², with r = ${rad} cm.`, G.sphereFig({ labels: [cm(rad)], hl: 'radius' })),
+      St(`4 × 3.14 × ${rad}² = 4 × 3.14 × ${rad * rad} = ${D(val)}.`),
+      St(`Rounded to the nearest tenth: ${answer}.`),
+      St(`So the surface area is about ${answer} cm².`),
+    ], { q: `Find the surface area of this sphere.${PIT}`, unit: 'cm²', visual: G.sphereFig({ labels: [cm(rad)] }), tol, expr: `4*3.14*${rad * rad}` });
+  }
+  if (v === 6) {
+    const [solid, make, desc] = r.pick(NET_SOLIDS), pic = make();
+    return mc(r, solid, r.shuffle(NET_SOLIDS.filter((n) => n[0] !== solid).map((n) => n[0])).slice(0, 3), { q: 'What solid does this net fold into?', visual: pic, steps: [St(`Count the faces of the net: ${desc}.`, pic), St(`Those faces fold into a ${solid}.`)] });
+  }
+  if (v === 7) {
+    const good = r.pick(G.CUBE_NETS), bad = r.shuffle(G.NOT_CUBE_NETS.filter((c) => !G.foldsToCube(c))).slice(0, 3);
+    const nets = r.shuffle([good, ...bad]), k = nets.indexOf(good), L = ['A', 'B', 'C', 'D'];
+    const pic = { type: 'figs', figs: nets.map((cells) => G.netFig({ cells })), captions: L };
+    return mc(r, L[k], L.filter((_, i) => i !== k), { q: 'Each net has 6 squares. Which one folds up into a cube?', visual: pic, steps: [
+      St('Fold one square up as the base and imagine folding the others up round it. Every square must land on a different face; if two land on the same face, it is not a cube net.'),
+      St(`Net ${L[k]} folds up with each square on a different face.`, G.netFig({ cells: good, hl: [0, 1, 2, 3, 4, 5] })),
+      St(`So the answer is ${L[k]}.`),
+    ] });
+  }
+  const [p, q, s] = r.pick([[3, 4, 5], [6, 8, 10], [5, 12, 13], [9, 12, 15]]), L = r.int(4, 15), tri = (p * q) / 2, rects = (p + q + s) * L, S = 2 * tri + rects;
+  const pic = G.prismFig({ base: [[0, 0], [p >= q ? 4 : 4 * p / q, 0], [0, p >= q ? 4 * q / p : 4]], depth: 4, sides: [cm(p), cm(s), cm(q)], depthLabel: cm(L) });
+  return num(S, [
+    St(`Unfold the prism: 2 triangles and 3 rectangles. Each triangle is ${p} × ${q} ÷ 2 = ${tri}, so both are ${2 * tri}.`, G.triPrismNet({ hl: 'tris' })),
+    St(`The rectangles are each ${L} long and as wide as a side of the triangle: (${p} + ${q} + ${s}) × ${L} = ${rects}.`, G.triPrismNet({ hl: 'rects' })),
+    St(`${2 * tri} + ${rects} = ${S}.`),
+    St(`So the surface area is ${S} cm².`),
+  ], { q: 'This prism has right-triangle ends. Find its surface area.', unit: 'cm²', visual: pic, expr: `${p}*${q}+(${p}+${q}+${s})*${L}` });
+});
+
+// two triangles ABC and DEF, the second a scaled (and maybe turned) copy; equal angles marked with 1, 2, 3 arcs
+function simPair({ T, k = 1, turn = 0, flip = false, names = ['A', 'B', 'C', 'D', 'E', 'F'], sides = [], hl = [], angs = [], marks = true, W = 320, H = 200 }) {
+  const [P1, P2] = H9.pairPts(T, { k, turn, flip });
+  const P = Object.fromEntries([...P1, ...P2].map((p, i) => [names[i], p]));
+  const [a, b, c, d, e, f] = names;
+  const arcs = marks ? [{ v: a, a: b, b: c, n: 1 }, { v: b, a: a, b: c, n: 2 }, { v: c, a: a, b: b, n: 3, r: 16 }, { v: d, a: e, b: f, n: 1 }, { v: e, a: d, b: f, n: 2 }, { v: f, a: d, b: e, n: 3, r: 16 }] : [];
+  for (const A of angs) { const i = arcs.findIndex((x) => x.v === A.v); if (i >= 0) arcs[i] = { ...arcs[i], ...A }; else arcs.push(A); }
+  return H9.scene({ P, W, H, pad: 30, fills: [{ pts: [a, b, c] }, { pts: [d, e, f] }], segs: hl.map(([x, y]) => [x, y, 'hlline']), angs: arcs, sides: sides.map(([x, y, s]) => [x, y, s, hl.some(([p, q]) => (p === x && q === y) || (p === y && q === x)) ? 'hl' : 'ink']), names });
+}
+skill('9-similar', 9, 'Geometry', 'Similar figures and solids', [
+  KL('Similar figures have the same shape: matching angles are equal (the same number of arcs), and every length is multiplied by the same scale factor k.', simPair({ T: H9.triFromAngles(55, 70, 4), k: 1.5, sides: [['A', 'B', '4'], ['D', 'E', '6']] })),
+  KL('Find k by dividing a pair of matching sides: k = new length ÷ old length = 6 ÷ 4 = 1.5. Then multiply any other side by k.'),
+  KL('Perimeters multiply by k, areas by k² and volumes by k³. Double every length and the area is 4 times as big.', { type: 'figs', figs: [G.polygonFig({ pts: [[0, 0], [3, 0], [3, 2], [0, 2]], sides: ['3', '2', '', ''], W: 160, H: 150, pad: 50 }), G.polygonFig({ pts: [[0, 0], [6, 0], [6, 4], [0, 4]], sides: ['6', '4', '', ''], W: 160, H: 150, pad: 22 })], captions: ['Area 6', 'Area 24'] }),
+  KL('A post and its shadow make the same shape as a tree and its shadow, at the same time of day. So height ÷ shadow is the same for both.', H9.shadowFig({ h1: 1.5, s1: 2, h2: 6, s2: 8, labels: ['1.5 m', '2 m', 'h', '8 m'] })),
+], (r) => {
+  const v = r.int(0, 8);
+  const shape = () => { const A = r.int(40, 75), B = r.int(45, 80); return [A, B, H9.triFromAngles(A, B, 4)]; };
+  if (v === 0 || v === 6) {
+    const k = r.pick([2, 3, 1.5, 0.5, 2.5]), [, , T] = shape(), side = (i, j) => Math.hypot(T[i][0] - T[j][0], T[i][1] - T[j][1]);
+    const a = 2 * r.int(2, 8), b = 2 * Math.max(1, Math.round((a * side(1, 2)) / side(0, 1) / 2)), kd = Math.min(1.8, Math.max(0.6, k)), turn = r.pick([0, 20, -25, 160]), flip = r.bool();
+    const note = kd !== k ? ' (Not drawn to scale.)' : '';
+    if (v === 6) {
+      const pic = (hl) => simPair({ T, k: kd, turn, flip, sides: [['A', 'B', cm(a)], ['D', 'E', cm(a * k)]], hl });
+      return num(dec(k), [
+        St(`AB and DE match: they are between the 1-arc and 2-arc angles.`, pic([['A', 'B'], ['D', 'E']])),
+        St(`k = DE ÷ AB = ${D(a * k)} ÷ ${a} = ${D(k)}.`),
+        St(`So the scale factor is ${D(k)}.`),
+      ], { q: `Triangle DEF is similar to triangle ABC. What is the scale factor from ABC to DEF?${note}`, visual: pic([]), expr: `${a * k}/${a}` });
+    }
+    const pic = (hl, ans) => simPair({ T, k: kd, turn, flip, sides: [['A', 'B', cm(a)], ['B', 'C', cm(b)], ['D', 'E', cm(a * k)], ['E', 'F', ans ? cm(b * k) : '?']], hl });
+    return num(dec(b * k), [
+      St(`Match the sides by the marked angles: AB ↔ DE. Scale factor k = DE ÷ AB = ${D(a * k)} ÷ ${a} = ${D(k)}.`, pic([['A', 'B'], ['D', 'E']])),
+      St(`EF matches BC, so EF = ${b} × ${D(k)} = ${D(b * k)}.`, pic([['B', 'C'], ['E', 'F']], true)),
+      St(`So EF = ${D(b * k)} cm.`),
+    ], { q: `Triangle ABC is similar to triangle DEF. Find EF.${note}`, unit: 'cm', visual: pic([]), expr: `${b}*${a * k}/${a}` });
+  }
+  if (v === 1) {
+    const [A, B, T] = shape(), k = r.pick([0.7, 1.3, 1.6]), turn = r.pick([0, 30, -30, 180]), flip = r.bool();
+    const pic = (hl) => simPair({ T, k, turn, flip, angs: [{ v: 'A', s: `${A}°` }, { v: 'B', s: `${B}°` }, { v: 'F', s: '?', t: hl ? 'hlline' : 'mark' }] });
+    const C = 180 - A - B;
+    return num(C, [
+      St(`F has 3 arcs, like C, so ∠F matches ∠C.`, pic(true)),
+      St(`∠C = 180° − ${A}° − ${B}° = ${C}°, and matching angles of similar triangles are equal.`),
+      St(`So ∠F = ${C}°.`),
+    ], { q: 'Triangle ABC is similar to triangle DEF. What is the angle marked ?, in degrees?', unit: '°', visual: pic(false), expr: `180-${A}-${B}` });
+  }
+  if (v === 2) {
+    const [h, s] = r.pick([[1.5, 2], [1.5, 3], [1.6, 2], [1.8, 1.5], [1.8, 1.2], [1.6, 4], [1.2, 1.5]]), S = r.int(4, 30), T = rnd((S * h) / s, 4), nm = r.pick(NAMES);
+    const pic = (hl, ans) => H9.shadowFig({ h1: h, s1: s, h2: T, s2: S, labels: [`${D(h)} m`, `${D(s)} m`, ans ? `${D(T)} m` : 'h', `${S} m`], hl });
+    return num(dec(T), [
+      St(`The sun's rays hit both at the same angle, so the two triangles are similar: height ÷ shadow is the same. For ${nm}: ${D(h)} ÷ ${D(s)} = ${D(h / s)}.`, pic(['h1', 's1'])),
+      St(`For the tree: h = ${S} × ${D(h / s)} = ${D(T)}.`, pic(['h2', 's2'], true)),
+      St(`So the tree is ${D(T)} m tall.`),
+    ], { q: `${nm} is ${D(h)} m tall and casts a ${D(s)} m shadow. At the same time a tree casts a ${S} m shadow. How tall is the tree? (Not drawn to scale.)`, unit: 'm', visual: pic([]), expr: `${S}*${h}/${s}` });
+  }
+  if (v === 3 || v === 4) {
+    const k = r.int(2, 4), w = r.int(2, 6), h = r.int(2, 6), area = v === 3;
+    const P = area ? w * h : 2 * (w + h), ans = area ? P * k * k : P * k;
+    const rect = (x0, s, lab, inside, hl) => [[x0, 0], [x0 + w * s, 0], [x0 + w * s, h * s], [x0, h * s], lab, inside, hl];
+    const kd = Math.min(k, 2.2), pic = (hl) => { const a = rect(0, 1, cm(w), area ? `${P} cm²` : `P = ${P} cm`), b = rect(w + 1.5, kd, cm(w * k), '?', hl);
+      return H9.scene({ P: { A: a[0], B: a[1], C: a[2], Dd: a[3], E: b[0], F: b[1], Gg: b[2], Hh: b[3] }, W: 320, H: 200, fills: [{ pts: ['A', 'B', 'C', 'Dd'] }, { pts: ['E', 'F', 'Gg', 'Hh'], t: hl ? 'hl' : 'fig' }], sides: [['A', 'B', a[4]], ['E', 'F', b[4]]], notes: [{ at: [w / 2, h + 0.8], s: a[5], size: 13 }, { at: [w + 1.5 + (w * kd) / 2, (h * kd) / 2], s: b[5], t: 'hl' }] }); };
+    return num(ans, [
+      St(`The rectangles are similar. Matching sides: ${w * k} ÷ ${w} = ${k}, so k = ${k}.`, pic(false)),
+      St(area ? `Area has two lengths multiplied, so it grows by k² = ${k * k}: ${P} × ${k * k} = ${ans}.` : `Perimeter is a length, so it grows by k = ${k}: ${P} × ${k} = ${ans}.`, pic(true)),
+      St(`So the large rectangle has ${area ? 'area' : 'perimeter'} ${ans} ${area ? 'cm²' : 'cm'}.`),
+    ], { q: `These two rectangles are similar. The small one has ${area ? `an area of ${P} cm²` : `a perimeter of ${P} cm`}. What is the ${area ? 'area' : 'perimeter'} of the large one?${kd < k ? ' (Not drawn to scale.)' : ''}`, unit: area ? 'cm²' : 'cm', visual: pic(false), expr: area ? `${P}*(${w * k}/${w})**2` : `${P}*${w * k}/${w}` });
+  }
+  if (v === 5) {
+    const k = r.int(2, 4), V = r.int(2, 30), pic = G.similarBoxes({ k, labels1: ['1', '', ''], labels2: [`${k}`, '', ''] });
+    return num(V * k ** 3, [
+      St(`Every length is ${k} times as long, so k = ${k}. Volume has three lengths multiplied, so it grows by k³ = ${k}³ = ${k ** 3}.`, pic),
+      St(`${V} × ${k ** 3} = ${V * k ** 3}.`),
+      St(`So the larger volume is ${V * k ** 3} cm³.`),
+    ], { q: `These two boxes are similar, with a scale factor of ${k}. The smaller one has a volume of ${V} cm³. What is the volume of the larger one?`, unit: 'cm³', visual: pic, expr: `${V}*${k}**3` });
+  }
+  if (v === 7) {
+    const w = r.int(2, 8), h = r.int(2, 8), k = r.pick([1.5, 2, 3]), yes = r.bool(), w2 = w * k, h2 = yes ? h * k : h * k + r.pick([1, 2, -1]);
+    if (h2 <= 0 || w === h) return gen9Similar(r);
+    const right = yes ? 'Yes' : 'No';
+    const s = (x0, a, b) => [[x0, 0], [x0 + a, 0], [x0 + a, b], [x0, b]];
+    const sc = 1 / Math.max(w2, h2) * 5, R1p = s(0, w * sc, h * sc), R2p = s(w * sc + 1.5, w2 * sc, h2 * sc);
+    const pic = H9.scene({ P: { A: R1p[0], B: R1p[1], C: R1p[2], Dd: R1p[3], E: R2p[0], F: R2p[1], Gg: R2p[2], Hh: R2p[3] }, W: 320, H: 200, fills: [{ pts: ['A', 'B', 'C', 'Dd'] }, { pts: ['E', 'F', 'Gg', 'Hh'] }], sides: [['A', 'B', cm(w)], ['Dd', 'A', cm(h)], ['E', 'F', cm(w2)], ['F', 'Gg', cm(h2)]] });
+    return mc(r, right, [yes ? 'No' : 'Yes'], { q: 'Are these two rectangles similar?', visual: pic, steps: [
+      St(`Compare matching sides. Long way: ${D(w2)} ÷ ${w} = ${D(k)}. Short way: ${D(h2)} ÷ ${h} = ${D(h2 / h, 3)}.`),
+      St(yes ? `Both ratios are ${D(k)}, so they are similar: Yes.` : 'The ratios are different, so the shapes are not similar: No.'),
+    ] });
+  }
+  const k = r.int(2, 4), word = { 2: 'doubled', 3: 'tripled', 4: 'multiplied by 4' }[k], isV = r.bool(), pic = G.similarBoxes({ k, labels1: ['1', '', ''], labels2: [`${k}`, '', ''] });
+  return num(isV ? k ** 3 : k * k, [
+    St(`Every length is ${word}, so k = ${k}.`, pic),
+    St(isV ? `Volume has three lengths multiplied: it is multiplied by k³ = ${k ** 3}.` : `Area has two lengths multiplied: surface area is multiplied by k² = ${k * k}.`),
+    St(`It is multiplied by ${isV ? k ** 3 : k * k}.`),
+  ], { q: `Every edge of a box is ${word}. By what number is its ${isV ? 'volume' : 'surface area'} multiplied?`, visual: pic, expr: isV ? `${k}**3` : `${k}**2` });
+});
+function gen9Similar(r) { return list.find((s) => s.id === 'math-9-similar').gen(r); }
+
+// transformations on a grid
+const gwin = (pts) => H9.window(pts, 1, 5);
+const tName = (t) => ({ T: 'a translation', R: 'a reflection', O: 'a rotation', D: 'a dilation' }[t]);
+skill('9-transform', 9, 'Geometry', 'Transformations', [
+  KL('A translation slides a shape: every point moves the same distance in the same direction.', H9.gridFig({ x0: -1, x1: 7, y0: -1, y1: 6, polys: [{ pts: [[0, 1], [2, 1], [1, 3]] }, { pts: [[4, 2], [6, 2], [5, 4]], t: 'hl2' }], arrows: [[[1, 3], [5, 4], 'aux']] })),
+  KL('A reflection flips a shape over a mirror line. In the x-axis (x, y) → (x, −y); in the y-axis (x, y) → (−x, y).', H9.gridFig({ x0: -5, x1: 5, y0: -4, y1: 4, polys: [{ pts: [[1, 1], [4, 1], [2, 3]] }, { pts: [[-1, 1], [-4, 1], [-2, 3]], t: 'hl2' }], segs: [[[0, -4], [0, 4], 'hlline']] })),
+  KL('A rotation turns a shape about a point. About the origin: 90° counterclockwise (x, y) → (−y, x); 180° (x, y) → (−x, −y).', H9.gridFig({ x0: -5, x1: 5, y0: -4, y1: 5, pts: [[3, 1, 'P'], [-1, 3, 'P′']], segs: [[[0, 0], [3, 1], 'aux'], [[0, 0], [-1, 3], 'aux']], rights: [[[0, 0], [3, 1], [-1, 3]]] })),
+  KL('A dilation about the origin multiplies both coordinates by the scale factor k: the shape grows (k > 1) or shrinks (k < 1).', H9.gridFig({ x0: -1, x1: 7, y0: -1, y1: 7, polys: [{ pts: [[1, 1], [3, 1], [1, 3]] }, { pts: [[2, 2], [6, 2], [2, 6]], t: 'hl2' }] })),
+], (r) => {
+  const v = r.int(0, 7);
+  if (v <= 2) {
+    const x = r.nonzero(-5, 5), y = r.nonzero(-5, 5);
+    let X, Y, desc, rule, extra;
+    if (v === 0) {
+      let dx, dy; do { dx = r.nonzero(-4, 4); dy = r.nonzero(-4, 4); } while (Math.abs(x + dx) > 6 || Math.abs(y + dy) > 6);
+      [X, Y] = [x + dx, y + dy];
+      desc = `a translation ${Math.abs(dx)} unit${Math.abs(dx) > 1 ? 's' : ''} ${dx > 0 ? 'right' : 'left'} and ${Math.abs(dy)} unit${Math.abs(dy) > 1 ? 's' : ''} ${dy > 0 ? 'up' : 'down'}`; rule = `(x, y) → (x ${sgn(dx)}, y ${sgn(dy)})`;
+      extra = { segs: [[[x, y], [X, y], 'hlline'], [[X, y], [X, Y], 'hlline']] };
+    } else if (v === 1) {
+      const xa = r.bool(); [X, Y] = xa ? [x, -y] : [-x, y];
+      desc = `a reflection in the ${xa ? 'x' : 'y'}-axis`; rule = xa ? '(x, y) → (x, −y)' : '(x, y) → (−x, y)';
+      extra = { segs: [[xa ? [-6, 0] : [0, -6], xa ? [6, 0] : [0, 6], 'hlline'], [[x, y], [X, Y], 'aux']] };
+    } else {
+      const t = r.int(0, 2); [X, Y, desc, rule] = [[-y, x, 'a rotation of 90° counterclockwise about the origin', '(x, y) → (−y, x)'], [y, -x, 'a rotation of 90° clockwise about the origin', '(x, y) → (y, −x)'], [-x, -y, 'a rotation of 180° about the origin', '(x, y) → (−x, −y)']][t];
+      extra = { segs: [[[0, 0], [x, y], 'aux'], [[0, 0], [X, Y], 'aux']], rights: t < 2 ? [[[0, 0], [x, y], [X, Y]]] : [] };
+    }
+    const w = { x0: -6, x1: 6, y0: -6, y1: 6 };
+    const ask = H9.gridFig({ ...w, pts: [[x, y, 'P']] });
+    const show = H9.gridFig({ ...w, ...extra, pts: [[x, y, 'P'], [X, Y, 'P′', 'hl']] });
+    return pt(X + 0, Y + 0, [
+      St(`The rule for ${desc} is ${rule}.`),
+      St(`${xy(x, y)} → ${xy(X + 0, Y + 0)}.`, show),
+      St(`So P′ is ${xy(X + 0, Y + 0)}.`),
+    ], { q: `Point P${xy(x, y)} is moved by ${desc}. What are the coordinates of its image P′? Write them as (x, y).`, visual: ask });
+  }
+  if (v === 3 || v === 7) {
+    let A, img, kind, why, dx = 0, dy = 0;
+    do {
+      const t = v === 7 ? 0 : r.int(0, 3), sm = t === 3;
+      A = []; while (A.length < 3) { const p = [r.int(sm ? -3 : -5, sm ? 3 : 5), r.int(sm ? -3 : -5, sm ? 3 : 5)]; if (!A.some((q) => q[0] === p[0] && q[1] === p[1]) && (p[0] || p[1])) A.push(p); }
+      if (t === 0) { dx = r.nonzero(-3, 3); dy = r.int(-3, 3); img = A.map(([x, y]) => [x + dx, y + dy]); kind = 'T'; why = `every point moved ${dx > 0 ? 'right' : 'left'} ${Math.abs(dx)}${dy ? ` and ${dy > 0 ? 'up' : 'down'} ${Math.abs(dy)}` : ''}: the shape slid without turning`; }
+      else if (t === 1) { const xa = r.bool(); img = A.map(([x, y]) => (xa ? [x, -y] : [-x, y])); kind = 'R'; why = `every ${xa ? 'y' : 'x'}-coordinate changed sign: the shape flipped over the ${xa ? 'x' : 'y'}-axis`; }
+      else if (t === 2) { img = A.map(([x, y]) => [-x, -y]); kind = 'O'; why = 'both coordinates changed sign: the shape turned 180° about the origin'; }
+      else { img = A.map(([x, y]) => [2 * x, 2 * y]); kind = 'D'; why = 'every coordinate was multiplied by 2: the shape grew'; }
+    } while ((A[0][0] - A[1][0]) * (A[2][1] - A[1][1]) === (A[0][1] - A[1][1]) * (A[2][0] - A[1][0]) || img.every(([x, y]) => A.some((p) => p[0] === x && p[1] === y)) || [...A, ...img].some(([x, y]) => Math.abs(x) > 7 || Math.abs(y) > 7));
+    const w = gwin([...A, ...img]);
+    const pic = H9.gridFig({ ...w, polys: [{ pts: img, t: 'hl2' }, { pts: A }], pts: [[A[0][0], A[0][1], 'A'], [img[0][0], img[0][1], 'A′', 'hl2']] });
+    if (v === 7) {
+      const rule = (p, q) => `(x, y) → (${p ? `x ${sgn(p)}` : 'x'}, ${q ? `y ${sgn(q)}` : 'y'})`;
+      return mc(r, rule(dx, dy), [rule(-dx, -dy), rule(dy, dx), rule(dx, -dy)].filter((t) => t !== rule(dx, dy)), { q: 'The blue triangle is translated onto the green one. Which rule describes the translation?', visual: pic, steps: [
+        St(`Follow one corner: A${xy(...A[0])} → A′${xy(...img[0])}. Across: ${neg(img[0][0])} − ${par(A[0][0])} = ${neg(dx)}; up: ${neg(img[0][1])} − ${par(A[0][1])} = ${neg(dy)}.`, H9.gridFig({ ...w, polys: [{ pts: img, t: 'hl2' }, { pts: A }], pts: [[A[0][0], A[0][1], 'A'], [img[0][0], img[0][1], 'A′', 'hl2']], arrows: [[A[0], img[0], 'aux']] })),
+        St(`So the rule is ${rule(dx, dy)}.`),
+      ] });
+    }
+    return mc(r, tName(kind), ['a translation', 'a reflection', 'a rotation', 'a dilation'].filter((k) => k !== tName(kind)), { q: 'The blue triangle is moved onto the green one. What kind of transformation is this?', visual: pic, steps: [St(`Compare A with A′ and the other corners: ${why}.`, pic), St(`So it is ${tName(kind)}.`)] });
+  }
+  if (v === 4) {
+    const k = r.pick([2, 3, 0.5]), x = (k === 3 ? 1 : 2) * r.int(-2, 2), y = (k === 3 ? 1 : 2) * r.nonzero(-2, 2), X = x * k + 0, Y = y * k + 0;
+    const w = gwin([[x, y], [X, Y]]);
+    return pt(X, Y, [
+      St(`A dilation about the origin multiplies both coordinates by ${D(k)}.`),
+      St(`(${neg(x)} × ${D(k)}, ${neg(y)} × ${D(k)}) = ${xy(X, Y)}. The image is on the same line from the origin, ${k > 1 ? 'further out' : 'closer in'}.`, H9.gridFig({ ...w, pts: [[x, y, 'Q'], [X, Y, 'Q′', 'hl']], segs: [[[0, 0], k > 1 ? [X, Y] : [x, y], 'aux']] })),
+      St(`So the image is ${xy(X, Y)}.`),
+    ], { q: `Point Q${xy(x, y)} is dilated by a scale factor of ${D(k)} about the origin. What is its image? Write it as (x, y).`, visual: H9.gridFig({ ...w, pts: [[x, y, 'Q']] }) });
+  }
+  if (v === 5) {
+    const k = r.pick([2, 3, 0.5]), m = k === 2 ? r.int(1, 2) : 1, sx = r.pick([1, -1]), sy = r.pick([1, -1]), base = (k === 0.5 ? [[2, 2], [6, 2], [2, 4]] : r.pick([[[1, 1], [2, 1], [1, 2]], [[1, 1], [2, 1], [2, 2]], [[1, 1], [3, 1], [1, 2]]])).map(([x, y]) => [sx * x * m, sy * y * m]);
+    const img = base.map(([x, y]) => [x * k, y * k]), w = gwin([...base, ...img]);
+    const pic = (hl) => H9.gridFig({ ...w, polys: [{ pts: img, t: 'hl2' }, { pts: base }], pts: [[base[1][0], base[1][1], 'B'], [img[1][0], img[1][1], 'B′', 'hl2']], segs: hl ? [[base[0], base[1], 'hlline'], [img[0], img[1], 'hlline']] : [] });
+    const a = Math.abs(base[1][0] - base[0][0]) || Math.abs(base[1][1] - base[0][1]), b = a * k;
+    return num(dec(k), [
+      St(`Compare a matching pair of sides. The flat (horizontal) side of the blue triangle is ${a} units long; on the green image it is ${D(b)} units.`, pic(true)),
+      St(`k = image ÷ original = ${D(b)} ÷ ${a} = ${D(k)}.`),
+      St(`So the scale factor is ${D(k)}.`),
+    ], { q: 'The green triangle is a dilation of the blue triangle about the origin. What is the scale factor?', visual: pic(false), expr: `${b}/${a}` });
   }
   const k = r.pick([2, 3, 1.5, 0.5, 2.5, 4]), L0 = 2 * r.int(2, 9);
-  return num(dec(k), ['Scale factor = image length ÷ original length.', `${D(L0 * k)} ÷ ${L0} = ${D(k)}.`, `The scale factor is ${D(k)}.`], { q: `A segment ${L0} cm long is dilated. Its image is ${D(L0 * k)} cm long. What is the scale factor?`, expr: `${L0 * k}/${L0}` });
+  const segPic = H9.scene({ P: { A: [0, 1], B: [3, 1], C: [0, 0], Dd: [3 * Math.min(k, 2.6), 0] }, W: 300, H: 120, pad: 26, segs: [['A', 'B', 'ink'], ['C', 'Dd', 'hlline']], dots: ['A', 'B', 'C', 'Dd'], sides: [['A', 'B', cm(L0), 'ink', [1.5, 0]], ['C', 'Dd', cm(L0 * k), 'hl', [1.5, 1]]] });
+  return num(dec(k), [
+    St('Scale factor = image length ÷ original length.', segPic),
+    St(`${D(L0 * k)} ÷ ${L0} = ${D(k)}.`),
+    St(`The scale factor is ${D(k)}.`),
+  ], { q: `A segment ${L0} cm long is dilated. Its image is ${D(L0 * k)} cm long. What is the scale factor?`, expr: `${L0 * k}/${L0}` });
 });
 
 const TRIPLES = [[3, 4, 5], [5, 12, 13], [8, 15, 17], [7, 24, 25], [6, 8, 10], [9, 12, 15], [20, 21, 29], [9, 40, 41]];
@@ -397,56 +678,174 @@ skill('9-pythag', 9, 'Geometry', 'The Pythagorean theorem', ['In a right triangl
 });
 
 // ───────────── Circles ─────────────
-skill('9-circle', 9, 'Circles', 'Parts and measures of a circle', ['The radius goes from the centre to the circle; the diameter goes across through the centre: d = 2r.', 'Circumference C = 2πr = πd. Area A = πr^2.', 'We use 3.14 for π.'], (r) => {
-  const v = r.int(0, 2);
+// a circle of radius 3 about O, with named points on it at the given angles (degrees) and any other points
+const OC = [0, 0], RC = 3;
+const onC = (deg, k = 1) => H9.onCircle(OC, RC * k, deg);
+const circScene = (pts, o = {}) => H9.scene({ W: 260, H: 230, pad: 30, ...o, P: { O: OC, ...Object.fromEntries(Object.entries(pts).map(([k, v]) => [k, typeof v === 'number' ? onC(v) : v])) }, circles: [{ c: 'O', r: RC, t: 'fig' }, ...(o.circles ?? [])], dots: ['O', ...(o.dots ?? [])] });
+const PARTS = [
+  ['radius', 'a segment from the centre to a point on the circle'], ['diameter', 'a chord that passes through the centre'], ['chord', 'a segment that joins two points on the circle'],
+  ['tangent', 'a line that touches the circle at exactly one point'], ['arc', 'a part of the circle between two points on it'], ['sector', 'the region between two radii and an arc'],
+  ['secant', 'a line that crosses the circle at two points'],
+];
+const partPic = (w) => {
+  if (w === 'radius') return circScene({ A: 35 }, { segs: [['O', 'A', 'hlline']], names: ['O', 'A'] });
+  if (w === 'diameter') return circScene({ A: 160, B: 340 }, { segs: [['A', 'B', 'hlline']], names: ['O', 'A', 'B'] });
+  if (w === 'chord') return circScene({ A: 140, B: 20 }, { segs: [['A', 'B', 'hlline']], names: ['O', 'A', 'B'] });
+  if (w === 'tangent') return circScene({ T: 60, U: H9.onCircle(OC, RC / Math.cos(Math.PI / 5), 60 - 36), V: H9.onCircle(OC, RC / Math.cos(Math.PI / 5), 60 + 36) }, { segs: [['U', 'V', 'hlline'], ['O', 'T', 'aux']], rights: [['T', 'O', 'U']], names: ['O', 'T'] });
+  if (w === 'arc') return circScene({ A: 200, B: 300 }, { arcs: [{ c: 'O', r: RC, from: 200, to: 300 }], names: ['O', 'A', 'B'] });
+  if (w === 'sector') return circScene({ A: 20, B: 110 }, { sectors: [{ c: 'O', r: RC, from: 20, to: 110 }], segs: [['O', 'A'], ['O', 'B']], names: ['O'] });
+  return circScene({ U: H9.onCircle(OC, 4.4, 195), V: H9.onCircle(OC, 4.2, 45) }, { segs: [['U', 'V', 'hlline']], names: ['O'] });
+};
+skill('9-circle', 9, 'Circles', 'Parts and measures of a circle', [
+  KL('The radius goes from the centre to the circle. The diameter goes right across through the centre, so d = 2r.', circScene({ A: 30, B: 160, C: 340 }, { segs: [['O', 'A', 'hlline'], ['B', 'C', 'ink']], sides: [['O', 'A', 'r', 'hl'], ['O', 'C', 'd = 2r', 'ink', [0, 2]]], names: ['O'] })),
+  KL('A chord joins two points on the circle. A tangent touches it at just one point, at right angles to the radius. An arc is a piece of the circle.', partPic('tangent')),
+  KL('Circumference C = 2πr (or πd): the distance around. Area A = πr². We use 3.14 for π.', G.circleFig({ r: 'r', show: 'radius', hl: 'fill' })),
+  KL('A sector is a slice between two radii, like a slice of pizza.', partPic('sector')),
+], (r) => {
+  const v = r.int(0, 8);
   if (v === 0) {
-    const P = [['radius', 'a segment from the centre to a point on the circle'], ['diameter', 'a chord that passes through the centre'], ['chord', 'a segment that joins two points on the circle'], ['tangent', 'a line that touches the circle at exactly one point'], ['arc', 'a part of the circle between two points on it'], ['sector', 'the region between two radii and an arc'], ['circumference', 'the distance around the circle'], ['secant', 'a line that crosses the circle at two points']];
-    const [w, def] = r.pick(P);
-    return mc(r, w, r.shuffle(P.filter((p) => p[0] !== w).map((p) => p[0])).slice(0, 3), { q: `Which word means ${def}?`, steps: [`${def[0].toUpperCase() + def.slice(1)} is called a ${w}.`, `The answer is ${w}.`] });
+    const [w] = r.pick(PARTS), pic = partPic(w), def = PARTS.find((p) => p[0] === w)[1];
+    return mc(r, w, r.shuffle(PARTS.filter((p) => p[0] !== w).map((p) => p[0])).slice(0, 3), { q: 'What is the highlighted part of the circle called?', visual: pic, steps: [St(`It is ${def}.`, pic), St(`That is called a ${w}.`)] });
   }
-  const rad = r.int(2, 20), tail = ' Use 3.14 for π and round to the nearest tenth.';
   if (v === 1) {
-    const t = r.int(0, 3);
-    if (t === 0) { const { answer, tol } = piAns(2 * 3.14 * rad, 2 * Math.PI * rad); return num(answer, ['C = 2πr.', `2 × 3.14 × ${rad} = ${dec(6.28 * rad)}.`, `The circumference is about ${answer} cm.`], { q: `A circle has a radius of ${rad} cm. Find its circumference.${tail}`, unit: 'cm', tol, expr: `Math.round(2*3.14*${rad}*10+1e-6)/10` }); }
-    if (t === 1) { const { answer, tol } = piAns(3.14 * rad * rad, Math.PI * rad * rad); return num(answer, ['A = πr^2. The radius is half the diameter.', `r = ${2 * rad} ÷ 2 = ${rad}; 3.14 × ${rad}^2 = 3.14 × ${rad * rad}.`, `The area is about ${answer} cm².`], { q: `A circle has a diameter of ${2 * rad} cm. Find its area.${tail}`, unit: 'cm²', tol, expr: `Math.round(3.14*${rad * rad}*10+1e-6)/10` }); }
-    if (t === 2) { const C = dec(6.28 * rad); return num(rad, ['C = 2πr, so r = C ÷ (2π).', `${C} ÷ (2 × 3.14) = ${C} ÷ 6.28 = ${rad}.`, `The radius is ${rad} cm.`], { q: `A circle has a circumference of ${C} cm. Use 3.14 for π to find its radius.`, unit: 'cm', tol: 0.06, expr: `${C}/6.28` }); }
-    return num(2 * rad, ['The diameter is twice the radius.', `2 × ${rad} = ${2 * rad}.`, `The diameter is ${2 * rad} cm.`], { q: `A circle has a radius of ${rad} cm. What is its diameter?`, unit: 'cm', expr: `2*${rad}` });
+    const [w, def] = r.pick(PARTS);
+    return mc(r, w, r.shuffle(PARTS.filter((p) => p[0] !== w).map((p) => p[0])).slice(0, 3), { q: `Which word means ${def}?`, steps: [St(`${def[0].toUpperCase() + def.slice(1)} is called a ${w}.`, partPic(w)), `The answer is ${w}.`] });
   }
-  if (r.bool()) {
-    const d = r.pick([50, 60, 64, 70, 75]), n = r.int(5, 40), { answer, tol } = piAns(3.14 * d * n / 100, Math.PI * d * n / 100);
-    return num(answer, [`One turn moves the bike one circumference: 3.14 × ${d} = ${dec(3.14 * d)} cm.`, `${n} turns: ${n} × ${dec(3.14 * d)} = ${dec(3.14 * d * n)} cm = ${dec(3.14 * d * n / 100)} m.`, `It travels about ${answer} m.`], { q: `A bike wheel has a diameter of ${d} cm. How many metres does the bike travel when the wheel turns ${n} times? Use 3.14 for π and round to the nearest tenth.`, unit: 'm', tol, expr: `Math.round(3.14*${d}*${n}/100*10+1e-6)/10` });
+  const rad = r.int(2, 20);
+  const pic = (o) => G.circleFig({ show: 'radius', r: cm(rad), ...o });
+  if (v === 2) {
+    const { answer, tol } = piAns(6.28 * rad, 2 * Math.PI * rad);
+    return num(answer, [St(`The radius is ${rad} cm. The circumference is the distance round the circle: C = 2πr.`, pic({ hl: 'radius' })), St(`C ≈ 2 × 3.14 × ${rad} = ${D(6.28 * rad)}.`), St(`So the circumference is about ${answer} cm.`)], { q: `Find the circumference of this circle.${PIT}`, unit: 'cm', visual: pic(), tol, expr: `2*3.14*${rad}` });
+  }
+  if (v === 3) {
+    const { answer, tol } = piAns(3.14 * rad * rad, Math.PI * rad * rad), dp = (hl) => G.circleFig({ show: 'diameter', d: cm(2 * rad), hl });
+    return num(answer, [St(`The diameter is ${2 * rad} cm, so the radius is half of it: ${2 * rad} ÷ 2 = ${rad} cm.`, dp('diameter')), St(`A = πr² ≈ 3.14 × ${rad}² = 3.14 × ${rad * rad} = ${D(3.14 * rad * rad)}.`, dp('fill')), St(`Rounded to the nearest tenth: ${answer}.`), St(`So the area is about ${answer} cm².`)], { q: `Find the area of this circle.${PIT}`, unit: 'cm²', visual: dp(), tol, expr: `3.14*${rad * rad}` });
+  }
+  if (v === 4) {
+    const C = dec(6.28 * rad);
+    return num(rad, [St('C = 2πr, so r = C ÷ (2π).', G.circleFig({ show: 'radius', r: 'r', hl: 'radius' })), St(`${C} ÷ (2 × 3.14) = ${C} ÷ 6.28 = ${rad}.`), St(`The radius is ${rad} cm.`)], { q: `A circle has a circumference of ${C} cm. Use 3.14 for π to find its radius.`, unit: 'cm', tol: 0.06, visual: G.circleFig({ show: 'radius', r: 'r' }), expr: `${C}/6.28` });
+  }
+  if (v === 5) return num(2 * rad, [St('The diameter goes right across through the centre: two radii end to end.', G.circleFig({ show: 'both', r: cm(rad), hl: 'diameter' })), St(`2 × ${rad} = ${2 * rad}.`), St(`The diameter is ${2 * rad} cm.`)], { q: 'What is the diameter of this circle?', unit: 'cm', visual: pic(), expr: `2*${rad}` });
+  if (v === 6) {
+    const d = r.pick([50, 60, 64, 70, 75]), n = r.int(5, 40), { answer, tol } = piAns((3.14 * d * n) / 100, (Math.PI * d * n) / 100);
+    return num(answer, [St(`One turn rolls the wheel along one circumference: C = πd ≈ 3.14 × ${d} = ${D(3.14 * d)} cm.`, G.circleFig({ show: 'diameter', d: `${d} cm`, hl: 'diameter' })), St(`${n} turns: ${n} × ${D(3.14 * d)} = ${D(3.14 * d * n)} cm = ${D((3.14 * d * n) / 100)} m.`), St(`It travels about ${answer} m.`)], { q: `A bike wheel has a diameter of ${d} cm. How many metres does the bike travel when the wheel turns ${n} times? Use 3.14 for π and round to the nearest tenth.`, unit: 'm', visual: G.circleFig({ show: 'diameter', d: `${d} cm` }), tol, expr: `3.14*${d}*${n}/100` });
+  }
+  if (v === 7) {
+    const val = (3.14 * rad * rad) / 2, { answer, tol } = piAns(val, (Math.PI * rad * rad) / 2), sp = (hl) => G.circleFig({ shade: 'half', show: 'diameter', d: cm(2 * rad), hl });
+    return num(answer, [St(`The straight edge is a diameter, ${2 * rad} cm, so r = ${rad} cm.`, sp('diameter')), St(`A semicircle is half a circle: 3.14 × ${rad}² ÷ 2 = ${D(3.14 * rad * rad)} ÷ 2 = ${D(val)}.`, sp('fill')), St(`Rounded to the nearest tenth: ${answer}.`), St(`So the area is about ${answer} cm².`)], { q: `Find the area of this semicircle.${PIT}`, unit: 'cm²', visual: sp(), tol, expr: `3.14*${rad * rad}/2` });
   }
   const R = r.int(2, 12), { answer, tol } = piAns(3.14 * R * R, Math.PI * R * R);
-  return num(answer, ['The grass covers the whole circle, so find the area: A = πr^2.', `3.14 × ${R}^2 = 3.14 × ${R * R}.`, `≈ ${answer}. About ${answer} m² of grass is needed.`], { q: `A round garden has a radius of ${R} m. How much grass sod is needed to cover it?${tail}`, unit: 'm²', tol, expr: `Math.round(3.14*${R * R}*10+1e-6)/10` });
+  return num(answer, [St('The grass covers the whole circle, so find the area: A = πr².', G.circleFig({ show: 'radius', r: `${R} m`, hl: 'fill' })), St(`3.14 × ${R}² = 3.14 × ${R * R} = ${D(3.14 * R * R)}.`), St(`About ${answer} m² of grass is needed.`)], { q: `A round garden has a radius of ${R} m. How much grass sod is needed to cover it?${PIT}`, unit: 'm²', visual: G.circleFig({ show: 'radius', r: `${R} m` }), tol, expr: `3.14*${R * R}` });
 });
 
-skill('9-arcs', 9, 'Circles', 'Central angles, arcs and sectors', ['The central angles around the centre add to 360°. An arc measures the same as its central angle.', 'Arc length = (angle ÷ 360) × 2πr.', 'Sector area = (angle ÷ 360) × πr^2.'], (r) => {
-  const v = r.int(0, 3), th = r.pick([30, 40, 45, 60, 72, 90, 120, 135, 150, 210, 240, 270, 300]), rad = r.int(2, 15), tail = ' Use 3.14 for π and round to the nearest tenth.';
-  if (v === 0) {
-    if (r.bool()) { const a = r.int(40, 120), b = r.int(40, 120), c = r.int(30, 100), x = 360 - a - b - c; return num(x, ['Central angles around the centre add to 360°.', `${a} + ${b} + ${c} = ${a + b + c}.`, `360 − ${a + b + c} = ${x}. The missing angle is ${x}°.`], { q: `Four central angles fill a circle. Three of them are ${a}°, ${b}° and ${c}°. What is the fourth?`, unit: '°', expr: `360-${a}-${b}-${c}` }); }
-    const x = r.int(25, 170); return num(360 - x, [`Arc AB (the minor arc) measures the same as ∠AOB: ${x}°.`, `The major arc is the rest of the circle: 360 − ${x} = ${360 - x}.`, `The major arc measures ${360 - x}°.`], { q: `The central angle ∠AOB is ${x}°. What is the measure of the major arc AB (the long way around)?`, unit: '°', expr: `360-${x}` });
-  }
-  if (v === 1) { const { answer, tol } = piAns(th / 360 * 2 * 3.14 * rad, th / 360 * 2 * Math.PI * rad); return num(answer, [`The arc is ${th}/360 = ${F(th, 360)} of the circle.`, `${F(th, 360)} × 2 × 3.14 × ${rad} = ${F(th, 360)} × ${dec(6.28 * rad)}.`, `≈ ${answer}. The arc length is about ${answer} cm.`], { q: `A circle has a radius of ${rad} cm. Find the length of an arc with a central angle of ${th}°.${tail}`, unit: 'cm', tol, expr: `Math.round(${th}/360*2*3.14*${rad}*10+1e-6)/10` }); }
-  if (v === 2) { const { answer, tol } = piAns(th / 360 * 3.14 * rad * rad, th / 360 * Math.PI * rad * rad); return num(answer, [`The sector is ${th}/360 = ${F(th, 360)} of the circle.`, `${F(th, 360)} × 3.14 × ${rad}^2 = ${F(th, 360)} × ${dec(3.14 * rad * rad)}.`, `≈ ${answer}. The sector's area is about ${answer} cm².`], { q: `A circle has a radius of ${rad} cm. Find the area of a sector with a central angle of ${th}°.${tail}`, unit: 'cm²', tol, expr: `Math.round(${th}/360*3.14*${rad * rad}*10+1e-6)/10` }); }
-  return num(frac(th, 360), ['A full turn is 360°.', `${th}/360 simplifies to ${frac(th, 360)}.`, `So the sector is ${frac(th, 360)} of the circle.`], { q: `A sector has a central angle of ${th}°. What fraction of the whole circle is it? Give the simplest fraction.`, exactForm: 'fraction', expr: `${th}/360` });
+// a sector from angle `a` to `a + th` with the arc or the slice highlighted
+const sectorPic = ({ th, start = 0, rl, hl = 'sector', ang = `${th}°`, names = false }) => circScene({ A: start, B: start + th }, {
+  sectors: hl === 'sector' || hl === 'both' ? [{ c: 'O', r: RC, from: start, to: start + th, t: 'hl' }] : [],
+  arcs: hl === 'arc' || hl === 'both' ? [{ c: 'O', r: RC, from: start, to: start + th }] : [],
+  segs: [['O', 'A'], ['O', 'B']], angs: th < 180 ? [{ v: 'O', a: 'A', b: 'B', s: ang, r: 16 }] : [], notes: th < 180 ? [] : [{ at: onC(start + th / 2, 0.42), s: ang, t: 'hl' }], sides: rl ? [['O', 'A', rl, 'ink', 'B']] : [], names: names ? ['O', 'A', 'B'] : [],
 });
-
-skill('9-inscribed', 9, 'Circles', 'Inscribed angles and tangents', ['An inscribed angle is half of the arc it cuts off.', 'An angle inscribed in a semicircle is 90°. Opposite angles of a quadrilateral inscribed in a circle add to 180°.', 'A tangent meets the radius at 90°, and the two tangents from one point are equal.'], (r) => {
-  const v = r.int(0, 4);
+skill('9-arcs', 9, 'Circles', 'Central angles, arcs and sectors', [
+  KL('A central angle has its vertex at the centre. The arc it cuts off has the same measure, and the central angles all the way round add to 360°.', circScene({ A: 10, B: 100, C: 210 }, { segs: [['O', 'A'], ['O', 'B'], ['O', 'C']], angs: [{ v: 'O', a: 'A', b: 'B', s: '90°', r: 16 }, { v: 'O', a: 'B', b: 'C', s: '110°', r: 18 }, { v: 'O', a: 'C', b: 'A', s: '160°', r: 14 }] })),
+  KL('An arc is part of the circumference. Arc length = (angle ÷ 360) × 2πr.', sectorPic({ th: 90, start: 20, rl: 'r', hl: 'arc' })),
+  KL('A sector is part of the area. Sector area = (angle ÷ 360) × πr².', sectorPic({ th: 90, start: 20, rl: 'r', hl: 'sector' })),
+  KL('The minor arc is the short way round; the major arc is the long way, 360° minus the minor arc.', circScene({ A: 230, B: 310 }, { arcs: [{ c: 'O', r: RC, from: 310, to: 230 }], segs: [['O', 'A'], ['O', 'B']], angs: [{ v: 'O', a: 'A', b: 'B', s: '80°', r: 16 }], names: ['A', 'B'] })),
+], (r) => {
+  const v = r.int(0, 7), th = r.pick([30, 40, 45, 60, 72, 90, 120, 135, 150, 210, 240, 270, 300]), rad = r.int(2, 15), start = r.pick([0, 10, 20, 200]);
   if (v === 0) {
-    const arc = 2 * r.int(20, 150);
-    if (r.bool()) return num(arc / 2, ['An inscribed angle is half of its arc.', `${arc} ÷ 2 = ${arc / 2}.`, `The inscribed angle is ${arc / 2}°.`], { q: `An inscribed angle cuts off an arc of ${arc}°. What is the inscribed angle?`, unit: '°', expr: `${arc}/2` });
-    return num(arc, ['The arc is twice the inscribed angle.', `2 × ${arc / 2} = ${arc}.`, `The arc measures ${arc}°.`], { q: `An inscribed angle measures ${arc / 2}°. What is the measure of the arc it cuts off?`, unit: '°', expr: `2*${arc / 2}` });
+    let a, b, c, x; do { a = r.int(40, 120); b = r.int(40, 120); c = r.int(30, 100); x = 360 - a - b - c; } while (x < 30 || x > 170);
+    const sh = [a, b, c, x], cum = [0, a, a + b, a + b + c], names = { A: cum[0] + 15, B: cum[1] + 15, C: cum[2] + 15, Dd: cum[3] + 15 };
+    const pic = (hl) => circScene(names, { segs: [['O', 'A'], ['O', 'B'], ['O', 'C'], ['O', 'Dd']], angs: [['A', 'B'], ['B', 'C'], ['C', 'Dd'], ['Dd', 'A']].map(([p, q], i) => ({ v: 'O', a: p, b: q, s: i === 3 ? (hl ? `${x}°` : 'x') : `${sh[i]}°`, r: 15 + 2 * i, t: i === 3 && hl ? 'hlline' : 'mark' })) });
+    return num(x, [St('The central angles go all the way round the centre, so they add to 360°.', pic(false)), St(`${a} + ${b} + ${c} = ${a + b + c}, and 360 − ${a + b + c} = ${x}.`, pic(true)), St(`So x = ${x}°.`)], { q: 'Find the central angle x. (Not drawn to scale.)', unit: '°', visual: pic(false), expr: `360-${a}-${b}-${c}` });
   }
-  if (v === 1) { const x = r.int(15, 75); return num(90 - x, ['The side AB is a diameter, so the angle at C is 90°.', `The angles add to 180°: 180 − 90 − ${x} = ${90 - x}.`, `∠B = ${90 - x}°.`], { q: `Triangle ABC is drawn inside a circle, and AB is a diameter. ∠A = ${x}°. What is ∠B?`, unit: '°', expr: `90-${x}` }); }
-  if (v === 2) { const x = r.int(50, 130); return num(180 - x, ['ABCD is inscribed in a circle, so opposite angles add to 180°.', `∠C = 180 − ${x} = ${180 - x}.`, `∠C = ${180 - x}°.`], { q: `Quadrilateral ABCD is inscribed in a circle. ∠A = ${x}°. What is ∠C?`, unit: '°', expr: `180-${x}` }); }
+  if (v === 1) {
+    const x = r.int(25, 170), A = 270 - x / 2, B = 270 + x / 2;
+    const pic = (hl) => circScene({ A, B }, { arcs: hl ? [{ c: 'O', r: RC, from: B, to: A + 360 }] : [], segs: [['O', 'A'], ['O', 'B']], angs: [{ v: 'O', a: 'A', b: 'B', s: `${x}°`, r: 16 }], names: ['A', 'B'] });
+    return num(360 - x, [St(`The minor arc AB measures the same as its central angle: ${x}°.`), St(`The major arc goes the long way round: 360° − ${x}° = ${360 - x}°.`, pic(true)), St(`So the major arc measures ${360 - x}°.`)], { q: 'What is the measure of the major arc AB (the long way round), in degrees?', unit: '°', visual: pic(false), expr: `360-${x}` });
+  }
+  if (v === 2) {
+    const L = (th / 360) * 6.28 * rad, { answer, tol } = piAns(L, (th / 360) * 2 * Math.PI * rad);
+    return num(answer, [
+      St(`The arc is ${th}/360 = ${F(th, 360)} of the whole circle.`, sectorPic({ th, start, rl: cm(rad), hl: 'arc' })),
+      St(`The whole circumference is 2 × 3.14 × ${rad} = ${D(6.28 * rad)}, and ${F(th, 360)} of it is ${D(L, 4)}.`),
+      St(`Rounded to the nearest tenth: ${answer}.`),
+      St(`So the arc length is about ${answer} cm.`),
+    ], { q: `Find the length of the highlighted arc.${PIT}`, unit: 'cm', visual: sectorPic({ th, start, rl: cm(rad), hl: 'arc' }), tol, expr: `${th}/360*2*3.14*${rad}` });
+  }
   if (v === 3) {
-    const [a, b, c] = r.pick(TRIPLES);
-    if (r.bool()) return num(b, [`The radius OT meets the tangent at 90°, so OTP is a right triangle with hypotenuse OP = ${c}.`, `PT^2 = ${c}^2 − ${a}^2 = ${c * c - a * a}, so PT = ${b}.`, `PT = ${b} cm.`], { q: `PT is tangent to a circle with centre O at point T. The radius is ${a} cm and OP = ${c} cm. How long is PT?`, unit: 'cm', expr: `Math.sqrt(${c}**2-${a}**2)` });
-    const x = r.int(30, 140); return num(180 - x, ['Each tangent meets its radius at 90°, so the quadrilateral has two 90° angles.', `The angles add to 360°: 360 − 90 − 90 − ${x} = ${180 - x}.`, `The angle at the centre is ${180 - x}°.`], { q: `Two tangents from point P touch a circle with centre O at A and B. ∠APB = ${x}°. What is ∠AOB?`, unit: '°', expr: `180-${x}` });
+    const A = (th / 360) * 3.14 * rad * rad, { answer, tol } = piAns(A, (th / 360) * Math.PI * rad * rad);
+    return num(answer, [
+      St(`The sector is ${th}/360 = ${F(th, 360)} of the whole circle.`, sectorPic({ th, start, rl: cm(rad) })),
+      St(`The whole area is 3.14 × ${rad}² = ${D(3.14 * rad * rad)}, and ${F(th, 360)} of it is ${D(A, 4)}.`),
+      St(`Rounded to the nearest tenth: ${answer}.`),
+      St(`So the sector's area is about ${answer} cm².`),
+    ], { q: `Find the area of the shaded sector.${PIT}`, unit: 'cm²', visual: sectorPic({ th, start, rl: cm(rad) }), tol, expr: `${th}/360*3.14*${rad * rad}` });
   }
-  const p = r.int(2, 9), q = r.int(2, 9), s = r.int(2, 9), P = 2 * (p + q + s);
-  return num(P, ['Two tangents from the same corner are equal, so each length appears twice.', `2 × (${p} + ${q} + ${s}) = 2 × ${p + q + s} = ${P}.`, `The perimeter is ${P} cm.`], { q: `A circle is inscribed in a triangle. From the three corners, the tangent lengths to the circle are ${p} cm, ${q} cm and ${s} cm. What is the perimeter of the triangle?`, unit: 'cm', expr: `2*(${p}+${q}+${s})` });
+  if (v === 4) return num(frac(th, 360), [St('A full turn round the centre is 360°.', sectorPic({ th, start })), St(`${th}/360 simplifies to ${frac(th, 360)}.`), St(`So the sector is ${frac(th, 360)} of the circle.`)], { q: 'What fraction of the whole circle is the shaded sector? Give the simplest fraction.', visual: sectorPic({ th, start }), exactForm: 'fraction', expr: `${th}/360` });
+  if (v === 5) {
+    const n = r.pick([3, 4, 5, 6, 8, 9, 10, 12]), P = {}; for (let i = 0; i < n; i++) P[`p${i}`] = 90 + (360 / n) * i;
+    const pic = (hl) => circScene(P, { sectors: hl ? [{ c: 'O', r: RC, from: 90, to: 90 + 360 / n, t: 'hl' }] : [], segs: Object.keys(P).map((k) => ['O', k]), angs: hl ? [{ v: 'O', a: 'p0', b: 'p1', s: `${360 / n}°`, r: 14 }] : [] });
+    return num(360 / n, [St(`The ${n} equal slices share the 360° round the centre.`, pic(false)), St(`360 ÷ ${n} = ${360 / n}.`, pic(true)), St(`So each slice has a central angle of ${360 / n}°.`)], { q: `A round pizza is cut into ${n} equal slices from the centre. What is the central angle of each slice, in degrees?`, unit: '°', visual: pic(false), expr: `360/${n}` });
+  }
+  if (v === 6) {
+    const a = r.int(30, 100), b = r.int(30, 100), A = 200, B = 200 + a, C = 200 + a + b;
+    const pic = (hl) => circScene({ A, B, C }, { arcs: hl ? [{ c: 'O', r: RC, from: A, to: C }] : [], segs: [['O', 'A'], ['O', 'B'], ['O', 'C']], angs: [{ v: 'O', a: 'A', b: 'B', s: `${a}°`, r: 15 }, { v: 'O', a: 'B', b: 'C', s: `${b}°`, r: 19 }], names: ['A', 'B', 'C'] });
+    return num(a + b, [St(`Each arc measures the same as its central angle: arc AB = ${a}° and arc BC = ${b}°.`, pic(false)), St(`Arc AC is the two together: ${a} + ${b} = ${a + b}.`, pic(true)), St(`So arc AC measures ${a + b}°.`)], { q: 'What is the measure of arc AC (through B), in degrees? (Not drawn to scale.)', unit: '°', visual: pic(false), expr: `${a}+${b}` });
+  }
+  const t2 = r.pick([90, 180, 120, 60, 45, 270]), rad2 = r.int(2, 12), whole = 6.28 * rad2, part = (t2 / 360) * whole, { answer, tol } = piAns(part, (t2 / 360) * 2 * Math.PI * rad2);
+  return num(answer, [St(`The arc is ${F(t2, 360)} of the circle, because ${t2} ÷ 360 = ${F(t2, 360)}.`, sectorPic({ th: t2, start: 0, rl: `${rad2} m`, hl: 'arc' })), St(`${F(t2, 360)} × 2 × 3.14 × ${rad2} = ${F(t2, 360)} × ${D(whole)} = ${D(part, 4)}.`), St(`Rounded to the nearest tenth: ${answer}.`), St(`So the path is about ${answer} m long.`)], { q: `A curved garden path follows an arc of a circle with radius ${rad2} m and central angle ${t2}°. How long is the path?${PIT}`, unit: 'm', visual: sectorPic({ th: t2, start: 0, rl: `${rad2} m`, hl: 'arc' }), tol, expr: `${t2}/360*2*3.14*${rad2}` });
+});
+
+skill('9-inscribed', 9, 'Circles', 'Inscribed angles and tangents', [
+  KL('An inscribed angle has its vertex on the circle. It is half of the central angle (and of the arc) that it cuts off.', circScene({ A: 230, B: 310, C: 100 }, { arcs: [{ c: 'O', r: RC, from: 230, to: 310 }], segs: [['C', 'A'], ['C', 'B'], ['O', 'A', 'aux'], ['O', 'B', 'aux']], angs: [{ v: 'C', a: 'A', b: 'B', s: '40°' }, { v: 'O', a: 'A', b: 'B', s: '80°', r: 14 }], names: ['A', 'B', 'C'] })),
+  KL('An angle inscribed in a semicircle (its arc is cut off by a diameter) is always 90°.', circScene({ A: 180, B: 0, C: 60 }, { fills: [{ pts: ['A', 'B', 'C'], t: 'fig' }], segs: [['A', 'B', 'hlline']], rights: [['C', 'A', 'B']], names: ['A', 'B', 'C'] })),
+  KL('In a quadrilateral inscribed in a circle, opposite angles add to 180°.', circScene({ A: 200, B: 300, C: 30, Dd: 120 }, { fills: [{ pts: ['A', 'B', 'C', 'Dd'], t: 'fig' }], angs: [{ v: 'A', a: 'Dd', b: 'B', s: 'a' }, { v: 'C', a: 'B', b: 'Dd', s: 'c' }], notes: [{ at: [0, -0.9], s: 'a + c = 180°', t: 'hl' }] })),
+  KL('A tangent meets the radius at 90°. The two tangents from one outside point are the same length.', circScene({ A: 60, B: -60, Pp: [6, 0] }, { segs: [['Pp', 'A'], ['Pp', 'B'], ['O', 'A', 'aux'], ['O', 'B', 'aux']], rights: [['A', 'O', 'Pp'], ['B', 'O', 'Pp']], ticks: [['Pp', 'A', 1], ['Pp', 'B', 1]], names: { O: 'O', A: 'A', B: 'B', Pp: 'P' } })),
+], (r) => {
+  const v = r.int(0, 8);
+  if (v <= 2) {
+    const arc = v === 2 ? 2 * r.int(20, 85) : 2 * r.int(20, 140), A = 270 - arc / 2, B = 270 + arc / 2, Cd = r.int(60, 120), x = arc / 2;
+    const pic = (o) => circScene({ A, B, C: Cd }, { arcs: o.arc ? [{ c: 'O', r: RC, from: A, to: B }] : [], segs: [['C', 'A', o.hlC ? 'hlline' : 'ink'], ['C', 'B', o.hlC ? 'hlline' : 'ink'], ...(o.central ? [['O', 'A', 'aux'], ['O', 'B', 'aux']] : [])], angs: [{ v: 'C', a: 'A', b: 'B', s: o.cs }, ...(o.central ? [{ v: 'O', a: 'A', b: 'B', s: o.os, r: 14 }] : [])], names: ['A', 'B', 'C'], notes: o.arcLab ? [{ at: onC(270, 1.22), s: o.arcLab, t: 'hl' }] : [] });
+    if (v === 0) return num(x, [St('∠ACB is an inscribed angle: its vertex C is on the circle. It cuts off arc AB.', pic({ arc: true, arcLab: `${arc}°`, cs: '?', hlC: true })), St(`An inscribed angle is half of its arc: ${arc} ÷ 2 = ${x}.`), St(`So ∠ACB = ${x}°.`)], { q: 'Arc AB measures as shown. What is the inscribed angle ∠ACB, in degrees?', unit: '°', visual: pic({ arc: true, arcLab: `${arc}°`, cs: '?' }), expr: `${arc}/2` });
+    if (v === 1) return num(arc, [St('∠ACB is inscribed, so the arc AB it cuts off is twice as big.', pic({ arc: true, arcLab: '?', cs: `${x}°` })), St(`2 × ${x} = ${arc}.`), St(`So arc AB measures ${arc}°.`)], { q: 'What is the measure of arc AB, in degrees?', unit: '°', visual: pic({ arc: true, arcLab: '?', cs: `${x}°` }), expr: `2*${x}` });
+    return num(x, [St('∠AOB is the central angle and ∠ACB is an inscribed angle on the same arc AB.', pic({ central: true, os: `${arc}°`, cs: '?', arc: true })), St(`The inscribed angle is half the central angle: ${arc} ÷ 2 = ${x}.`, pic({ central: true, os: `${arc}°`, cs: `${x}°`, hlC: true })), St(`So ∠ACB = ${x}°.`)], { q: 'O is the centre. What is ∠ACB, in degrees?', unit: '°', visual: pic({ central: true, os: `${arc}°`, cs: '?' }), expr: `${arc}/2` });
+  }
+  if (v === 3) {
+    const x = r.int(15, 75), Cd = 2 * x;  // C on the circle at 2x° from B makes ∠A = x
+    const pic = (hl) => circScene({ A: 180, B: 0, C: Cd }, { fills: [{ pts: ['A', 'B', 'C'], t: 'fig' }], segs: hl ? [['A', 'B', 'hlline']] : [], rights: hl ? [['C', 'A', 'B']] : [], angs: [{ v: 'A', a: 'B', b: 'C', s: `${x}°` }, { v: 'B', a: 'A', b: 'C', s: '?' }], names: ['A', 'B', 'C'] });
+    return num(90 - x, [St('AB passes through the centre, so it is a diameter. The angle at C stands on a semicircle, so ∠C = 90°.', pic(true)), St(`The angles of a triangle add to 180°: 180 − 90 − ${x} = ${90 - x}.`), St(`So ∠B = ${90 - x}°.`)], { q: 'AB is a diameter of the circle (O is the centre). What is ∠B, in degrees?', unit: '°', visual: pic(false), expr: `90-${x}` });
+  }
+  if (v === 4) {
+    const a = r.int(40, 100), b = r.int(40, 100), c = r.int(40, 100), d = 360 - a - b - c;
+    if (d < 40 || b + c < 90 || d + a < 90) return list.find((s) => s.id === 'math-9-inscribed').gen(r);
+    const pA = 200, pB = pA + a, pC = pB + b, pD = pC + c;   // arcs AB, BC, CD, DA
+    const angA = (b + c) / 2, angC = (d + a) / 2, x = angA;
+    if (!Number.isInteger(x)) return list.find((s) => s.id === 'math-9-inscribed').gen(r);
+    const pic = (hl) => circScene({ A: pA, B: pB, C: pC, Dd: pD }, { fills: [{ pts: ['A', 'B', 'C', 'Dd'], t: 'fig' }], angs: [{ v: 'A', a: 'Dd', b: 'B', s: `${x}°`, t: hl ? 'hlline' : 'mark' }, { v: 'C', a: 'B', b: 'Dd', s: '?', t: hl ? 'hlline' : 'mark' }], names: { A: 'A', B: 'B', C: 'C', Dd: 'D' } });
+    return num(180 - x, [St('ABCD is inscribed in the circle: all four corners are on it. Opposite angles A and C add to 180°.', pic(true)), St(`∠C = 180 − ${x} = ${180 - x}.`), St(`So ∠C = ${180 - x}°.`)], { q: 'Quadrilateral ABCD is inscribed in a circle. What is ∠C, in degrees?', unit: '°', visual: pic(false), expr: `180-${x}` });
+  }
+  if (v === 5) {
+    const [a, b, c] = r.pick(TRIPLES), k = c / a;
+    const tA = (Math.acos(1 / k) * 180) / Math.PI;    // T sits where OT ⟂ TP
+    const pic = (hl, ans) => circScene({ T: tA, Pp: [RC * k, 0] }, { segs: [['O', 'Pp', 'ink'], ['T', 'Pp', hl ? 'hlline' : 'ink'], ['O', 'T', 'aux']], rights: hl ? [['T', 'O', 'Pp']] : [], sides: [['O', 'T', cm(a)], ['O', 'Pp', cm(c)], ['T', 'Pp', ans ? cm(b) : '?', hl ? 'hl' : 'ink']], names: { O: 'O', T: 'T', Pp: 'P' }, W: 300 });
+    return num(b, [St(`The radius OT meets the tangent at 90°, so triangle OTP has a right angle at T. OP = ${c} cm is the hypotenuse.`, pic(true)), St(`PT² = ${c}² − ${a}² = ${c * c} − ${a * a} = ${b * b}, so PT = √${b * b} = ${b}.`, pic(true, true)), St(`So PT = ${b} cm.`)], { q: 'PT is tangent to the circle with centre O. How long is PT? (Not drawn to scale.)', unit: 'cm', visual: pic(false), expr: `Math.sqrt(${c}**2-${a}**2)` });
+  }
+  if (v === 6) {
+    const x = r.int(30, 140), half = (180 - x) / 2, k = 1 / Math.cos((half * Math.PI) / 180);
+    const pic = (hl) => circScene({ A: half, B: -half, Pp: [RC * k, 0] }, { segs: [['Pp', 'A'], ['Pp', 'B'], ['O', 'A', 'aux'], ['O', 'B', 'aux']], rights: hl ? [['A', 'O', 'Pp'], ['B', 'O', 'Pp']] : [], angs: [{ v: 'Pp', a: 'A', b: 'B', s: `${x}°`, r: 18 }, { v: 'O', a: 'A', b: 'B', s: '?', r: 14, t: hl ? 'hlline' : 'mark' }], names: { O: 'O', A: 'A', B: 'B', Pp: 'P' }, W: 300 });
+    return num(180 - x, [St('Each tangent meets its radius at 90°, so quadrilateral OAPB has two right angles.', pic(true)), St(`Its angles add to 360°: 360 − 90 − 90 − ${x} = ${180 - x}.`), St(`So ∠AOB = ${180 - x}°.`)], { q: 'PA and PB are tangents to the circle with centre O. What is ∠AOB, in degrees? (Not drawn to scale.)', unit: '°', visual: pic(false), expr: `180-${x}` });
+  }
+  if (v === 7) {
+    const p = r.int(2, 9), q = r.int(2, 9), s = r.int(2, 9), Pm = 2 * (p + q + s);
+    const [A, B, C] = H9.triFromSides(q + s, p + s, p + q), a = q + s, b = p + s, c = p + q, per = a + b + c;
+    const I = [(a * A[0] + b * B[0] + c * C[0]) / per, (a * A[1] + b * B[1] + c * C[1]) / per], ri = Math.sqrt((p * q * s) / (p + q + s));
+    const toward = (X, Y, d) => { const L = Math.hypot(Y[0] - X[0], Y[1] - X[1]); return [X[0] + ((Y[0] - X[0]) * d) / L, X[1] + ((Y[1] - X[1]) * d) / L]; };
+    const P = { A, B, C, I, T1: toward(A, B, p), T2: toward(B, C, q), T3: toward(C, A, s) };
+    const pic = (hl) => H9.scene({ P, W: 300, H: 230, fills: [{ pts: ['A', 'B', 'C'] }], circles: [{ c: 'I', r: ri, t: 'ink' }], dots: ['T1', 'T2', 'T3'], ticks: [['A', 'T1', 1], ['T3', 'A', 1], ['B', 'T1', 2], ['B', 'T2', 2], ['C', 'T2', 3], ['C', 'T3', 3]], sides: [['A', 'T1', `${p}`, hl ? 'hl' : 'ink'], ['T2', 'B', `${q}`, hl ? 'hl' : 'ink'], ['C', 'T3', `${s}`, hl ? 'hl' : 'ink']], names: ['A', 'B', 'C'] });
+    return num(Pm, [St('The two tangents from the same corner are equal (same ticks), so each tangent length appears twice round the triangle.', pic(true)), St(`2 × (${p} + ${q} + ${s}) = 2 × ${p + q + s} = ${Pm}.`), St(`So the perimeter is ${Pm} cm.`)], { q: 'A circle is inscribed in triangle ABC. The tangent lengths from the corners are shown in cm. What is the perimeter of the triangle?', unit: 'cm', visual: pic(false), expr: `2*(${p}+${q}+${s})` });
+  }
+  const arc = 2 * r.int(25, 80), A = 270 - arc / 2, B = 270 + arc / 2, c1 = r.int(60, 85), c2 = r.int(100, 140), x = arc / 2;
+  const pic = (hl) => circScene({ A, B, C: c1, Dd: c2 }, { arcs: hl ? [{ c: 'O', r: RC, from: A, to: B }] : [], segs: [['C', 'A'], ['C', 'B'], ['Dd', 'A'], ['Dd', 'B']], angs: [{ v: 'C', a: 'A', b: 'B', s: `${x}°`, r: 22 }, { v: 'Dd', a: 'A', b: 'B', s: '?', r: 30, t: hl ? 'hlline' : 'mark' }], names: { A: 'A', B: 'B', C: 'C', Dd: 'D' } });
+  return num(x, [St('∠ACB and ∠ADB are both inscribed angles that cut off the same arc AB.', pic(true)), St(`Each is half of arc AB, so they are equal: ∠ADB = ∠ACB = ${x}°.`), St(`So ∠ADB = ${x}°.`)], { q: 'C and D are on the circle. What is ∠ADB, in degrees?', unit: '°', visual: pic(false), expr: String(x) });
 });
 
 // ───────────── Coordinate plane ─────────────

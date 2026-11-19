@@ -40,7 +40,7 @@ export default function (main, { args, go }) {
     if (i >= lesson.steps.length) return ask();
     const s = lesson.steps[i++];
     board.querySelectorAll('li').forEach((x) => x.classList.remove('now'));
-    const li = el('li', { class: 'now' }, el('span', { class: 'chalk' }, mathText(s.board)));
+    const li = el('li', { class: s.head ? 'now board-head' : 'now' }, el('span', { class: 'chalk' }, mathText(s.board)));
     const pic = visual(s.visual); if (pic) li.append(pic);
     if (readable && !s.visual) li.append(el('button', { type: 'button', class: 'read-btn', title: 'Read this line to me', onclick: () => readAloud(s.board, li) }, icon('mic'), 'Read it'));
     board.append(li);
@@ -50,22 +50,31 @@ export default function (main, { args, go }) {
     if (alive && auto && i < lesson.steps.length) setTimeout(() => alive && auto && step(), 700);
   }
 
-  let tries = 0;
+  // Check your understanding: three questions (two for the youngest). All but one right completes the lesson.
+  const checks = (lesson.checks?.length ? lesson.checks : [lesson.check]).slice(0, young ? 2 : 3);
+  const need = Math.max(1, checks.length - 1);
+  let k = 0, rightN = 0, round = 0;
+  const again = () => { below.replaceChildren(); board.replaceChildren(); i = 0; auto = true; controls.hidden = false; step(); };
   async function ask() {
     controls.hidden = true;
-    const item = tries === 0 ? lesson.check : makeItem(skill);
-    tries++;
-    const lead = tries === 1 ? `Now your turn, ${l.name}.` : "Let's try another one.";
+    const item = round === 0 ? checks[k] : makeItem(skill);
+    const lead = round ? "Let's try another one." : k === 0 ? `Now check your understanding, ${l.name}: ${checks.length} questions.` : `Question ${k + 1}.`;
+    const dots = el('div', { class: 'chk-dots', 'aria-hidden': 'true' }, ...checks.map((_, j) => el('span', { class: j < k ? 'done' : j === k ? 'now' : '' })));
     const q = question(item, { teacher: T.id, fig, young, onDone: (right) => {
-      if (right) {
-        learned(l, skill.id); answer(l, skill.id, true, { kind: 'lesson' });
-        q.append(el('p', { class: 'cele' }, icon('star'), 'Lesson complete! +5 stars.'), el('div', { class: 'row' }, el('a', { class: 'btn btn-primary', href: skill.subject === 'activities' ? `#/play/${skill.id}` : `#/practise/${skill.id}` }, 'Practise now', icon('next')), el('a', { class: 'btn', href: '#/' }, 'Home')));
+      answer(l, skill.id, right, { kind: 'lesson' });
+      if (right) rightN++;
+      if (round === 0) { dots.children[k]?.classList.add(right ? 'ok' : 'miss'); k++; }
+      if ((round === 0 && k < checks.length) || (round > 0 && !right)) { q.append(el('div', { class: 'row' }, button([round ? 'Try another' : 'Next question', icon('next')], ask, 'btn btn-primary'), round ? button('Watch the lesson again', again, 'btn') : null)); return; }
+      if (round > 0 || rightN >= need) {
+        learned(l, skill.id);
+        q.append(el('p', { class: 'cele' }, icon('star'), round ? 'Lesson complete! +5 stars.' : `Lesson complete: ${rightN} of ${checks.length} right. +5 stars.`), el('div', { class: 'row' }, el('a', { class: 'btn btn-primary', href: skill.subject === 'activities' ? `#/play/${skill.id}` : `#/practise/${skill.id}` }, 'Practise now', icon('next')), el('a', { class: 'btn', href: '#/' }, 'Home')));
+        say(`Well done, ${l.name}! Lesson complete.`, { teacher: T.id, fig });
       } else {
-        answer(l, skill.id, false, { kind: 'lesson' });
-        q.append(el('div', { class: 'row' }, button(['Try another', icon('next')], ask, 'btn btn-primary'), button('Watch the lesson again', () => { below.replaceChildren(); board.replaceChildren(); i = 0; auto = true; controls.hidden = false; step(); }, 'btn')));
+        round++;
+        q.append(el('p', { class: 'nudge' }, icon('hint'), `${rightN} of ${checks.length} right. Watch the lesson again, or try one more.`), el('div', { class: 'row' }, button(['Try another', icon('next')], ask, 'btn btn-primary'), button('Watch the lesson again', again, 'btn')));
       }
     } });
-    below.replaceChildren(el('p', { class: 'lead' }, lead), q);
+    below.replaceChildren(el('p', { class: 'lead' }, lead), round ? null : dots, q);
     await speak(lead);
     q.querySelector('.q-read')?.click();
   }

@@ -1,6 +1,7 @@
 // Grade 12 maths: more skills, one or more for each topic of the grade (see src/math/kit.mjs for the helpers).
 import { grade, mc, near, num, txt, OBJ, plural, NAMES, comma, par, gcd, lcm, simplify, frac, isPrime, dec, sgn, neg, St, columnAdd, columnSub, columnMul, longDivision, numberLine, fractionBars, eqnLines, areaModel, multiplesOf, PLACE } from '../kit.mjs';
 import { TRIPLES, SPECIAL, CONDS, NEGS, BICOND, CEX, NORMAL } from './g11.mjs';
+import * as GEO from './geo-g1112.mjs';
 const { skill, list } = grade();
 
 // ── small helpers for this grade ──
@@ -522,62 +523,9 @@ skill('12-det', 12, 'Matrices', 'Determinants and inverse matrices', ['For [a b 
 });
 
 // ───────── 14. Trigonometry ─────────
-skill('12-radians', 12, 'Trigonometry', 'Radians, arc length and reference angles', ['180° = π radians, so multiply degrees by π/180.', 'Arc length s = rθ, with θ in radians.', 'Use the reference angle for the size of a ratio and the quadrant for its sign.'], (r) => {
-  const t = r.int(0, 4);
-  if (t === 0) {
-    const deg = r.pick([30, 45, 60, 90, 120, 135, 150, 210, 225, 240, 270, 300, 315, 330, 360, 540]), right = piS(deg, 180);
-    return mc(r, right, [piS(deg, 360), piS(180, deg), piS(deg, 90)].filter((x) => x !== right), { q: `Convert ${deg}° to radians.`, steps: [`Multiply by π/180: ${deg} × π/180.`, `= ${right}.`] });
-  }
-  if (t === 1) {
-    const d = r.pick([2, 3, 4, 6, 12]), n = r.int(1, 2 * d); const deg = (180 * n) / d;
-    return num(deg, ['Replace π with 180°.', `${piS(n, d)} = ${n} × 180° ÷ ${d} = ${dec(deg)}°.`], { q: `Convert ${piS(n, d)} radians to degrees.`, expr: `${n}*180/${d}` });
-  }
-  if (t === 2) {
-    const rr = r.int(2, 20), dpi = r.bool(), th = dpi ? null : r.int(5, 30) / 10, [n, d] = dpi ? r.pick([[1, 6], [1, 4], [1, 3], [2, 3], [3, 4], [5, 6], [1, 2]]) : [0, 0], ang = dpi ? n * Math.PI / d : th, v = rr * ang, ans = dec(v, 1);
-    return num(ans, ['Arc length s = rθ.', `s = ${rr} × ${dpi ? piS(n, d) : th} ≈ ${ans} cm.`], { q: `A circle has radius ${rr} cm. Find the length of the arc cut off by a central angle of ${dpi ? piS(n, d) : th} radians. Round to 1 decimal place.`, tol: 0.051, expr: `${rr}*${dpi ? `${n}*Math.PI/${d}` : th}` });
-  }
-  if (t === 3) {
-    const [n, d] = r.pick([[2, 3], [3, 4], [5, 6], [7, 6], [5, 4], [4, 3], [5, 3], [7, 4], [11, 6]]), refN = { 3: 1, 4: 1, 6: 1 }[d], rd = n / d < 1 ? 1 - n / d : n / d < 1.5 ? n / d - 1 : 2 - n / d, right = piS(Math.round(rd * d), d);
-    return mc(r, right, ['π/6', 'π/4', 'π/3', 'π/2'].filter((x) => x !== right), { q: `What is the reference angle of ${piS(n, d)}?`, steps: [`${piS(n, d)} is in Quadrant ${n / d < 1 ? 'II' : n / d < 1.5 ? 'III' : 'IV'}.`, `Its distance to the x-axis is ${right}.`] });
-  }
-  const deg = r.pick([120, 135, 150, 210, 225, 240, 300, 315, 330]), f = r.pick(['sin', 'cos', 'tan']), q = Math.floor(deg / 90), ref = [deg, 180 - deg, deg - 180, 360 - deg][q];
-  const pos = { sin: q <= 1, cos: q === 0 || q === 3, tan: q === 0 || q === 2 }[f], mag = SPECIAL[f][ref], right = pos ? mag : `−${mag}`;
-  const pool = ['1/2', '√2/2', '√3/2', '1', '√3', '√3/3'].flatMap((x) => [x, `−${x}`]).filter((x) => x !== right && x !== (pos ? `−${mag}` : mag));
-  return mc(r, right, [pos ? `−${mag}` : mag, ...r.shuffle(pool).slice(0, 2)], { q: `What is the exact value of ${f} ${deg}°?`, steps: [`The reference angle is ${ref}°, and ${deg}° is in Quadrant ${['I', 'II', 'III', 'IV'][q]}, where ${f} is ${pos ? 'positive' : 'negative'}.`, `${f} ${ref}° = ${mag}, so ${f} ${deg}° = ${right}.`] });
-});
-skill('12-trisolve', 12, 'Trigonometry', 'Solve triangles', ['Right triangles: SOH CAH TOA. Other triangles: the Sine Law or the Cosine Law.', "Area = ½ab sin C, or Heron's formula: √(s(s − a)(s − b)(s − c)) where s is half the perimeter."], (r) => {
-  const t = r.int(0, 4);
-  if (t === 0) {
-    const th = r.int(15, 75), a = r.int(4, 30), v = a * Math.tan(th * RAD), ans = dec(v, 1);
-    return num(ans, [`tan ${th}° = opposite ÷ ${a}.`, `opposite = ${a} × tan ${th}° ≈ ${ans}.`], { q: `In a right triangle, an angle of ${th}° has an adjacent leg of ${a} cm. How long is the opposite leg? Round to 1 decimal place.`, tol: 0.051, expr: `${a}*Math.tan(${th}*Math.PI/180)` });
-  }
-  if (t === 1) {
-    const h = r.int(6, 30), o = r.int(2, h - 1), A = Math.asin(o / h) / RAD, ans = Math.round(A);
-    return num(ans, [`sin θ = ${o}/${h}.`, `θ = sin⁻¹(${o}/${h}) ≈ ${A.toFixed(2)}°, so about ${ans}°.`], { q: `A right triangle has hypotenuse ${h} cm and the side opposite θ is ${o} cm. Find θ to the nearest degree.`, tol: 0.51, expr: `Math.asin(${o}/${h})*180/Math.PI` });
-  }
-  if (t === 2) {
-    const A = r.int(30, 80), a = r.int(10, 25), b = r.int(4, a - 1), B = Math.asin(b * Math.sin(A * RAD) / a) / RAD, ans = Math.round(B);
-    return num(ans, [`Sine Law: sin B = ${b} × sin ${A}° ÷ ${a} ≈ ${dec(Math.sin(B * RAD), 4)}.`, `B ≈ ${B.toFixed(2)}°, so about ${ans}°.`], { q: `In △ABC, ∠A = ${A}°, a = ${a} cm and b = ${b} cm. Find ∠B to the nearest degree.`, tol: 0.51, expr: `Math.asin(${b}*Math.sin(${A}*Math.PI/180)/${a})*180/Math.PI` });
-  }
-  if (t === 3) {
-    const a = r.int(4, 20), b = r.int(4, 20), C = r.int(20, 150), area = r.bool(), v = area ? 0.5 * a * b * Math.sin(C * RAD) : Math.sqrt(a * a + b * b - 2 * a * b * Math.cos(C * RAD)), ans = dec(v, 1);
-    return num(ans, [area ? `Area = ½ × ${a} × ${b} × sin ${C}°.` : `c² = ${a}² + ${b}² − 2(${a})(${b})cos ${C}°.`, area ? `≈ ${ans} cm².` : `c ≈ ${ans} cm.`], { q: `In △ABC, a = ${a} cm, b = ${b} cm and ∠C = ${C}°. Find ${area ? 'the area' : 'c'}, rounded to 1 decimal place.`, tol: 0.051, expr: area ? `0.5*${a}*${b}*Math.sin(${C}*Math.PI/180)` : `Math.sqrt(${a}**2+${b}**2-2*${a}*${b}*Math.cos(${C}*Math.PI/180))` });
-  }
-  let a, b, c; do { a = r.int(4, 15); b = r.int(4, 15); c = r.int(4, 15); } while (a + b <= c || a + c <= b || b + c <= a);
-  const s = (a + b + c) / 2, v = Math.sqrt(s * (s - a) * (s - b) * (s - c)), ans = dec(v, 1);
-  return num(ans, [`s = (${a} + ${b} + ${c}) ÷ 2 = ${dec(s)}.`, `Area = √(${dec(s)} × ${dec(s - a)} × ${dec(s - b)} × ${dec(s - c)}) ≈ ${ans}.`], { q: `Use Heron's formula to find the area of a triangle with sides ${a}, ${b} and ${c} cm. Round to 1 decimal place.`, tol: 0.051, expr: `Math.sqrt(${s}*(${s}-${a})*(${s}-${b})*(${s}-${c}))` });
-});
-const INV = [['sin⁻¹(1/2)', 30], ['sin⁻¹(−1/2)', -30], ['cos⁻¹(1/2)', 60], ['cos⁻¹(−1/2)', 120], ['tan⁻¹(1)', 45], ['tan⁻¹(−1)', -45], ['sin⁻¹(√3/2)', 60], ['cos⁻¹(0)', 90], ['tan⁻¹(√3)', 60], ['cos⁻¹(−√2/2)', 135], ['sin⁻¹(1)', 90]];
-const LINEQ = [['2 sin x − 1 = 0', [30, 150]], ['2 cos x + 1 = 0', [120, 240]], ['tan x − 1 = 0', [45, 225]], ['2 sin x + √3 = 0', [240, 300]], ['√2 cos x − 1 = 0', [45, 315]], ['2 cos x − √3 = 0', [30, 330]], ['sin x + 1 = 0', [270]], ['√3 tan x + 1 = 0', [150, 330]]];
-const RADEQ = [['sin x = 1/2', 'π/6 and 5π/6', ['π/3 and 2π/3', 'π/6 and 7π/6', 'π/6 and 11π/6']], ['cos x = 1/2', 'π/3 and 5π/3', ['π/6 and 11π/6', 'π/3 and 2π/3', 'π/3 and 4π/3']], ['tan x = 1', 'π/4 and 5π/4', ['π/4 and 3π/4', 'π/4 and 7π/4', '3π/4 and 7π/4']], ['sin x = −√2/2', '5π/4 and 7π/4', ['3π/4 and 5π/4', 'π/4 and 3π/4', '5π/4 and 3π/4']], ['cos x = −√3/2', '5π/6 and 7π/6', ['π/6 and 11π/6', '2π/3 and 4π/3', '5π/6 and 11π/6']]];
-skill('12-trigeq', 12, 'Trigonometry', 'Inverse trig and trig equations', ['sin⁻¹ gives an angle from −90° to 90°, cos⁻¹ from 0° to 180°, tan⁻¹ between −90° and 90°.', 'Get the trig ratio alone, find the reference angle, then use the signs to find every angle in the interval.'], (r) => {
-  const t = r.int(0, 3);
-  if (t === 0) { const [e, v] = r.pick(INV); return num(v, [`Which angle in the allowed range has this ratio?`, `${e} = ${neg(v)}°.`], { q: `Find ${e} in degrees.` }); }
-  if (t === 1) { const [e, s] = r.pick(LINEQ); return txt(`x = ${s.join('°, ')}°`, ['Get the trig ratio alone, then use the special angles and the signs in each quadrant.', `x = ${s.join('° and ')}°.`], { q: `Solve ${e} for 0° ≤ x < 360°. Give every solution.`, numbers: s }); }
-  if (t === 2) { const [e, right, w] = r.pick(RADEQ); return mc(r, right, w, { q: `Solve ${e} for 0 ≤ x < 2π.`, steps: ['Find the reference angle, then the two quadrants with the right sign.', `x = ${right}.`] }); }
-  const sinE = r.bool(), v = r.int(10, 90) / 100, A = (sinE ? Math.asin(v) : Math.acos(v)) / RAD, s = [Math.round(A), Math.round(sinE ? 180 - A : 360 - A)];
-  return txt(`x = ${s[0]}° or x = ${s[1]}°`, [`${sinE ? 'sin' : 'cos'}⁻¹(${v}) ≈ ${A.toFixed(2)}°. ${sinE ? 'sin' : 'cos'} is also positive in Quadrant ${sinE ? 'II' : 'IV'}: ${sinE ? '180°' : '360°'} − ${A.toFixed(2)}°.`, `x ≈ ${s[0]}° or x ≈ ${s[1]}°.`], { q: `Solve ${sinE ? 'sin' : 'cos'} x = ${v} for 0° ≤ x < 360°. Round each angle to the nearest degree.`, numbers: s });
-});
+skill('12-radians', 12, 'Trigonometry', 'Radians, arc length and reference angles', GEO.LESSONS12.radians, GEO.radians);
+skill('12-trisolve', 12, 'Trigonometry', 'Solve triangles', GEO.LESSONS12.trisolve, GEO.trisolve);
+skill('12-trigeq', 12, 'Trigonometry', 'Inverse trig and trig equations', GEO.LESSONS12.trigeq, GEO.trigeq);
 
 // ───────── 15. Trigonometric functions ─────────
 const sinEq = (fn, a, b, c, d) => `y = ${coef(a)}${fn}(${b === 1 ? (c ? `x ${sgn(-c)}°` : 'x') : `${b}${c ? `(x ${sgn(-c)}°)` : 'x'}`})${d ? ' ' + sgn(d) : ''}`;
@@ -634,23 +582,7 @@ skill('12-identity', 12, 'Trigonometric identities', 'Trigonometric identities',
 });
 
 // ───────── 17. Conic sections ─────────
-skill('12-circle', 12, 'Conic sections', 'Circles and parabolas', ['A circle with centre (h, k) and radius r: (x − h)² + (y − k)² = r².', 'x² = 4py is a parabola with vertex (0, 0), focus (0, p) and directrix y = −p.', 'Complete the square to change general form to standard form.'], (r) => {
-  const t = r.int(0, 4), h = r.int(-6, 6), k = r.int(-6, 6), rr = r.int(1, 9), sq = (v, c) => (c === 0 ? `${v}²` : `(${v} ${sgn(-c)})²`), std = `${sq('x', h)} + ${sq('y', k)} = ${rr * rr}`;
-  if (t === 0) {
-    if (r.bool()) return num(rr, ['The right side is r².', `r = √${rr * rr} = ${rr}.`], { q: `What is the radius of the circle ${std}?` });
-    const right = pt(h, k); return mc(r, right, [pt(-h, -k), pt(h, -k), pt(k, h)].filter((x) => x !== right).concat([pt(h + 1, k)]), { q: `What is the centre of the circle ${std}?`, steps: ['In (x − h)² + (y − k)² = r² the centre is (h, k).', `Centre ${right}.`] });
-  }
-  if (t === 1) {
-    return mc(r, std, [`${sq('x', -h)} + ${sq('y', -k)} = ${rr * rr}`, `${sq('x', h)} + ${sq('y', k)} = ${rr}`, `${sq('x', k)} + ${sq('y', h)} = ${rr * rr}`].filter((x) => x !== std).concat([`${sq('x', h)} + ${sq('y', k)} = ${rr * rr + 1}`]), { q: `Which is the equation of the circle with centre ${pt(h, k)} and radius ${rr}?`, steps: ['Use (x − h)² + (y − k)² = r².', std + '.'] });
-  }
-  if (t === 2) {
-    const D = -2 * h, E = -2 * k, F = h * h + k * k - rr * rr, gen = `x² + y²${D ? ` ${sgn(D)}x` : ''}${E ? ` ${sgn(E)}y` : ''}${F ? ` ${sgn(F)}` : ''} = 0`;
-    return num(rr, [`Complete the square: ${sq('x', h)} + ${sq('y', k)} = ${neg(-F)} + ${h * h} + ${k * k} = ${rr * rr}.`, `So the radius is √${rr * rr} = ${rr}.`], { q: `Find the radius of the circle ${gen}.`, expr: `Math.sqrt(${h * h}+${k * k}-(${F}))` });
-  }
-  const p = r.nonzero(-4, 4), up = r.bool(), eq = up ? `x² = ${4 * p}y` : `y² = ${4 * p}x`;
-  if (t === 3) { const right = up ? pt(0, p) : pt(p, 0); return mc(r, right, [up ? pt(0, -p) : pt(-p, 0), up ? pt(p, 0) : pt(0, p), up ? pt(0, 4 * p) : pt(4 * p, 0)], { q: `Where is the focus of the parabola ${eq}?`, steps: [`${4 * p} = 4p, so p = ${neg(p)}.`, `The focus is ${right}.`] }); }
-  return num(-p, [`${4 * p} = 4p, so p = ${neg(p)}.`, `The directrix is ${up ? 'y' : 'x'} = −p = ${neg(-p)}.`], { q: `The directrix of the parabola ${eq} is ${up ? 'y' : 'x'} = ?`, expr: `-(${4 * p})/4` });
-});
+skill('12-circle', 12, 'Conic sections', 'Circles and parabolas', GEO.LESSONS12.circle, GEO.circles);
 const ELL = [[5, 4, 3], [13, 12, 5], [10, 8, 6], [17, 15, 8], [5, 3, 4], [25, 24, 7], [10, 6, 8]];
 const HYP = [[3, 4, 5], [4, 3, 5], [6, 8, 10], [5, 12, 13], [12, 5, 13], [8, 6, 10], [8, 15, 17]];
 skill('12-ellipse', 12, 'Conic sections', 'Ellipses and hyperbolas', ['Ellipse x²/a² + y²/b² = 1 (a > b): vertices (±a, 0), foci (±c, 0) with c² = a² − b².', 'Hyperbola x²/a² − y²/b² = 1: vertices (±a, 0), c² = a² + b², asymptotes y = ±(b/a)x.', 'Eccentricity e = c ÷ a.'], (r) => {
@@ -750,41 +682,8 @@ skill('12-polar', 12, 'Polar form', 'Polar form of complex numbers', ['r(cos θ 
 });
 
 // ───────── 21. Two-dimensional vectors ─────────
-skill('12-vec', 12, 'Two-dimensional vectors', 'Magnitude, direction and components', ['For v = ⟨a, b⟩: |v| = √(a² + b²) and the direction angle θ has tan θ = b/a.', 'From A to B: ⟨x₂ − x₁, y₂ − y₁⟩. From magnitude m and angle θ: ⟨m cos θ, m sin θ⟩.'], (r) => {
-  const t = r.int(0, 3);
-  if (t === 0) { const [p, q, h] = r.pick(TRIPLES), k = r.int(1, 2), s1 = r.bool() ? 1 : -1, s2 = r.bool() ? 1 : -1; return num(h * k, ['|v| = √(a² + b²).', `√(${(p * k) ** 2} + ${(q * k) ** 2}) = ${h * k}.`], { q: `Find the magnitude of v = ${vec(s1 * p * k, s2 * q * k)}.`, expr: `Math.hypot(${p * k},${q * k})` }); }
-  if (t === 1) {
-    const a = r.nonzero(-9, 9), b = r.nonzero(-9, 9), A = ((Math.atan2(b, a) / RAD) + 360) % 360, ans = Math.round(A);
-    return num(ans, [`tan⁻¹(${Math.abs(b)}/${Math.abs(a)}) ≈ ${(Math.atan(Math.abs(b / a)) / RAD).toFixed(2)}°, and ⟨${neg(a)}, ${neg(b)}⟩ points into Quadrant ${a > 0 ? (b > 0 ? 'I' : 'IV') : b > 0 ? 'II' : 'III'}.`, `So θ ≈ ${A.toFixed(2)}°, about ${ans}°.`], { q: `Find the direction angle of ${vec(a, b)}, from 0° to 360°, to the nearest degree.`, tol: 0.51, expr: `((Math.atan2(${b},${a})*180/Math.PI)+360)%360` });
-  }
-  if (t === 2) {
-    const x1 = r.int(-6, 6), y1 = r.int(-6, 6), x2 = r.int(-6, 6), y2 = r.int(-6, 6), right = vec(x2 - x1, y2 - y1);
-    return mc(r, right, [vec(x1 - x2, y1 - y2), vec(x2 + x1, y2 + y1), vec(y2 - y1, x2 - x1)].filter((x) => x !== right).concat([vec(x2 - x1 + 1, y2 - y1)]), { q: `A vector starts at ${pt(x1, y1)} and ends at ${pt(x2, y2)}. What is its component form?`, steps: ['Subtract start from end: ⟨x₂ − x₁, y₂ − y₁⟩.', `⟨${neg(x2)} − ${par(x1)}, ${neg(y2)} − ${par(y1)}⟩ = ${right}.`] });
-  }
-  const m = r.int(3, 20), th = r.int(10, 350), xc = r.bool(), v = xc ? m * Math.cos(th * RAD) : m * Math.sin(th * RAD), ans = dec(v, 1);
-  return num(ans, [`The ${xc ? 'x' : 'y'}-component is ${m} × ${xc ? 'cos' : 'sin'} ${th}°.`, `≈ ${fm(ans)}.`], { q: `A vector has magnitude ${m} and direction angle ${th}°. Find its ${xc ? 'x' : 'y'}-component, rounded to 1 decimal place.`, tol: 0.051, expr: `${m}*Math.${xc ? 'cos' : 'sin'}(${th}*Math.PI/180)` });
-});
-skill('12-vecops', 12, 'Two-dimensional vectors', 'Vector operations', ['Add vectors by adding components: ⟨a, b⟩ + ⟨c, d⟩ = ⟨a + c, b + d⟩. Tip-to-tail or parallelogram drawings give the same resultant.', 'k⟨a, b⟩ = ⟨ka, kb⟩, and its magnitude is |k| times as long.', 'A unit vector is v ÷ |v|.'], (r) => {
-  const t = r.int(0, 4), a = r.int(-6, 6), b = r.int(-6, 6), c = r.int(-6, 6), d = r.int(-6, 6);
-  if (t === 0) {
-    const sub = r.bool(), right = vec(sub ? a - c : a + c, sub ? b - d : b + d);
-    return mc(r, right, [vec(sub ? a + c : a - c, sub ? b + d : b - d), vec(sub ? a - c : a + c, sub ? b + d : b - d), vec(a * c, b * d)].filter((x) => x !== right).concat([vec((sub ? a - c : a + c) + 1, sub ? b - d : b + d)]), { q: `u = ${vec(a, b)} and v = ${vec(c, d)}. ${sub ? 'Find u − v.' : 'Using the triangle (tip-to-tail) method, what is the resultant u + v?'}`, steps: [`${sub ? 'Subtract' : 'Add'} matching components.`, `${right}.`] });
-  }
-  if (t === 1) {
-    const p = r.nonzero(-3, 3), q = r.nonzero(-3, 3), right = vec(p * a + q * c, p * b + q * d);
-    return mc(r, right, [vec(p * a - q * c, p * b - q * d), vec(p * a + q * c, p * b - q * d), vec((p + q) * a, (p + q) * b)].filter((x) => x !== right).concat([vec(p * a + q * c + 1, p * b + q * d)]), { q: `u = ${vec(a, b)} and v = ${vec(c, d)}. Find ${coef(p)}u ${q < 0 ? '−' : '+'} ${Math.abs(q) === 1 ? '' : Math.abs(q)}v.`, steps: [`${coef(p)}u = ${vec(p * a, p * b)} and ${coef(q)}v = ${vec(q * c, q * d)}.`, `Add: ${right}.`] });
-  }
-  if (t === 2) {
-    const [p, q, h] = r.pick(TRIPLES), s1 = r.bool() ? 1 : -1, s2 = r.bool() ? 1 : -1, right = vec(frac(s1 * p, h), frac(s2 * q, h));
-    return mc(r, right, [vec(frac(s2 * q, h), frac(s1 * p, h)), vec(frac(s1 * p, p + q), frac(s2 * q, p + q)), vec(frac(-s1 * p, h), frac(-s2 * q, h))], { q: `Find the unit vector in the direction of ${vec(s1 * p, s2 * q)}.`, steps: [`|v| = √(${p * p} + ${q * q}) = ${h}.`, `Divide each component by ${h}: ${right}.`] });
-  }
-  if (t === 3) {
-    const [p, q, h] = r.pick(TRIPLES), k = r.nonzero(-4, 4);
-    return num(Math.abs(k) * h, [`|${vec(p, q)}| = ${h}.`, `|${neg(k)}v| = ${Math.abs(k)} × ${h} = ${Math.abs(k) * h}.`], { q: `v = ${vec(p, q)}. What is the magnitude of ${neg(k)}v?`, expr: `Math.abs(${k})*Math.hypot(${p},${q})` });
-  }
-  const sx = a + c, sy = b + d, v = Math.hypot(sx, sy), ans = dec(v, 2);
-  return num(ans, [`u + v = ${vec(sx, sy)}.`, `|u + v| = √(${sx * sx} + ${sy * sy}) ≈ ${ans}.`], { q: `u = ${vec(a, b)} and v = ${vec(c, d)}. Find |u + v|, rounded to 2 decimal places.`, tol: 0.006, expr: `Math.hypot(${a}+(${c}),${b}+(${d}))` });
-});
+skill('12-vec', 12, 'Two-dimensional vectors', 'Magnitude, direction and components', GEO.LESSONS12.vec, GEO.vectors);
+skill('12-vecops', 12, 'Two-dimensional vectors', 'Vector operations', GEO.LESSONS12.vecops, GEO.vecops);
 
 // ───────── 22. Three-dimensional vectors ─────────
 const QUADS = [[1, 2, 2, 3], [2, 3, 6, 7], [1, 4, 8, 9], [2, 6, 9, 11], [4, 4, 7, 9], [2, 10, 11, 15], [6, 6, 7, 11]];

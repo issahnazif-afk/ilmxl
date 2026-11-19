@@ -6,9 +6,12 @@
 //  · the answer marker itself, on known cases
 import { SKILLS, makeItem, lessonOf, fromBank } from '../src/app/curriculum.mjs';
 import { mark, parseNumber, spokenToNumber } from '../src/app/answer.mjs';
+import { figProblems } from '../src/math/figs.mjs';
+import { unitsOf, examSet } from '../src/app/exams.mjs';
+import { GRADES, LEARN_SUBJECTS } from '../src/app/curriculum.mjs';
 import { PUZZLES, parse, run, countBlocks } from '../src/app/coding.mjs';
 
-const VISUALS = new Set(['bars', 'table', 'coins', 'poly', 'angle', 'plane', 'objects', 'groups', 'takeaway', 'tenframes', 'blocks', 'clock', 'fraction', 'shape', 'array', 'grid', 'coord', 'righttri', 'column', 'longdiv', 'numberline', 'fracbars', 'area', 'eqn']);
+const VISUALS = new Set(['bars', 'table', 'coins', 'poly', 'angle', 'plane', 'objects', 'groups', 'takeaway', 'tenframes', 'blocks', 'clock', 'fraction', 'shape', 'array', 'grid', 'coord', 'righttri', 'column', 'longdiv', 'numberline', 'fracbars', 'area', 'eqn', 'fig', 'figs']);
 const fails = [];
 const failCount = {};
 const fail = (where, msg) => { const k = where.split(/[#\[ ]/)[0]; failCount[k] = (failCount[k] ?? 0) + 1; if (fails.length < 60) fails.push(`${where}: ${msg}`); else fails.length === 60 && fails.push('…'); };
@@ -28,6 +31,10 @@ function checkItem(where, it, generated = false) {
     if (it.kind === 'num' && Number.isNaN(parseNumber(it.answer))) fail(where, `answer is not a number: ${it.answer}`);
     for (const a of it.accept ?? []) if (!mark(it, a).right) fail(where, `accepted answer marked wrong: ${a}`);
   } else fail(where, `unknown kind ${it.kind}`);
+  // figures: every point a real number, every label real text
+  const figsOf = (v) => (!v ? [] : v.type === 'fig' ? [v] : v.type === 'figs' ? v.figs : []);
+  for (const f of [...figsOf(it.visual), ...(it.steps ?? []).flatMap((s) => figsOf(s?.visual))]) { const bad = figProblems(f); if (bad.length) fail(where, `figure: ${bad.slice(0, 3).join('; ')}`); }
+  if (it.visual && !VISUALS.has(it.visual.type)) fail(where, `unknown picture: ${it.visual.type}`);
   // worked steps: well formed, known pictures, and the working must reach the answer
   const steps = it.steps ?? [];
   steps.forEach((s, k) => {
@@ -71,7 +78,11 @@ for (const s of SKILLS) {
     (s.items ?? []).forEach((it, i) => { const key = it.q + '|' + (it.choices ?? []).join('|'); if (seenQ.has(key)) fail(`${s.id}[${i}]`, 'repeated question'); seenQ.add(key); checkItem(`${s.id}[${i}]`, fromBank(it)); });
     if (s.check) checkItem(`${s.id} check`, fromBank(s.check));
   }
-  try { const L = lessonOf(s); if (!L.steps.length) fail(s.id, 'empty lesson'); checkItem(`${s.id} lesson check`, L.check); } catch (e) { fail(s.id, `lesson: ${e.message}`); }
+  try {
+    const L = lessonOf(s); if (!L.steps.length) fail(s.id, 'empty lesson');
+    L.steps.forEach((st, k) => { if (/undefined|NaN|\[object/.test(`${st.board} ${st.say}`)) fail(s.id, `lesson line ${k + 1}: ${String(st.board).slice(0, 60)}`); if (st.visual && st.visual.type === 'fig' && figProblems(st.visual).length) fail(s.id, `lesson line ${k + 1} figure`); });
+    (L.checks ?? [L.check]).forEach((c, k) => checkItem(`${s.id} lesson check ${k + 1}`, c));
+  } catch (e) { fail(s.id, `lesson: ${e.message}`); }
 }
 
 for (const p of PUZZLES) {
@@ -82,6 +93,15 @@ for (const p of PUZZLES) {
     const used = p.solution.match(/\?[LRFW]|[FLR[{]/g) ?? [];
     for (const u of used) if (!p.tools.includes(u[0] === '?' ? u : u) && !(u.startsWith('?') && p.tools.includes('?') && (u !== '?W' || p.tools.includes('W')))) fail(`puzzle ${p.id}`, `solution needs ${u}, not in the toolbox`);
   } catch (e) { fail(`puzzle ${p.id}`, e.message); }
+}
+
+// exams: every unit of every grade makes a full set of good questions
+let exams = 0;
+if (!ONLY) for (const sj of LEARN_SUBJECTS) for (const { g } of GRADES) {
+  const us = unitsOf(sj, g); if (!us.length) continue;
+  for (const code of [...us.map((u) => u.code), 'all']) {
+    try { const set = examSet(sj, g, code, { seed: 7 }); if (!set || set.items.length < 10) { fail(`exam ${sj}/${g}/${code}`, 'too few questions'); continue; } set.items.forEach(({ item }, i) => checkItem(`exam ${sj}/${g}/${code} #${i + 1}`, item)); exams++; } catch (e) { fail(`exam ${sj}/${g}/${code}`, e.message); }
+  }
 }
 
 // the marker
@@ -96,4 +116,4 @@ cases.forEach(([it, g, want], i) => { if (mark(it, g).right !== want) fail(`mark
 
 const by = {}; SKILLS.forEach((s) => (by[s.subject] = (by[s.subject] ?? 0) + 1));
 if (fails.length) { console.error(`✗ ${fails.length} problem(s):\n  ` + fails.join('\n  ')); process.exit(1); }
-console.log(`✓ ${SKILLS.length} skills (${Object.entries(by).map(([k, v]) => `${k} ${v}`).join(', ')}), ${questions} questions checked, ${PUZZLES.length} puzzles solved`);
+console.log(`✓ ${exams} exams, ${SKILLS.length} skills (${Object.entries(by).map(([k, v]) => `${k} ${v}`).join(', ')}), ${questions} questions checked, ${PUZZLES.length} puzzles solved`);

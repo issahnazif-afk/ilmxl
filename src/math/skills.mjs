@@ -8,6 +8,13 @@
 //         (fractions and decimals both accepted unless `exactForm` is set, e.g. "simplest form")
 //   mc:   choices + a (index)
 //   expr: a plain JS expression whose value must equal the answer (the checker evaluates it independently)
+import * as GEO10 from './more/geo10.mjs';
+import * as GC from './more/geo-core.mjs';
+import * as GEO6 from './more/geo6.mjs';
+import * as GEO8 from './more/geo8.mjs';
+import * as GEO45 from './more/geo45.mjs';
+import * as G1112 from './more/geo-g1112.mjs';
+import * as F from './figs.mjs';
 import { gcd, lcm, simplify, frac, isPrime, dec, sgn, neg } from './rng.mjs';
 import { S as St, columnAdd, columnSub, columnMul, longDivision, numberLine, fractionBars, eqnLines, areaModel, multiplesOf } from './steps.mjs';
 const par = (n) => (n < 0 ? `(${neg(n)})` : String(n));   // a negative number in brackets, for working
@@ -181,12 +188,12 @@ skill('3-fraccmp', 3, 'Fractions', 'Compare fractions with the same bottom', ['W
   return mc(r, s, ['>', '<', '='].filter((x) => x !== s), { q: `${a}/${d} ? ${b}/${d}`, say: `Which sign goes between ${a} over ${d} and ${b} over ${d}?`, steps: [St(`Both fractions have ${d} equal parts, so the parts are the same size.`, fractionBars([{ n: a, d }, { n: b, d }])), St(`${Math.max(a, b)} parts is more than ${Math.min(a, b)} parts.`), St(`So ${a}/${d} ${s} ${b}/${d}.`)] });
 });
 skill('3-area', 3, 'Measurement', 'Area of a rectangle', ['Area is how many unit squares cover a shape.', 'For a rectangle: length × width.'], (r) => {
-  const l = r.int(2, 12), w = r.int(2, 10);
-  return num(l * w, [`Area = length × width.`, `${l} × ${w} = ${l * w} square units.`], { q: `A rectangle is ${l} units long and ${w} units wide. What is its area in square units?`, visual: l * w <= 60 ? { type: 'grid', rows: w, cols: l } : null, expr: `${l}*${w}` });
+  const l = r.int(2, 12), w = r.int(2, 10), small = l * w <= 60;
+  return num(l * w, [St('Area counts the unit squares inside. Count the squares in one row: the length.', small ? { type: 'grid', rows: w, cols: l } : GC.rectFig(l, w, 'units', [{ side: 0 }])), St(`There are ${w} rows, so area = length × width.`), St(`${l} × ${w} = ${l * w} square units.`)], { q: `A rectangle is ${l} units long and ${w} units wide. What is its area in square units?`, visual: small ? { type: 'grid', rows: w, cols: l } : GC.rectFig(l, w, 'units'), expr: `${l}*${w}` });
 });
 skill('3-perim', 3, 'Measurement', 'Perimeter', ['Perimeter is the distance all the way around.', 'Add every side.'], (r) => {
   const l = r.int(2, 20), w = r.int(2, 15);
-  return num(2 * (l + w), [`Sides: ${l}, ${w}, ${l}, ${w}.`, `${l} + ${w} + ${l} + ${w} = ${2 * (l + w)}.`], { q: `What is the perimeter of a rectangle ${l} cm long and ${w} cm wide? (in cm)`, expr: `2*(${l}+${w})` });
+  return num(2 * (l + w), [St(`Start at a corner and go all the way round. The sides are ${l}, ${w}, ${l} and ${w} cm.`, GC.rectFig(l, w, 'cm', [{ side: 0 }, { side: 1 }, { side: 2 }, { side: 3 }])), St(`${l} + ${w} + ${l} + ${w} = ${2 * (l + w)}.`), St(`So the perimeter is ${2 * (l + w)} cm.`)], { q: 'What is the perimeter of this rectangle, in cm?', visual: GC.rectFig(l, w, 'cm'), expr: `2*(${l}+${w})` });
 });
 skill('3-elapsed', 3, 'Time', 'Elapsed time', ['Count forward from the start time.', 'Count the hours, then the minutes.'], (r) => {
   const h = r.int(1, 10), m = 5 * r.int(0, 6), add = 5 * r.int(3, 20);
@@ -234,10 +241,7 @@ skill('4-placemil', 4, 'Place value', 'Round large numbers', ['Find the place, l
   const to = r.pick([1000, 10000, 100000]), n = r.int(to + 1, to * 99);
   return num(Math.round(n / to) * to, [`Round ${n.toLocaleString('en-CA')} to the nearest ${to.toLocaleString('en-CA')}.`, `Answer: ${(Math.round(n / to) * to).toLocaleString('en-CA')}.`], { q: `Round ${n.toLocaleString('en-CA')} to the nearest ${to.toLocaleString('en-CA')}.`, expr: `Math.round(${n}/${to})*${to}` });
 });
-skill('4-angles', 4, 'Geometry', 'Angles on a line and in a right angle', ['Angles on a straight line add to 180°.', 'A right angle is 90°.'], (r) => {
-  const total = r.pick([90, 180]), a = r.int(10, total - 10);
-  return num(total - a, [`They add to ${total}°.`, `${total} − ${a} = ${total - a}.`], { q: `Two angles together make a ${total === 90 ? 'right angle' : 'straight line'}. One is ${a}°. What is the other, in degrees?`, expr: `${total}-${a}` });
-});
+skill('4-angles', 4, 'Geometry', 'Angles on a line and in a right angle', GEO45.LESSONS.angles4, GEO45.angles4);
 
 // ───────────── Grade 5 ─────────────
 skill('5-fracunlike', 5, 'Fractions', 'Add fractions with unlike denominators', ['Find a common denominator first.', '1/2 + 1/3 = 3/6 + 2/6 = 5/6.'], (r) => {
@@ -265,10 +269,7 @@ skill('5-decmult', 5, 'Decimals', 'Multiply decimals', ['Multiply as whole numbe
   const ans = dec(a * b);
   return num(ans, [`${Math.round(a * 10)} × ${b} = ${Math.round(a * 10) * b}.`, `One decimal place: ${ans}.`], { q: `${a} × ${b} = ?`, expr: `${a}*${b}` });
 });
-skill('5-volume', 5, 'Measurement', 'Volume of a box', ['Volume is how many unit cubes fill a shape.', 'For a box: length × width × height.'], (r) => {
-  const l = r.int(2, 10), w = r.int(2, 8), h = r.int(2, 8);
-  return num(l * w * h, [`V = l × w × h.`, `${l} × ${w} × ${h} = ${l * w * h} cubic units.`], { q: `A box is ${l} cm long, ${w} cm wide and ${h} cm high. What is its volume in cubic cm?`, expr: `${l}*${w}*${h}` });
-});
+skill('5-volume', 5, 'Measurement', 'Volume of a box', GEO45.LESSONS.volume, GEO45.volume5);
 skill('5-order', 5, 'Expressions', 'Order of operations', ['Brackets first, then × and ÷, then + and −.', 'Work left to right within each step.'], (r) => {
   const a = r.int(2, 9), b = r.int(2, 9), c = r.int(2, 9), form = r.int(0, 2);
   const [q, ans, work] = [
@@ -338,10 +339,7 @@ skill('6-stats', 6, 'Statistics', 'Mean, median and mode', ['Mean: add them all,
   const ans = which === 'mean' ? dec(xs.reduce((a, b) => a + b, 0) / xs.length, 2) : which === 'median' ? sorted[(sorted.length - 1) / 2] : modes[0];
   return num(ans, which === 'mean' ? [`Sum = ${xs.reduce((a, b) => a + b, 0)}.`, `${xs.reduce((a, b) => a + b, 0)} ÷ ${xs.length} = ${ans}.`] : which === 'median' ? [`In order: ${sorted.join(', ')}.`, `The middle is ${ans}.`] : [`${ans} appears most often.`], { q: `Find the ${which} of: ${xs.join(', ')}${which === 'mean' ? ' (round to 2 decimal places if needed)' : ''}` });
 });
-skill('6-tri', 6, 'Geometry', 'Area of a triangle', ['A triangle is half of a rectangle.', 'Area = base × height ÷ 2.'], (r) => {
-  const b = r.int(2, 20), h = 2 * r.int(1, 10);
-  return num(b * h / 2, [`${b} × ${h} = ${b * h}.`, `÷ 2 = ${b * h / 2}.`], { q: `A triangle has base ${b} m and height ${h} m. What is its area in square metres?`, expr: `${b}*${h}/2` });
-});
+skill('6-tri', 6, 'Geometry', 'Area of a triangle', GEO6.TRI_LESSON, GEO6.tri6);
 
 // ───────────── Grade 7 ─────────────
 skill('7-int', 7, 'Integers', 'Integer operations', ['Adding a negative is subtracting.', 'Same signs multiply to positive; different signs to negative.'], (r) => {
@@ -375,8 +373,8 @@ skill('7-pctchange', 7, 'Ratios', 'Percent increase and decrease', ['Change ÷ o
 });
 skill('7-circle', 7, 'Geometry', 'Circles', ['Circumference = 2 × π × r. Area = π × r².', 'Use π ≈ 3.14.'], (r) => {
   const rad = r.int(1, 12), area = r.bool();
-  const ans = dec(area ? 3.14 * rad * rad : 2 * 3.14 * rad, 2);
-  return num(ans, [area ? `A = 3.14 × ${rad}² = 3.14 × ${rad * rad}.` : `C = 2 × 3.14 × ${rad}.`, `= ${ans}.`], { q: `A circle has radius ${rad} cm. Using π ≈ 3.14, what is its ${area ? 'area (cm²)' : 'circumference (cm)'}?`, expr: area ? `3.14*${rad}*${rad}` : `2*3.14*${rad}` });
+  const ans = dec(area ? 3.14 * rad * rad : 2 * 3.14 * rad, 2), pic = (hl) => F.circleFig({ r: `${rad} cm`, hl });
+  return num(ans, [St(`The radius is ${rad} cm.`, pic('radius')), St(area ? `A = 3.14 × ${rad}² = 3.14 × ${rad * rad} = ${ans}.` : `C = 2 × 3.14 × ${rad} = ${ans}.`, pic(area ? 'fill' : null)), St(`So the ${area ? 'area' : 'circumference'} is ${ans} ${area ? 'cm²' : 'cm'}.`)], { q: `Using π ≈ 3.14, what is the ${area ? 'area (cm²)' : 'circumference (cm)'} of this circle?`, visual: pic(), expr: area ? `3.14*${rad}*${rad}` : `2*3.14*${rad}` });
 });
 skill('7-prob', 7, 'Probability', 'Simple probability', ['Probability = favourable outcomes ÷ all outcomes.', 'Write it as a fraction in simplest form.'], (r) => {
   const red = r.int(1, 8), blue = r.int(1, 8), green = r.int(0, 6), tot = red + blue + green;
@@ -409,8 +407,8 @@ skill('8-sqrt', 8, 'Exponents', 'Square roots', ['The square root of n is the nu
 const TRIPLES = [[3, 4, 5], [5, 12, 13], [8, 15, 17], [7, 24, 25], [6, 8, 10], [9, 12, 15], [12, 16, 20], [20, 21, 29]];
 skill('8-pyth', 8, 'Geometry', 'The Pythagorean theorem', ['In a right triangle, a² + b² = c².', 'c is the longest side, across from the right angle.'], (r) => {
   const [a, b, c] = r.pick(TRIPLES), findC = r.bool();
-  return findC ? num(c, [`${a}² + ${b}² = ${a * a} + ${b * b} = ${c * c}.`, `c = √${c * c} = ${c}.`], { q: `A right triangle has legs ${a} and ${b}. How long is the hypotenuse?`, visual: { type: 'righttri', a, b, c: '?' }, expr: `Math.hypot(${a},${b})` })
-    : num(b, [`${c}² − ${a}² = ${c * c} − ${a * a} = ${b * b}.`, `b = √${b * b} = ${b}.`], { q: `A right triangle has hypotenuse ${c} and one leg ${a}. How long is the other leg?`, visual: { type: 'righttri', a, b: '?', c }, expr: `Math.sqrt(${c}**2-${a}**2)` });
+  if (findC) return num(c, [St('The hypotenuse is across from the right angle. a² + b² = c².', GC.rightTriFig(a, b, [`${a}`, `${b}`, 'c'], [{ side: 2 }])), St(`${a}² + ${b}² = ${a * a} + ${b * b} = ${c * c}.`), St(`c = √${c * c} = ${c}.`)], { q: 'How long is the hypotenuse c of this right triangle?', visual: GC.rightTriFig(a, b, [`${a}`, `${b}`, 'c']), expr: `Math.hypot(${a},${b})` });
+  return num(b, [St(`The hypotenuse is ${c}, so b² = c² − a².`, GC.rightTriFig(a, b, [`${a}`, 'b', `${c}`], [{ side: 1 }])), St(`${c}² − ${a}² = ${c * c} − ${a * a} = ${b * b}.`), St(`b = √${b * b} = ${b}.`)], { q: 'How long is the side b of this right triangle?', visual: GC.rightTriFig(a, b, [`${a}`, 'b', `${c}`]), expr: `Math.sqrt(${c}**2-${a}**2)` });
 });
 skill('8-slope', 8, 'Linear relations', 'Slope from two points', ['Slope = rise ÷ run = (y₂ − y₁) ÷ (x₂ − x₁).'], (r) => {
   const x1 = r.int(-6, 6), y1 = r.int(-6, 6), run = r.nonzero(-5, 5), m = r.pick([-3, -2, -1, 1, 2, 3, 0.5, -0.5]);
@@ -434,10 +432,7 @@ skill('8-system', 8, 'Linear relations', 'Systems of equations', ['Add or subtra
     St(`So x = ${neg(x)} and y = ${neg(y)}. The question asks for ${askX ? `x: ${neg(x)}` : `y: ${neg(y)}`}.`),
   ], { q: `${e1} and ${e2}. What is ${askX ? 'x' : 'y'}?`, unit: `${askX ? 'x' : 'y'} =` });
 });
-skill('8-cyl', 8, 'Geometry', 'Volume of a cylinder', ['V = π × r² × h.', 'Use π ≈ 3.14.'], (r) => {
-  const rad = r.int(1, 8), h = r.int(2, 15);
-  return num(dec(3.14 * rad * rad * h, 2), [`V = 3.14 × ${rad}² × ${h} = 3.14 × ${rad * rad * h}.`, `= ${dec(3.14 * rad * rad * h, 2)}.`], { q: `A cylinder has radius ${rad} cm and height ${h} cm. Using π ≈ 3.14, what is its volume in cm³?`, expr: `3.14*${rad}*${rad}*${h}` });
-});
+skill('8-cyl', 8, 'Geometry', 'Volume of a cylinder', GEO8.LESSONS.cyl, GEO8.cyl);
 
 // ───────────── Grade 9: Algebra 1 ─────────────
 skill('9-multistep', 9, 'Algebra 1', 'Equations with variables on both sides', ['Gather the x terms on one side, numbers on the other.', 'Then divide.'], (r) => {
@@ -472,30 +467,31 @@ skill('9-intercept', 9, 'Algebra 1', 'Equation of a line', ['y = mx + b: m is th
 });
 
 // ───────────── Grade 10: Geometry ─────────────
-skill('10-polyangle', 10, 'Geometry', 'Angles in polygons', ['The interior angles of an n-sided polygon add to (n − 2) × 180°.', 'In a regular polygon each angle is that sum ÷ n.'], (r) => {
-  const n = r.pick([5, 6, 8, 9, 10, 12]), regular = r.bool();
-  const sum = (n - 2) * 180;
-  return num(regular ? sum / n : sum, [`(${n} − 2) × 180 = ${sum}°.`, ...(regular ? [`÷ ${n} = ${sum / n}°.`] : [])], { q: regular ? `What is each interior angle of a regular polygon with ${n} sides, in degrees?` : `What do the interior angles of a ${n}-sided polygon add up to, in degrees?`, expr: regular ? `(${n}-2)*180/${n}` : `(${n}-2)*180` });
-});
+skill('10-polyangle', 10, 'Geometry', 'Angles in polygons', GEO10.LESSONS.polyAngles, GEO10.polyAngles);
 skill('10-similar', 10, 'Geometry', 'Similar triangles', ['Similar triangles have sides in the same ratio.', 'Find the scale factor, then multiply.'], (r) => {
   const a = r.int(2, 9), b = r.int(2, 9), k = r.int(2, 5);
-  return num(b * k, [`Scale factor: ${a * k} ÷ ${a} = ${k}.`, `${b} × ${k} = ${b * k}.`], { q: `Two triangles are similar. A side of ${a} cm matches a side of ${a * k} cm. Another side of the small triangle is ${b} cm. How long is the matching side of the big one?`, expr: `${b}*${a * k}/${a}` });
+  const pic = (show) => GC.similarTris([`${a} cm`, '', `${b} cm`], [`${a * k} cm`, '', show ? `${b * k} cm` : '?'], k);
+  return num(b * k, [St(`Matching sides: ${a} cm matches ${a * k} cm, so the scale factor is ${a * k} ÷ ${a} = ${k}.`, pic(false)), St(`${b} × ${k} = ${b * k}.`, pic(true)), St(`So the matching side is ${b * k} cm.`)], { q: 'These two triangles are similar. How long is the side marked ?, in cm?', visual: pic(false), expr: `${b}*${a * k}/${a}` });
 });
 skill('10-trig', 10, 'Trigonometry', 'Sine, cosine and tangent', ['SOH CAH TOA: sin = opposite ÷ hypotenuse, cos = adjacent ÷ hypotenuse, tan = opposite ÷ adjacent.'], (r) => {
   const ang = r.pick([20, 25, 30, 35, 40, 50, 55, 60]), h = r.int(5, 30), f = r.pick(['sin', 'cos']);
-  const v = f === 'sin' ? h * Math.sin(ang * Math.PI / 180) : h * Math.cos(ang * Math.PI / 180);
-  return num(dec(Math.round(v * 10) / 10), [`${f === 'sin' ? 'Opposite' : 'Adjacent'} = hypotenuse × ${f}(${ang}°).`, `= ${h} × ${dec(f === 'sin' ? Math.sin(ang * Math.PI / 180) : Math.cos(ang * Math.PI / 180), 4)} ≈ ${dec(Math.round(v * 10) / 10)}.`], { q: `A right triangle has hypotenuse ${h} and an angle of ${ang}°. Find the side ${f === 'sin' ? 'opposite' : 'adjacent to'} that angle, to the nearest tenth.`, tol: 0.1001 });
+  const rad = ang * Math.PI / 180, v = f === 'sin' ? h * Math.sin(rad) : h * Math.cos(rad), ans = dec(Math.round(v * 10) / 10);
+  const A = Math.cos(rad), B = Math.sin(rad);
+  const pic = (hl) => GC.rightTriFig(A * 10, B * 10, [f === 'cos' ? 'x' : '', f === 'sin' ? 'x' : '', `${h}`], hl, `${ang}°`);
+  return num(ans, [St(`From the ${ang}° angle, the side x is the ${f === 'sin' ? 'opposite' : 'adjacent'} side and ${h} is the hypotenuse, so use ${f === 'sin' ? 'SOH: sin = opposite ÷ hypotenuse' : 'CAH: cos = adjacent ÷ hypotenuse'}.`, pic([{ side: f === 'sin' ? 1 : 0 }, { side: 2 }])), St(`x = ${h} × ${f}(${ang}°) = ${h} × ${dec(f === 'sin' ? Math.sin(rad) : Math.cos(rad), 4)} ≈ ${ans}.`), St(`So x ≈ ${ans}.`)], { q: 'Find the side x in this right triangle, to the nearest tenth.', unit: 'x =', visual: pic(), tol: 0.1001 });
 });
 skill('10-distance', 10, 'Coordinate geometry', 'Distance and midpoint', ['Distance = √((x₂ − x₁)² + (y₂ − y₁)²).', 'Midpoint = the average of the x values and of the y values.'], (r) => {
-  const [a, b, c] = r.pick(TRIPLES), x1 = r.int(-5, 5), y1 = r.int(-5, 5), sx = r.pick([1, -1]), sy = r.pick([1, -1]);
-  const x2 = x1 + sx * a, y2 = y1 + sy * b;
-  if (r.bool()) return num(c, [`Δx = ${a}, Δy = ${b}.`, `√(${a * a} + ${b * b}) = ${c}.`], { q: `Find the distance between (${x1}, ${y1}) and (${x2}, ${y2}).`, expr: `Math.hypot(${x2}-(${x1}),${y2}-(${y1}))` });
-  return { kind: 'text', answer: `(${dec((x1 + x2) / 2)}, ${dec((y1 + y2) / 2)})`, numbers: [(x1 + x2) / 2, (y1 + y2) / 2], q: `Find the midpoint of (${x1}, ${y1}) and (${x2}, ${y2}). Write it as (x, y).`, steps: [`x: (${x1} + ${x2}) ÷ 2 = ${dec((x1 + x2) / 2)}.`, `y: (${y1} + ${y2}) ÷ 2 = ${dec((y1 + y2) / 2)}.`] };
+  const [a, b, c] = r.pick(TRIPLES.filter((t) => t[0] <= 6 && t[1] <= 8)), x1 = r.int(-4, 1), y1 = r.int(-4, 0), sx = 1, sy = 1;
+  const x2 = x1 + sx * a, y2 = y1 + sy * b, R = Math.max(6, Math.abs(x1), Math.abs(x2), Math.abs(y1), Math.abs(y2));
+  const plane = { type: 'plane', range: R, points: [[x1, y1, 'A'], [x2, y2, 'B']] };
+  if (r.bool()) return num(c, [St(`Make a right triangle under AB: across ${x2} − ${x1 < 0 ? `(${x1})` : x1} = ${a}, up ${y2} − ${y1 < 0 ? `(${y1})` : y1} = ${b}.`, { ...plane, points: [...plane.points, [x2, y1, '']] }), St(`AB is the hypotenuse: √(${a}² + ${b}²) = √${a * a + b * b} = ${c}.`), St(`So the distance is ${c}.`)], { q: `Find the distance between A(${x1}, ${y1}) and B(${x2}, ${y2}).`, visual: plane, expr: `Math.hypot(${x2}-(${x1}),${y2}-(${y1}))` });
+  return { kind: 'text', answer: `(${dec((x1 + x2) / 2)}, ${dec((y1 + y2) / 2)})`, numbers: [(x1 + x2) / 2, (y1 + y2) / 2], q: `Find the midpoint of A(${x1}, ${y1}) and B(${x2}, ${y2}). Write it as (x, y).`, visual: plane, steps: [St('The midpoint is halfway along AB: average the x values, then the y values.', plane), St(`x: (${x1} + ${x2}) ÷ 2 = ${dec((x1 + x2) / 2)}.`), St(`y: (${y1} + ${y2}) ÷ 2 = ${dec((y1 + y2) / 2)}.`, { ...plane, points: [...plane.points, [(x1 + x2) / 2, (y1 + y2) / 2, 'M']] })] };
 });
 skill('10-special', 10, 'Trigonometry', 'Exact trig values', ['sin 30° = 1/2, cos 60° = 1/2, tan 45° = 1.', 'sin 90° = 1, cos 0° = 1.'], (r) => {
-  const T = [['sin 30°', '1/2'], ['cos 60°', '1/2'], ['tan 45°', '1'], ['sin 90°', '1'], ['cos 90°', '0'], ['sin 0°', '0'], ['cos 0°', '1']];
-  const [q, a] = r.pick(T);
-  return num(a, [`${q} = ${a}.`], { q: `What is ${q}? (exact value)`, exactForm: 'fraction' });
+  const T = [['sin 30°', '1/2', 30, 'y'], ['cos 60°', '1/2', 60, 'x'], ['tan 45°', '1', 45, 't'], ['sin 90°', '1', 90, 'y'], ['cos 90°', '0', 90, 'x'], ['sin 0°', '0', 0, 'y'], ['cos 0°', '1', 0, 'x']];
+  const [q, a, deg, part] = r.pick(T);
+  const why = part === 'y' ? `sin is the height (y) of the point at ${deg}° on the unit circle.` : part === 'x' ? `cos is how far across (x) the point at ${deg}° is on the unit circle.` : 'tan = sin ÷ cos; at 45° they are equal, so tan 45° = 1.';
+  return num(a, [St(why, GC.unitCircle(deg, `${deg}°`)), St(`${q} = ${a}.`), St(`So ${q} = ${a}.`)], { q: `What is ${q}? (exact value)`, exactForm: 'fraction' });
 });
 
 // ───────────── Grade 11: Algebra 2 ─────────────
@@ -535,11 +531,7 @@ skill('12-ncr', 12, 'Probability', 'Combinations and permutations', ['Order matt
   const v = perm ? f(n) / f(n - k) : f(n) / (f(k) * f(n - k));
   return num(v, [perm ? `${n}P${k} = ${n}! ÷ ${n - k}!.` : `${n}C${k} = ${n}! ÷ (${k}! × ${n - k}!).`, `= ${v}.`], { q: perm ? `In how many ways can ${k} of ${n} runners finish 1st to ${k === 2 ? '2nd' : k === 3 ? '3rd' : k + 'th'}?` : `How many ways can you choose ${k} books from ${n}?` });
 });
-skill('12-unit', 12, 'Trigonometry', 'The unit circle', ['On the unit circle, x = cos θ and y = sin θ.', 'Know the values at 0, π/6, π/4, π/3, π/2 and their reflections.'], (r) => {
-  const T = [['sin(π/6)', '1/2'], ['cos(π/3)', '1/2'], ['sin(π/2)', '1'], ['cos(π)', '-1'], ['sin(3π/2)', '-1'], ['cos(0)', '1'], ['tan(π/4)', '1'], ['sin(7π/6)', '-1/2'], ['cos(2π/3)', '-1/2'], ['sin(π)', '0']];
-  const [q, a] = r.pick(T);
-  return num(a, [`${q} = ${a}.`], { q: `What is ${q}? (exact value)`, exactForm: 'fraction' });
-});
+skill('12-unit', 12, 'Trigonometry', 'The unit circle', G1112.LESSONS12.unit, G1112.unitCircle);
 skill('12-limit', 12, 'Calculus', 'Limits by factoring', ['If you get 0/0, factor and cancel.', '(x² − a²)/(x − a) = x + a, so the limit at a is 2a.'], (r) => {
   const a = r.nonzero(-6, 6);
   return num(2 * a, [`x² − ${a * a} = (x − ${neg(a)})(x + ${neg(a)}).`, `Cancel: x + ${neg(a)}. At x = ${a}: ${2 * a}.`], { q: `Find the limit as x → ${a} of (x² − ${a * a}) ÷ (x ${sgn(-a)}).` });

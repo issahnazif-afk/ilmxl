@@ -65,15 +65,38 @@ export function makeItem(skill, seed = Math.floor(Math.random() * 2 ** 31), avoi
   return { ...fromBank(it), seed };
 }
 
-// ── the teacher's lesson for a skill: [{ say, board }] then a question to check ──
+// ── the teacher's lesson for a skill ──
+// Like a textbook lesson: the key ideas (each line may have its picture), then worked examples of different kinds,
+// solved step by step with their pictures, then "Check your understanding": three questions.
+// Returns { steps: [{ say, board, visual?, head? }], check (the first question), checks: [three questions] }.
+const lineOf = (t) => (typeof t === 'string' ? { text: t } : t);
+// items of a generated skill that look different from each other (a different kind of question, not new numbers)
+export function variedItems(skill, n, seed = 12345, avoid = []) {
+  const out = [], kinds = new Set(avoid.map((it) => kindOf(it)));
+  for (let k = 0; out.length < n && k < 60; k++) {
+    const it = makeItem(skill, seed + k * 7919);
+    if (kinds.has(kindOf(it)) && k < 40) continue;
+    kinds.add(kindOf(it)); out.push(it);
+  }
+  return out;
+}
+const kindOf = (it) => `${it.kind}|${it.visual?.type ?? ''}|${String(it.q).replace(/[\d.,−-]+/g, '#').slice(0, 48)}`;
 export function lessonOf(skill) {
   if (skill.gen) {
-    const lines = skill.lesson.map((t) => ({ say: speakable(t), board: t }));
-    const ex = makeItem(skill, 12345);
-    const worked = [{ say: "Let's do one together.", board: ex.q, visual: ex.visual }, ...(ex.steps ?? []).map((t) => ({ say: stepSay(t), board: stepText(t), visual: t.visual }))];
-    return { steps: [...lines, ...worked], check: makeItem(skill, 777) };
+    const keys = skill.lesson.map(lineOf).map((t) => ({ say: t.say ?? speakable(t.text), board: t.text, visual: t.visual }));
+    const exs = variedItems(skill, 2);
+    const worked = exs.flatMap((ex, k) => [
+      { head: true, say: k ? 'Here is another kind of question.' : "Now let's work through an example together.", board: `Example ${k + 1}` },
+      { say: speakable(ex.q), board: ex.q, visual: ex.visual },
+      ...(ex.steps ?? []).map((t) => ({ say: stepSay(t), board: stepText(t), visual: t.visual })),
+    ]);
+    const checks = variedItems(skill, 3, 777, exs);
+    return { steps: [{ head: true, say: 'First, the key ideas.', board: 'Key ideas' }, ...keys, ...worked], check: checks[0], checks };
   }
-  return { steps: skill.lesson.map((x) => ({ say: x.say, board: x.board ?? x.say })), check: skill.check ? fromBank(skill.check) : makeItem(skill, 1) };
+  const items = skill.items ?? [];
+  const extra = [0, 1, 2].map((k) => items[(k * 5 + 3) % Math.max(1, items.length)]).filter(Boolean).map(fromBank);
+  const checks = [skill.check ? fromBank(skill.check) : makeItem(skill, 1), ...extra].filter((it, i, arr) => arr.findIndex((x) => x.q === it.q) === i).slice(0, 3);
+  return { steps: skill.lesson.map((x) => ({ say: x.say, board: x.board ?? x.say, visual: x.visual })), check: checks[0], checks };
 }
 // 3/4 → "3 quarters", 1/2 → "1 half", 7/20 → "7 over 20": the way a teacher reads a fraction
 const DEN = { 2: ['half', 'halves'], 3: ['third', 'thirds'], 4: ['quarter', 'quarters'], 5: ['fifth', 'fifths'], 6: ['sixth', 'sixths'], 7: ['seventh', 'sevenths'], 8: ['eighth', 'eighths'], 9: ['ninth', 'ninths'], 10: ['tenth', 'tenths'], 12: ['twelfth', 'twelfths'], 100: ['hundredth', 'hundredths'] };

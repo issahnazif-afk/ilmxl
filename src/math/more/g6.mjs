@@ -1,5 +1,6 @@
 // Grade 6 maths: more skills, one or more for each topic of the grade (see src/math/kit.mjs for the helpers).
 import { grade, mc, near, num, txt, OBJ, plural, NAMES, comma, par, gcd, lcm, simplify, frac, isPrime, dec, sgn, neg, St, columnAdd, columnSub, columnMul, longDivision, numberLine, fractionBars, eqnLines, areaModel, multiplesOf, PLACE } from '../kit.mjs';
+import * as G6 from './geo6.mjs';   // grade 6 geometry and measurement, taught with pictures
 const { skill, list } = grade();
 
 // ── small helpers for this grade ──
@@ -689,19 +690,7 @@ skill('6-metric', 6, 'Measurement', 'Metric units', ['To change a big unit to a 
   const piece = r.pick([20, 25, 40, 50]), n = r.int(3, 12), total = piece * n;
   return num(n, [`Change to the same unit: ${dec(total / 100)} m = ${total} cm.`, `${total} ÷ ${piece} = ${n}.`, `So ${n} pieces.`], { q: `A ribbon is ${dec(total / 100)} m long. It is cut into pieces ${piece} cm long. How many pieces are there?`, expr: `${total}/${piece}` });
 });
-skill('6-unitsarea', 6, 'Measurement', 'Area, volume, capacity and temperature', ['1 m² = 100 cm × 100 cm = 10,000 cm². 1 m³ = 1000 L, and 1 cm³ holds 1 mL.', 'On the Celsius scale water freezes at 0 °C; numbers below zero are colder.'], (r) => {
-  const t = r.int(0, 4);
-  if (t === 0) { const a = r.int(2, 9); return r.bool() ? num(a * 10000, [`1 m = 100 cm, so 1 m² = 100 × 100 = 10,000 cm².`, `${a} × 10,000 = ${comma(a * 10000)}.`, `So ${a} m² = ${comma(a * 10000)} cm².`], { q: `${a} m² = ? cm²`, expr: `${a}*10000` }) : num(a, [`1 m² = 10,000 cm².`, `${comma(a * 10000)} ÷ 10,000 = ${a}.`, `So ${comma(a * 10000)} cm² = ${a} m².`], { q: `${comma(a * 10000)} cm² = ? m²`, expr: `${a * 10000}/10000` }); }
-  if (t === 1) { const a = r.int(2, 9) / (r.bool() ? 1 : 2); return num(a * 1000, [`1 m³ holds 1000 L.`, `${a} × 1000 = ${comma(a * 1000)}.`, `So ${a} m³ = ${comma(a * 1000)} L.`], { q: `A tank holds ${a} m³ of water. How many litres is that?`, expr: `${a}*1000` }); }
-  if (t === 2) { const v = r.int(2, 30) * 100; return num(dec(v / 1000), [`1 cm³ holds 1 mL, so ${comma(v)} cm³ = ${comma(v)} mL.`, `1 L = 1000 mL: ${comma(v)} ÷ 1000 = ${dec(v / 1000)}.`, `So it holds ${dec(v / 1000)} L.`], { q: `A box has a volume of ${comma(v)} cm³. How many litres does it hold?`, expr: `${v}/1000` }); }
-  if (t === 3) {
-    const [what, right, wrongs] = r.pick([['a hot summer day in Toronto', '30 °C', ['5 °C', '75 °C', '−10 °C']], ['a cold winter day in Winnipeg', '−25 °C', ['10 °C', '25 °C', '−90 °C']], ['a cup of hot chocolate', '70 °C', ['7 °C', '200 °C', '−5 °C']], ['the inside of a fridge', '4 °C', ['40 °C', '−40 °C', '24 °C']], ['a comfortable classroom', '21 °C', ['2 °C', '51 °C', '−21 °C']]]);
-    return mc(r, right, wrongs, { q: `Which is the most reasonable temperature for ${what}?`, steps: [`Water freezes at 0 °C and boils at 100 °C. A warm room is about 20 °C.`, `So the most reasonable is ${right}.`] });
-  }
-  const a = r.int(-15, 10), b = a + r.int(2, 15), [c1, c2] = r.shuffle(['Iqaluit', 'Regina', 'Halifax', 'Calgary', 'Quebec City']);
-  if (r.bool()) return mc(r, c1, [c1, c2], { q: `It is ${neg(a)} °C in ${c1} and ${neg(b)} °C in ${c2}. Which city is colder?`, steps: [`The lower temperature is colder.`, `${neg(a)} is less than ${neg(b)}, so ${c1} is colder.`] });
-  return num(b - a, [`From ${neg(a)} °C up to ${neg(b)} °C.`, `${neg(b)} − ${par(a)} = ${b - a}.`, `So it rose by ${b - a} degrees.`], { q: `The temperature was ${neg(a)} °C in the morning and ${neg(b)} °C in the afternoon. By how many degrees did it rise?`, unit: '°C', expr: `${b}-(${a})` });
-});
+skill('6-unitsarea', 6, 'Measurement', 'Area, volume, capacity and temperature', G6.UNITSAREA_LESSON, G6.unitsArea6);
 
 // ───────────── 23. Money ─────────────
 skill('6-money', 6, 'Money', 'Money problems', ['Line up the decimal points when you add or subtract money.', 'Work in cents if it helps: $2.35 = 235¢.'], (r) => {
@@ -920,72 +909,15 @@ skill('6-twovarrule', 6, 'Two-variable equations', 'Find the equation from a tab
 });
 
 // ───────────── 31. Lines and angles ─────────────
-const angleType = (d) => (d < 90 ? 'Acute' : d === 90 ? 'Right' : d < 180 ? 'Obtuse' : d === 180 ? 'Straight' : 'Reflex');
-skill('6-angles', 6, 'Lines and angles', 'Measure and classify angles', ['Acute: less than 90°. Right: exactly 90°. Obtuse: between 90° and 180°. Straight: 180°. Reflex: more than 180°.', 'A full turn is 360°, so a quarter turn is 90°.'], (r) => {
-  const t = r.int(0, 2);
-  if (t === 0) { const d = r.pick([r.int(2, 8) * 10, 90, r.int(10, 17) * 10, 180, r.int(20, 33) * 10]); return mc(r, angleType(d), ['Acute', 'Right', 'Obtuse', 'Straight', 'Reflex'].filter((x) => x !== angleType(d)).slice(0, 3), { q: `The angle measures ${d}°. What type of angle is it?`, visual: { type: 'angle', deg: d, label: `${d}°` }, steps: [`Compare ${d}° with 90° and 180°.`, `So it is ${angleType(d).toLowerCase()}.`] }); }
-  if (t === 1) {
-    const d = r.pick([30, 45, 60, 120, 135, 150, 90]), wrongs = [30, 60, 90, 120, 150, 45, 135].filter((x) => Math.abs(x - d) >= 30 && x !== d);
-    return mc(r, `${d}°`, r.shuffle(wrongs).slice(0, 3).map((x) => `${x}°`), { q: 'Which is the best estimate of this angle?', visual: { type: 'angle', deg: d }, steps: [`Compare with a right angle (90°): the angle is ${d < 90 ? 'smaller' : d > 90 ? 'bigger' : 'exactly a right angle'}.`, `The best estimate is ${d}°.`] });
-  }
-  const [n, d, what] = r.pick([[1, 4, 'a quarter turn'], [1, 2, 'a half turn'], [3, 4, 'three-quarters of a turn'], [1, 3, 'a third of a turn'], [1, 6, 'a sixth of a turn'], [1, 8, 'an eighth of a turn'], [1, 12, 'the angle between two neighbouring numbers on a clock face']]);
-  return num(360 * n / d, [`A full turn is 360°.`, `${n}/${d} of 360° = ${360 * n / d}°.`, `So the angle is ${360 * n / d}°.`], { q: `How many degrees is ${what}?`, unit: '°', expr: `360*${n}/${d}` });
-});
-skill('6-anglepairs', 6, 'Lines and angles', 'Angle pairs', ['Complementary angles add to 90°. Supplementary angles add to 180°.', 'Vertical angles (opposite each other where two lines cross) are equal. Adjacent angles share a side.'], (r) => {
-  const t = r.int(0, 3);
-  if (t === 0) { const a = r.int(5, 85); return num(90 - a, [`Complementary angles add to 90°.`, `90 − ${a} = ${90 - a}.`, `So the other angle is ${90 - a}°.`], { q: `Two angles are complementary. One is ${a}°. What is the other?`, unit: '°', expr: `90-${a}` }); }
-  if (t === 1) { const a = r.int(10, 170); return num(180 - a, [`Angles on a straight line are supplementary: they add to 180°.`, `180 − ${a} = ${180 - a}.`, `So the other angle is ${180 - a}°.`], { q: `Two angles are supplementary. One is ${a}°. What is the other?`, unit: '°', expr: `180-${a}` }); }
-  if (t === 2) { const a = r.int(20, 160), ask = r.bool(); return num(ask ? a : 180 - a, ask ? [`Vertical angles are equal.`, `So the angle opposite ${a}° is also ${a}°.`] : [`The angle next to it on the straight line is supplementary.`, `180 − ${a} = ${180 - a}. So it is ${180 - a}°.`], { q: `Two lines cross. One angle is ${a}°. What is the angle ${ask ? 'opposite it (the vertical angle)' : 'next to it (the adjacent angle on the same line)'}?`, unit: '°', expr: ask ? String(a) : `180-${a}` }); }
-  const [desc, right] = r.pick([['add up to 90°', 'Complementary'], ['add up to 180°', 'Supplementary'], ['are opposite each other where two lines cross', 'Vertical'], ['share a vertex and a side, and do not overlap', 'Adjacent']]);
-  return mc(r, right, ['Complementary', 'Supplementary', 'Vertical', 'Adjacent'], { q: `Two angles ${desc}. What are they called?`, steps: [`Recall: complementary → 90°, supplementary → 180°, vertical → opposite, adjacent → side by side.`, `So they are ${right.toLowerCase()} angles.`] });
-});
+skill('6-angles', 6, 'Lines and angles', 'Measure and classify angles', G6.ANGLES_LESSON, G6.angles6);
+skill('6-anglepairs', 6, 'Lines and angles', 'Angle pairs', G6.ANGLEPAIRS_LESSON, G6.anglePairs6);
 
 // ───────────── 32. Two-dimensional figures ─────────────
-const POLY = { 3: 'Triangle', 4: 'Quadrilateral', 5: 'Pentagon', 6: 'Hexagon', 7: 'Heptagon', 8: 'Octagon', 9: 'Nonagon', 10: 'Decagon' };
-const regular = (n) => Array.from({ length: n }, (_, i) => { const a = Math.PI / 2 + (2 * Math.PI * i) / n; return [Number((5 + 4.5 * Math.cos(a)).toFixed(2)), Number((5 + 4.5 * Math.sin(a)).toFixed(2))]; });
-skill('6-polygons', 6, 'Two-dimensional figures', 'Classify polygons, triangles and quadrilaterals', ['Polygons are named by their number of sides: pentagon 5, hexagon 6, octagon 8.', 'Triangles are classified by sides (equilateral, isosceles, scalene) or by angles (acute, right, obtuse).'], (r) => {
-  const t = r.int(0, 4);
-  if (t === 0) { const n = r.int(3, 10); return mc(r, POLY[n], r.shuffle(Object.values(POLY).filter((x) => x !== POLY[n])).slice(0, 3), { q: 'What is the name of this polygon?', visual: { type: 'poly', points: regular(n) }, steps: [`Count the sides: ${n}.`, `A polygon with ${n} sides is a ${POLY[n].toLowerCase()}.`] }); }
-  if (t === 1) {
-    const k = r.int(0, 2), a = r.int(4, 12), sides = k === 0 ? [a, a, a] : k === 1 ? r.shuffle([a, a, a + r.int(1, 3)]) : [a, a + 1, a + 3], right = ['Equilateral', 'Isosceles', 'Scalene'][k];
-    return mc(r, right, ['Equilateral', 'Isosceles', 'Scalene'], { q: `A triangle has sides of ${sides.join(' cm, ')} cm. What kind of triangle is it?`, steps: [`Equilateral: 3 equal sides. Isosceles: exactly 2. Scalene: none.`, `This one is ${right.toLowerCase()}.`] });
-  }
-  if (t === 2) {
-    const k = r.int(0, 2), A = k === 0 ? r.int(50, 80) : k === 1 ? 90 : r.int(95, 140), B = k === 0 ? r.int(Math.max(181 - A - 89, 30), 85) : r.int(15, 180 - A - 15), C = 180 - A - B, right = ['Acute', 'Right', 'Obtuse'][k];
-    return mc(r, right, ['Acute', 'Right', 'Obtuse'], { q: `A triangle has angles of ${r.shuffle([A, B, C]).join('°, ')}°. Classify it by its angles.`, steps: [`The largest angle is ${Math.max(A, B, C)}°.`, `${k === 0 ? 'All angles are less than 90°' : k === 1 ? 'One angle is exactly 90°' : 'One angle is more than 90°'}, so it is ${right.toLowerCase()}.`] });
-  }
-  if (t === 3) {
-    const Q = [['4 equal sides and 4 right angles', 'Square'], ['4 right angles, but the sides are not all equal', 'Rectangle'], ['4 equal sides, but no right angles', 'Rhombus'], ['exactly one pair of parallel sides', 'Trapezoid'], ['two pairs of parallel sides, no right angles, and sides not all equal', 'Parallelogram'], ['two pairs of equal sides next to each other, and no parallel sides', 'Kite']];
-    const [d, right] = r.pick(Q);
-    return mc(r, right, r.shuffle(Q.map((q) => q[1]).filter((x) => x !== right)).slice(0, 3), { q: `A quadrilateral has ${d}. What is it?`, steps: [`Match the clues to the definitions.`, `It is a ${right.toLowerCase()}.`] });
-  }
-  if (r.bool()) { const rad = r.int(2, 30), toD = r.bool(); return toD ? num(2 * rad, [`The diameter goes all the way across: it is 2 radii.`, `2 × ${rad} = ${2 * rad}. So the diameter is ${2 * rad} cm.`], { q: `A circle has a radius of ${rad} cm. What is its diameter, in cm?`, expr: `2*${rad}` }) : num(rad, [`The radius is half the diameter.`, `${2 * rad} ÷ 2 = ${rad}. So the radius is ${rad} cm.`], { q: `A circle has a diameter of ${2 * rad} cm. What is its radius, in cm?`, expr: `${2 * rad}/2` }); }
-  const [d, right] = r.pick([['goes from the centre to the circle', 'Radius'], ['goes across the circle through the centre', 'Diameter'], ['joins two points on the circle but does not pass through the centre', 'Chord'], ['is the distance all the way around the circle', 'Circumference']]);
-  return mc(r, right, ['Radius', 'Diameter', 'Chord', 'Circumference'], { q: `What is the name of the part of a circle that ${d}?`, steps: [`Radius: centre to edge. Diameter: across through the centre. Chord: edge to edge. Circumference: around.`, `So it is the ${right.toLowerCase()}.`] });
-});
-skill('6-anglesum', 6, 'Two-dimensional figures', 'Angles in polygons', ['The angles in a triangle add to 180°; in a quadrilateral, 360°.', 'A polygon with n sides has angles adding to (n − 2) × 180°. The exterior angles of any polygon add to 360°.'], (r) => {
-  const t = r.int(0, 4);
-  if (t === 0) { const a = r.int(20, 100), b = r.int(20, 150 - a); return num(180 - a - b, [`The angles in a triangle add to 180°.`, `180 − ${a} − ${b} = ${180 - a - b}.`, `So the missing angle is ${180 - a - b}°.`], { q: `A triangle has angles of ${a}° and ${b}°. What is the third angle?`, unit: '°', expr: `180-${a}-${b}` }); }
-  if (t === 1) { const a = r.int(60, 120), b = r.int(60, 120), c = r.int(50, 130); const d = 360 - a - b - c; if (d <= 10) return num(360 - 90 - 90 - a, [`The angles in a quadrilateral add to 360°.`, `360 − 90 − 90 − ${a} = ${180 - a}.`, `So the missing angle is ${180 - a}°.`], { q: `A quadrilateral has angles of 90°, 90° and ${a}°. What is the fourth angle?`, unit: '°', expr: `360-90-90-${a}` }); return num(d, [`The angles in a quadrilateral add to 360°.`, `360 − ${a} − ${b} − ${c} = ${d}.`, `So the missing angle is ${d}°.`], { q: `A quadrilateral has angles of ${a}°, ${b}° and ${c}°. What is the fourth angle?`, unit: '°', expr: `360-${a}-${b}-${c}` }); }
-  const n = r.pick([5, 6, 8, 9, 10, 12]), name = POLY[n] ?? '12-sided polygon', nm = name.toLowerCase();
-  if (t === 2) return num((n - 2) * 180, [`A polygon with ${n} sides splits into ${n} − 2 = ${n - 2} triangles.`, `${n - 2} × 180 = ${(n - 2) * 180}.`, `So the angles add to ${(n - 2) * 180}°.`], { q: `What is the sum of the interior angles of a ${nm}?`, unit: '°', expr: `(${n}-2)*180` });
-  if (t === 3) return num((n - 2) * 180 / n, [`The angles add to (${n} − 2) × 180 = ${(n - 2) * 180}°.`, `A regular ${nm} has ${n} equal angles: ${(n - 2) * 180} ÷ ${n} = ${(n - 2) * 180 / n}.`, `So each angle is ${(n - 2) * 180 / n}°.`], { q: `What is the measure of each interior angle of a regular ${nm}?`, unit: '°', visual: { type: 'poly', points: regular(n) }, expr: `(${n}-2)*180/${n}` });
-  return num(360 / n, [`The exterior angles of any polygon add to 360°.`, `A regular ${nm} has ${n} equal exterior angles: 360 ÷ ${n} = ${360 / n}.`, `So each exterior angle is ${360 / n}°.`], { q: `What is the measure of each exterior angle of a regular ${nm}?`, unit: '°', expr: `360/${n}` });
-});
+skill('6-polygons', 6, 'Two-dimensional figures', 'Classify polygons, triangles and quadrilaterals', G6.POLYGONS_LESSON, G6.polygons6);
+skill('6-anglesum', 6, 'Two-dimensional figures', 'Angles in polygons', G6.ANGLESUM_LESSON, G6.angleSum6);
 
 // ───────────── 33. Symmetry and transformations ─────────────
-skill('6-symmetry', 6, 'Symmetry and transformations', 'Symmetry and types of transformations', ['A line of symmetry folds a shape into two matching halves.', 'A translation slides, a reflection flips over a line, and a rotation turns around a point.'], (r) => {
-  if (r.bool(0.45)) {
-    const [shape, n] = r.pick([['a square', 4], ['a rectangle (not a square)', 2], ['an equilateral triangle', 3], ['an isosceles triangle (not equilateral)', 1], ['a scalene triangle', 0], ['a regular pentagon', 5], ['a regular hexagon', 6], ['a rhombus (not a square)', 2], ['a parallelogram (not a rectangle or rhombus)', 0], ['a regular octagon', 8], ['a kite', 1]]);
-    return num(n, [`Try folding the shape so the halves match exactly.`, `${shape[0].toUpperCase() + shape.slice(1)} has ${n} line${n === 1 ? '' : 's'} of symmetry.`, `So the answer is ${n}.`], { q: `How many lines of symmetry does ${shape} have?`, expr: String(n) });
-  }
-  const x = r.int(1, 5), y = r.int(1, 5), x2 = r.int(1, 5), y2 = r.int(1, 5), k = r.int(0, 2);
-  if (x === x2 && y === y2) return mc(r, 'Translation', ['Translation', 'Reflection', 'Rotation'], { q: `A shape slides ${x} units right without turning or flipping. What transformation is this?`, steps: [`Sliding without turning or flipping is a translation.`, `So it is a translation.`] });
-  const dx = r.int(1, 4), dy = r.nonzero(-3, 3);
-  const map = [([a, b]) => [a + dx, b + dy], ([a, b]) => [-a, b], ([a, b]) => [-a, -b]][k], right = ['Translation', 'Reflection', 'Rotation'][k];
-  const P = [x, y], Q = [x2, y2], P2 = map(P), Q2 = map(Q);
-  return mc(r, right, ['Translation', 'Reflection', 'Rotation'], { q: `A shape is moved so that ${pt(...P)} goes to ${pt(...P2)} and ${pt(...Q)} goes to ${pt(...Q2)}. Which transformation is it?`, steps: [k === 0 ? `Every point moves the same way: ${dx} right and ${Math.abs(dy)} ${dy > 0 ? 'up' : 'down'}.` : k === 1 ? `Each x-coordinate changes sign and y stays: a flip over the y-axis.` : `Both coordinates change sign: a half turn (180°) around the origin.`, `So it is a ${right.toLowerCase()}.`] });
-});
+skill('6-symmetry', 6, 'Symmetry and transformations', 'Symmetry and types of transformations', G6.SYMMETRY_LESSON, G6.symmetry6);
 skill('6-transcoord', 6, 'Symmetry and transformations', 'Coordinates after a transformation', ['Translate: add to x for right (subtract for left), add to y for up. Reflect in the x-axis: (x, y) → (x, −y); in the y-axis: (x, y) → (−x, y).', 'Rotate 180° about the origin: (x, y) → (−x, −y). 90° clockwise: (x, y) → (y, −x).'], (r) => {
   const t = r.int(0, 2), x = r.nonzero(-5, 5), y = r.nonzero(-5, 5);
   let ans, q, why;
@@ -993,83 +925,20 @@ skill('6-transcoord', 6, 'Symmetry and transformations', 'Coordinates after a tr
   else if (t === 1) { const xa = r.bool(); ans = xa ? [x, -y] : [-x, y]; q = `Point A ${pt(x, y)} is reflected in the ${xa ? 'x' : 'y'}-axis. Where is A′?`; why = xa ? `Reflecting in the x-axis keeps x and changes the sign of y.` : `Reflecting in the y-axis keeps y and changes the sign of x.`; }
   else { const k = r.int(0, 2); ans = [[-x, -y], [y, -x], [-y, x]][k]; q = `Point A ${pt(x, y)} is rotated ${['180°', '90° clockwise', '90° counter-clockwise'][k]} about the origin. Where is A′?`; why = ['A 180° turn changes the sign of both coordinates: (x, y) → (−x, −y).', 'A 90° clockwise turn: (x, y) → (y, −x).', 'A 90° counter-clockwise turn: (x, y) → (−y, x).'][k]; }
   const right = pt(...ans);
-  return mc(r, right, [pt(-ans[0], ans[1]), pt(ans[0], -ans[1]), pt(ans[1], ans[0]), pt(-ans[0], -ans[1])], { q, visual: { type: 'plane', points: [[x, y, 'A']], range: 9 }, steps: [why, `So A′ is ${right}.`] });
+  return mc(r, right, [pt(-ans[0], ans[1]), pt(ans[0], -ans[1]), pt(ans[1], ans[0]), pt(-ans[0], -ans[1])], { q, visual: { type: 'plane', points: [[x, y, 'A']], range: 9 }, steps: [St(why, { type: 'plane', points: [[x, y, 'A'], [ans[0], ans[1], 'A′']], range: 9 }), `So A′ is ${right}.`] });
 });
 
 // ───────────── 34. Three-dimensional figures ─────────────
-const BASES = { 3: 'triangular', 4: 'rectangular', 5: 'pentagonal', 6: 'hexagonal', 8: 'octagonal' };
-skill('6-solids', 6, 'Three-dimensional figures', 'Solids, nets and views', ['A polyhedron has flat faces that are polygons. Prisms have two matching bases; pyramids have one base and meet at a point.', 'Cylinders, cones and spheres have curved surfaces, so they are not polyhedra.'], (r) => {
-  const t = r.int(0, 3), n = r.pick([3, 4, 5, 6, 8]), prism = r.bool(), name = `${BASES[n]} ${prism ? 'prism' : 'pyramid'}`;
-  if (t === 0) {
-    const what = r.pick(['faces', 'edges', 'vertices']), v = prism ? { faces: n + 2, edges: 3 * n, vertices: 2 * n }[what] : { faces: n + 1, edges: 2 * n, vertices: n + 1 }[what];
-    const how = prism ? { faces: `2 bases + ${n} side faces = ${n + 2}`, edges: `${n} on each base + ${n} joining them = ${3 * n}`, vertices: `${n} on each base × 2 = ${2 * n}` }[what] : { faces: `1 base + ${n} triangles = ${n + 1}`, edges: `${n} on the base + ${n} to the top = ${2 * n}`, vertices: `${n} on the base + 1 at the top = ${n + 1}` }[what];
-    return num(v, [`The base has ${n} sides.`, `${how}.`, `So a ${name} has ${v} ${what}.`], { q: `How many ${what} does a ${name} have?`, expr: String(v) });
-  }
-  const D = [['6 square faces', 'Cube'], ['2 triangular bases and 3 rectangular faces', 'Triangular prism'], ['a square base and 4 triangular faces that meet at a point', 'Square pyramid'], ['2 circular bases and one curved surface', 'Cylinder'], ['one circular base and a curved surface that comes to a point', 'Cone'], ['one curved surface and no edges or vertices', 'Sphere'], ['2 hexagonal bases and 6 rectangular faces', 'Hexagonal prism']];
-  if (t === 1) { const [d, right] = r.pick(D); return mc(r, right, r.shuffle(D.map((x) => x[1]).filter((x) => x !== right)).slice(0, 3), { q: `Which solid has ${d}?`, steps: [`Match the faces to the solid.`, `It is a ${right.toLowerCase()}.`] }); }
-  if (t === 2) { const [d, right] = r.pick([['2 triangles and 3 rectangles', 'Triangular prism'], ['6 squares', 'Cube'], ['1 square and 4 triangles', 'Square pyramid'], ['2 circles and a rectangle', 'Cylinder'], ['4 triangles', 'Triangular pyramid'], ['2 pentagons and 5 rectangles', 'Pentagonal prism']]); return mc(r, right, ['Triangular prism', 'Cube', 'Square pyramid', 'Cylinder', 'Triangular pyramid', 'Pentagonal prism'].filter((x) => x !== right).slice(0, 3), { q: `A net is made of ${d}. What solid does it fold into?`, steps: [`The net shows every face of the solid.`, `${d[0].toUpperCase() + d.slice(1)} fold into a ${right.toLowerCase()}.`] }); }
-  const [d, right, wrongs] = r.pick([['the top view of a cylinder standing upright', 'Circle', ['Rectangle', 'Triangle', 'Square']], ['the front view of a cylinder standing upright', 'Rectangle', ['Circle', 'Triangle', 'Pentagon']], ['the top view of a square pyramid', 'Square', ['Circle', 'Triangle', 'Hexagon']], ['the front view of a cone standing on its base', 'Triangle', ['Circle', 'Square', 'Rectangle']], ['the top view of a cube', 'Square', ['Triangle', 'Circle', 'Pentagon']]]);
-  return mc(r, right, wrongs, { q: `What shape is ${d}?`, steps: [`Imagine looking at the solid from that side.`, `You would see a ${right.toLowerCase()}.`] });
-});
+skill('6-solids', 6, 'Three-dimensional figures', 'Solids, nets and views', G6.SOLIDS_LESSON, G6.solids6);
 
 // ───────────── 35. Perimeter and area ─────────────
-skill('6-perimeter', 6, 'Perimeter and area', 'Perimeter and area of rectangles and grid shapes', ['Perimeter is the distance around: add all the sides.', 'Area of a rectangle = length × width. On a grid, count the unit squares.'], (r) => {
-  const t = r.int(0, 4);
-  if (t === 0) {
-    const n = r.int(3, 5), sides = Array.from({ length: n }, () => r.int(3, 15)), pts = n === 3 ? [[1, 1], [9, 1], [4, 8]] : n === 4 ? [[1, 1], [9, 1], [8, 7], [2, 8]] : [[2, 1], [8, 1], [9, 6], [5, 9], [1, 6]];
-    const P = sides.reduce((a, b) => a + b, 0);
-    return num(P, [`Add all ${n} sides.`, `${sides.join(' + ')} = ${P}.`, `So the perimeter is ${P} cm.`], { q: 'What is the perimeter of this shape, in cm? (It is not drawn to scale.)', visual: { type: 'poly', points: pts, labels: sides.map((s) => `${s} cm`) }, expr: sides.join('+') });
-  }
-  if (t === 1) {
-    const W = r.int(5, 10), H = r.int(5, 10), w2 = r.int(2, W - 2), h1 = r.int(2, H - 2), P = 2 * (W + H);
-    return num(P, [`Find the missing sides: the top right is ${W} − ${w2} = ${W - w2} m, the inner step is ${H} − ${h1} = ${H - h1} m.`, `Add all six: ${W} + ${h1} + ${W - w2} + ${H - h1} + ${w2} + ${H} = ${P}.`, `So the perimeter is ${P} m.`], { q: 'What is the perimeter of this shape, in metres?', visual: { type: 'poly', points: [[0, 0], [W, 0], [W, h1], [w2, h1], [w2, H], [0, H]], labels: [`${W} m`, `${h1} m`, '', '', `${w2} m`, `${H} m`] }, expr: `2*(${W}+${H})` });
-  }
-  if (t === 2) {
-    const w = r.int(2, 8), h = r.int(2, 8), area = r.bool();
-    return num(area ? w * h : 2 * (w + h), area ? [`The rectangle is ${w} squares across and ${h} squares up.`, `${w} × ${h} = ${w * h}.`, `So the area is ${w * h} square units.`] : [`The sides are ${w}, ${h}, ${w} and ${h} units.`, `${w} + ${h} + ${w} + ${h} = ${2 * (w + h)}.`, `So the perimeter is ${2 * (w + h)} units.`], { q: `What is the ${area ? 'area, in square units,' : 'perimeter, in units,'} of the rectangle on the grid?`, visual: { type: 'poly', points: [[1, 1], [1 + w, 1], [1 + w, 1 + h], [1, 1 + h]], grid: true }, expr: area ? `${w}*${h}` : `2*(${w}+${h})` });
-  }
-  if (t === 3) { const l = r.int(3, 15), w = r.int(2, 12); return num(2 * (l + w), [`Area = length × width, so the width is ${l * w} ÷ ${l} = ${w} m.`, `Perimeter = 2 × (${l} + ${w}) = ${2 * (l + w)}.`, `So the perimeter is ${2 * (l + w)} m.`], { q: `A rectangle has an area of ${l * w} m² and a length of ${l} m. What is its perimeter, in metres?`, expr: `2*(${l}+${l * w}/${l})` }); }
-  const P = r.int(8, 15) * 2, half = P / 2, a1 = r.int(1, Math.floor(half / 2) - 1), a2 = Math.floor(half / 2), ask = r.bool();
-  return mc(r, ask ? `${a2} m by ${half - a2} m` : `${a1} m by ${half - a1} m`, [`${a1} m by ${half - a1} m`, `${a2} m by ${half - a2} m`], { q: `Both rectangles have a perimeter of ${P} m. Which has the ${ask ? 'greater' : 'smaller'} area?`, steps: [`${a1} × ${half - a1} = ${a1 * (half - a1)} m² and ${a2} × ${half - a2} = ${a2 * (half - a2)} m².`, `With the same perimeter, the shape closer to a square has the greater area. So the answer is ${ask ? `${a2} m by ${half - a2} m` : `${a1} m by ${half - a1} m`}.`] });
-});
-skill('6-areaquad', 6, 'Perimeter and area', 'Area of parallelograms, trapezoids and rhombuses', ['Parallelogram: A = base × height (the height is straight up from the base, not the slanted side).', 'Trapezoid: A = (a + b) ÷ 2 × h. Rhombus: A = d1 × d2 ÷ 2, using the diagonals.'], (r) => {
-  const t = r.int(0, 2);
-  if (t === 0) { const b = r.int(4, 8), h = r.int(3, 7), s = r.int(1, 2); return num(b * h, [`Cut the triangle off one end and move it to the other: it makes a ${b} by ${h} rectangle.`, `A = base × height = ${b} × ${h} = ${b * h}.`, `So the area is ${b * h} cm².`], { q: `A parallelogram has base ${b} cm and height ${h} cm. What is its area, in cm²?`, visual: { type: 'poly', points: [[0, 1], [b, 1], [b + s, 1 + h], [s, 1 + h]], labels: [`${b} cm`, '', '', ''] }, expr: `${b}*${h}` }); }
-  if (t === 1) { const a = r.int(2, 6), b = a + 2 * r.int(1, 2), h = r.int(2, 8), A = (a + b) * h / 2; return num(dec(A), [`Add the parallel sides: ${a} + ${b} = ${a + b}.`, `Half of that times the height: ${a + b} ÷ 2 × ${h} = ${dec(A)}.`, `So the area is ${dec(A)} m².`], { q: `A trapezoid has parallel sides of ${a} m and ${b} m and a height of ${h} m. What is its area, in m²?`, visual: { type: 'poly', points: [[0, 1], [b, 1], [(b + a) / 2, 1 + h], [(b - a) / 2, 1 + h]], labels: [`${b} m`, '', `${a} m`, ''] }, expr: `(${a}+${b})/2*${h}` }); }
-  const d1 = 2 * r.int(2, 4), d2 = 2 * r.int(2, 4) + (r.bool() ? 0 : 1), A = d1 * d2 / 2;
-  return num(dec(A), [`Multiply the diagonals: ${d1} × ${d2} = ${d1 * d2}.`, `Halve it: ${d1 * d2} ÷ 2 = ${dec(A)}.`, `So the area is ${dec(A)} cm².`], { q: `A rhombus has diagonals of ${d1} cm and ${d2} cm. What is its area, in cm²?`, visual: { type: 'poly', points: [[5 - d1 / 2, 5], [5, 5 - d2 / 2], [5 + d1 / 2, 5], [5, 5 + d2 / 2]] }, expr: `${d1}*${d2}/2` });
-});
-skill('6-areacomp', 6, 'Perimeter and area', 'Area of compound shapes and word problems', ['Split a compound shape into rectangles, find each area, then add.', 'For the area between two shapes, subtract the inside area from the outside area.'], (r) => {
-  const t = r.int(0, 2);
-  if (t === 0) {
-    const W = r.int(5, 10), H = r.int(5, 10), w2 = r.int(2, W - 2), h1 = r.int(2, H - 2), A = W * h1 + w2 * (H - h1);
-    return num(A, [`Split into two rectangles: bottom ${W} × ${h1} = ${W * h1}, and top ${w2} × ${H - h1} = ${w2 * (H - h1)}.`, `Add: ${W * h1} + ${w2 * (H - h1)} = ${A}.`, `So the area is ${A} m².`], { q: 'What is the area of this shape, in m²?', visual: { type: 'poly', points: [[0, 0], [W, 0], [W, h1], [w2, h1], [w2, H], [0, H]], labels: [`${W} m`, `${h1} m`, '', '', `${w2} m`, `${H} m`] }, expr: `${W}*${h1}+${w2}*(${H}-${h1})` });
-  }
-  if (t === 1) {
-    const w = r.int(2, 8), h = r.int(2, 8), m = r.int(1, 3), W = w + 2 * m, H = h + 2 * m;
-    return num(W * H - w * h, [`Outer rectangle: ${W} × ${H} = ${W * H}.`, `Inner photo: ${w} × ${h} = ${w * h}. Subtract: ${W * H} − ${w * h} = ${W * H - w * h}.`, `So the frame has an area of ${W * H - w * h} cm².`], { q: `A photo ${w} cm by ${h} cm sits in a frame that is ${W} cm by ${H} cm. What is the area of the frame around the photo, in cm²?`, expr: `${W}*${H}-${w}*${h}` });
-  }
-  const L = r.int(4, 9), Ht = r.int(3, 4), ww = r.int(1, 2), wh = r.int(1, 2), area = L * Ht - ww * wh, cans = r.pick([5, 10]);
-  return num(area, [`Wall: ${L} × ${Ht} = ${L * Ht} m². Window: ${ww} × ${wh} = ${ww * wh} m².`, `Paint covers the wall without the window: ${L * Ht} − ${ww * wh} = ${area}.`, `So ${area} m² needs paint.`], { q: `A wall is ${L} m long and ${Ht} m high. It has a window ${ww} m by ${wh} m. How many square metres of wall need paint?`, expr: `${L}*${Ht}-${ww}*${wh}` });
-});
+skill('6-perimeter', 6, 'Perimeter and area', 'Perimeter and area of rectangles and grid shapes', G6.PERIMETER_LESSON, G6.perimeter6);
+skill('6-areaquad', 6, 'Perimeter and area', 'Area of parallelograms, trapezoids and rhombuses', G6.AREAQUAD_LESSON, G6.areaQuad6);
+skill('6-areacomp', 6, 'Perimeter and area', 'Area of compound shapes and word problems', G6.AREACOMP_LESSON, G6.areaComp6);
 
 // ───────────── 36. Surface area and volume ─────────────
-skill('6-surface', 6, 'Surface area and volume', 'Surface area', ['Surface area is the total area of all the faces. A net helps you see every face.', 'Cube: 6 × s². Rectangular prism: 2(lw + lh + wh).'], (r) => {
-  const t = r.int(0, 3);
-  if (t === 0) { const s = r.int(2, 12); return num(6 * s * s, [`A cube has 6 equal square faces.`, `Each face: ${s} × ${s} = ${s * s}. All six: 6 × ${s * s} = ${6 * s * s}.`, `So the surface area is ${6 * s * s} cm².`], { q: `A cube has edges of ${s} cm. What is its surface area, in cm²?`, expr: `6*${s}**2` }); }
-  if (t === 1) { const l = r.int(2, 12), w = r.int(2, 10), h = r.int(2, 10), S = 2 * (l * w + l * h + w * h); return num(S, [`Pairs of faces: ${l} × ${w} = ${l * w}, ${l} × ${h} = ${l * h}, ${w} × ${h} = ${w * h}.`, `Add and double: 2 × (${l * w} + ${l * h} + ${w * h}) = ${S}.`, `So the surface area is ${S} cm².`], { q: `A box is ${l} cm long, ${w} cm wide and ${h} cm high. What is its surface area, in cm²?`, expr: `2*(${l}*${w}+${l}*${h}+${w}*${h})` }); }
-  if (t === 2) { const k = r.int(1, 3), a = 3 * k, b = 4 * k, c = 5 * k, L = r.int(4, 12), S = a * b + (a + b + c) * L; return num(S, [`Two triangle ends: 2 × (${a} × ${b} ÷ 2) = ${a * b}.`, `Three rectangles: (${a} + ${b} + ${c}) × ${L} = ${(a + b + c) * L}.`, `Total: ${a * b} + ${(a + b + c) * L} = ${S}. So the surface area is ${S} cm².`], { q: `A triangular prism has right-triangle ends with sides ${a} cm, ${b} cm and ${c} cm, and it is ${L} cm long. What is its surface area, in cm²?`, visual: { type: 'righttri', a: `${b} cm`, b: `${a} cm`, c: `${c} cm` }, expr: `${a}*${b}+(${a}+${b}+${c})*${L}` }); }
-  const s = r.int(2, 10), l = r.int(3, 12), S = s * s + 2 * s * l;
-  return num(S, [`Square base: ${s} × ${s} = ${s * s}.`, `Four triangles: 4 × (${s} × ${l} ÷ 2) = ${2 * s * l}.`, `Total: ${s * s} + ${2 * s * l} = ${S}. So the surface area is ${S} cm².`], { q: `A square pyramid has a base ${s} cm on each side. Each triangular face has a height (slant height) of ${l} cm. What is its surface area, in cm²?`, expr: `${s}*${s}+4*${s}*${l}/2` });
-});
-skill('6-volume6', 6, 'Surface area and volume', 'Volume of prisms', ['Volume of a prism = area of the base × height (or length).', 'Rectangular prism: l × w × h. Cube: s × s × s.'], (r) => {
-  const t = r.int(0, 3);
-  if (t === 0) { const l = r.int(2, 12), w = r.int(2, 10), h = r.int(2, 10) + (r.bool(0.3) ? 0.5 : 0), V = l * w * h; return num(dec(V), [`V = l × w × h.`, `${l} × ${w} × ${h} = ${dec(V)}.`, `So the volume is ${dec(V)} cm³.`], { q: `A rectangular prism is ${l} cm by ${w} cm by ${h} cm. What is its volume, in cm³?`, expr: `${l}*${w}*${h}` }); }
-  if (t === 1) { const s = r.int(2, 10); return r.bool() ? num(s ** 3, [`V = s × s × s.`, `${s} × ${s} × ${s} = ${s ** 3}.`, `So the volume is ${s ** 3} m³.`], { q: `A cube has edges of ${s} m. What is its volume, in m³?`, expr: `${s}**3` }) : num(s, [`V = s × s × s, so find a number that multiplied by itself 3 times gives ${s ** 3}.`, `${s} × ${s} × ${s} = ${s ** 3}.`, `So each edge is ${s} m.`], { q: `A cube has a volume of ${s ** 3} m³. How long is each edge, in m?`, expr: `Math.round(${s ** 3}**(1/3))` }); }
-  if (t === 2) { const b = r.int(2, 10), h = 2 * r.int(1, 5), L = r.int(3, 12), V = b * h / 2 * L; return num(V, [`Area of the triangle base: ${b} × ${h} ÷ 2 = ${b * h / 2}.`, `Times the length: ${b * h / 2} × ${L} = ${V}.`, `So the volume is ${V} cm³.`], { q: `A triangular prism has a triangle base with base ${b} cm and height ${h} cm. The prism is ${L} cm long. What is its volume, in cm³?`, expr: `${b}*${h}/2*${L}` }); }
-  const l = r.int(2, 6), w = r.int(2, 5), h = r.int(2, 5);
-  return num(l * w * h, [`One layer is ${l} × ${w} = ${l * w} cubes.`, `There are ${h} layers: ${l * w} × ${h} = ${l * w * h}.`, `So the volume is ${l * w * h} cubic units.`], { q: `A box is filled with unit cubes: ${l} cubes long, ${w} cubes wide and ${h} cubes high. How many cubes fill it?`, expr: `${l}*${w}*${h}` });
-});
+skill('6-surface', 6, 'Surface area and volume', 'Surface area', G6.SURFACE_LESSON, G6.surface6);
+skill('6-volume6', 6, 'Surface area and volume', 'Volume of prisms', G6.VOLUME_LESSON, G6.volume6);
 
 // ───────────── 37. Data and graphs ─────────────
 skill('6-bargraph', 6, 'Data and graphs', 'Bar graphs, pictographs and line plots', ['Read each bar against the scale on the side.', 'In a pictograph, use the key: each symbol stands for a number of items.'], (r) => {

@@ -115,6 +115,16 @@ export function review(l, id, right) {
     log(l, { skill: id, kind: 'review', right });
   });
 }
+// a unit or grade exam: keep the last and the best result for each exam (key "math/10/Y" or "math/10/all")
+export const examOf = (l, key) => l.progress.exams?.[key] ?? null;
+export function examDone(l, key, { right, n, secs }) {
+  const p = l.progress; p.exams ??= {};
+  const pct = Math.round((100 * right) / Math.max(1, n)), old = p.exams[key];
+  p.exams[key] = { last: pct, best: Math.max(pct, old?.best ?? 0), tries: (old?.tries ?? 0) + 1, at: Date.now(), secs };
+  p.stars += Math.round(pct / 10);
+  log(l, { kind: 'exam', exam: key, pct }); touchDay(p); save();
+  return p.exams[key];
+}
 export function learned(l, id) {
   return put(l, id, (s) => { s.learned = Date.now(); s.level = Math.max(s.level, 1); s.seen = Date.now(); l.progress.stars += 5; log(l, { skill: id, kind: 'learn' }); });
 }

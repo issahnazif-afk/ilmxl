@@ -1,5 +1,6 @@
 // Grade 8 maths: more skills, one or more for each topic of the grade (see src/math/kit.mjs for the helpers).
 import { grade, mc, near, num, txt, OBJ, plural, NAMES, comma, par, gcd, lcm, simplify, frac, isPrime, dec, sgn, neg, St, columnAdd, columnSub, columnMul, longDivision, numberLine, fractionBars, eqnLines, areaModel, multiplesOf, PLACE } from '../kit.mjs';
+import * as GEO8 from './geo8.mjs';   // geometry and measurement, taught with pictures (lessons and generators)
 const { skill, list } = grade();
 
 // ── small helpers for this grade ──
@@ -774,85 +775,13 @@ skill('8-coord', 8, 'Coordinate plane', 'Quadrants, moves and distance', ['(x, y
 });
 
 // ───────────── 20. Lines and angles ─────────────
-skill('8-anglepairs', 8, 'Lines and angles', 'Complementary, supplementary and vertical angles', ['Complementary angles add to 90°. Supplementary angles add to 180°.', 'Vertical angles (across from each other where two lines cross) are equal.'], (r) => {
-  const t = r.int(0, 3), a = r.int(12, 78);
-  if (t === 0) return num(90 - a, [St('Complementary angles add to 90°.', { type: 'angle', deg: a, label: `${a}°` }), `90 − ${a} = ${90 - a}.`, `The complement is ${90 - a}°.`], { q: `What is the complement of a ${a}° angle?`, unit: '°', expr: `90-${a}` });
-  const b = r.int(20, 160);
-  if (t === 1) return num(180 - b, [St('Supplementary angles add to 180°.', { type: 'angle', deg: b, label: `${b}°` }), `180 − ${b} = ${180 - b}.`, `The supplement is ${180 - b}°.`], { q: `What is the supplement of a ${b}° angle?`, unit: '°', expr: `180-${b}` });
-  if (t === 2) {
-    const which = r.pick(['vertical', 'next to each other on a straight line']);
-    const ans = which === 'vertical' ? b : 180 - b;
-    return num(ans, [which === 'vertical' ? 'Vertical angles are across from each other, and they are equal.' : 'Angles side by side on a straight line are supplementary: they add to 180°.', which === 'vertical' ? `So the other angle is also ${b}°.` : `180 − ${b} = ${180 - b}.`, `The angle is ${ans}°.`], { q: `Two lines cross. One angle is ${b}°. What is the angle that is ${which === 'vertical' ? 'vertical to it (across from it)' : 'next to it on the same straight line'}?`, unit: '°', expr: `${ans}` });
-  }
-  const k = r.pick([2, 3, 4]), x = r.int(5, Math.floor((90 - 10) / (k + 1))), c = 90 - (k + 1) * x;
-  if (c < 0) return num(90 - a, [`Complementary angles add to 90°.`, `90 − ${a} = ${90 - a}.`], { q: `What is the complement of a ${a}° angle?`, unit: '°', expr: `90-${a}` });
-  return num(x, [`The two angles are complementary: ${k}x + (x + ${c}) = 90.`, `${k + 1}x + ${c} = 90, so ${k + 1}x = ${90 - c}.`, `x = ${x}.`], { q: `Two adjacent angles make a right angle. One is ${k}x° and the other is (x + ${c})°. What is x?`, unit: 'x =', expr: `(90-${c})/${k + 1}` });
-});
-skill('8-transversal', 8, 'Lines and angles', 'Parallel lines, transversals and bisectors', ['A line crossing two parallel lines makes corresponding angles that are equal and alternate interior angles that are equal.', 'Same-side interior angles add to 180°. A bisector cuts a segment or angle into two equal parts.'], (r) => {
-  const t = r.int(0, 3), a = r.int(35, 145);
-  if (t === 0) {
-    const pairs = [['in the same position at each crossing (both above-left, say)', 'corresponding angles'], ['between the parallel lines, on opposite sides of the transversal', 'alternate interior angles'], ['outside the parallel lines, on opposite sides of the transversal', 'alternate exterior angles'], ['between the parallel lines, on the same side of the transversal', 'same-side interior angles']];
-    const [desc, right] = r.pick(pairs);
-    return mc(r, right, pairs.map((p) => p[1]).filter((p) => p !== right), { q: `A transversal crosses two parallel lines. Two angles are ${desc}. What are they called?`, steps: [`Look at where the two angles sit: ${desc}.`, `Those are ${right}.`] });
-  }
-  if (t === 1) {
-    const kind = r.pick(['corresponding', 'alternate interior', 'alternate exterior', 'same-side interior']), ans = kind === 'same-side interior' ? 180 - a : a;
-    return num(ans, [kind === 'same-side interior' ? 'Same-side interior angles add to 180°.' : `With parallel lines, ${kind} angles are equal.`, kind === 'same-side interior' ? `180 − ${a} = ${ans}.` : `So the angle is ${a}°.`, `The answer is ${ans}°.`], { q: `Two parallel lines are cut by a transversal. One angle is ${a}°. What is the measure of its ${kind} partner?`, unit: '°', expr: `${ans}` });
-  }
-  if (t === 2) {
-    const x = r.int(2, 12), p = r.int(2, 5); let q = r.int(1, 6); if (q === p) q++;
-    const c = r.int(1, 20), d = (p - q) * x + c;
-    if (d < 1 || p < q) { const m = r.int(3, 30); return num(2 * m, [`M is the midpoint, so AM = MB = ${m}.`, `AB = ${m} + ${m} = ${2 * m}.`], { q: `M is the midpoint of segment AB, and AM = ${m} cm. How long is AB?`, unit: 'cm', expr: `2*${m}` }); }
-    return num(x, [`A midpoint makes two equal parts: ${p}x + ${c} = ${q}x + ${d}.`, `${p - q}x = ${d - c}.`, `x = ${x}.`], { q: `M is the midpoint of AB. AM = ${p}x + ${c} and MB = ${q}x + ${d}. What is x?`, unit: 'x =', expr: `(${d}-${c})/${p - q}` });
-  }
-  const whole = 2 * r.int(15, 85);
-  return num(whole / 2, [St('A bisector splits the angle into two equal angles.', { type: 'angle', deg: whole, label: `${whole}°` }), `${whole} ÷ 2 = ${whole / 2}.`, `Each part is ${whole / 2}°.`], { q: `Ray BD bisects ∠ABC, which measures ${whole}°. What is the measure of ∠ABD?`, unit: '°', expr: `${whole}/2` });
-});
+skill('8-anglepairs', 8, 'Lines and angles', 'Complementary, supplementary and vertical angles', GEO8.LESSONS.anglePairs, GEO8.anglePairs);
+skill('8-transversal', 8, 'Lines and angles', 'Parallel lines, transversals and bisectors', GEO8.LESSONS.transversal, GEO8.transversal);
 
 // ───────────── 21. Two-dimensional figures ─────────────
-const NGON = { 3: 'triangle', 4: 'quadrilateral', 5: 'pentagon', 6: 'hexagon', 7: 'heptagon', 8: 'octagon', 9: 'nonagon', 10: 'decagon' };
-skill('8-classify2d', 8, 'Two-dimensional figures', 'Classify polygons, triangles and quadrilaterals', ['Name a polygon by its number of sides.', 'Triangles: equilateral, isosceles or scalene by sides; acute, right or obtuse by angles.'], (r) => {
-  const t = r.int(0, 2);
-  if (t === 0) { const n = r.int(3, 10); return mc(r, NGON[n], r.shuffle(Object.values(NGON).filter((x) => x !== NGON[n])).slice(0, 3), { q: `What is a polygon with ${n} sides called?`, steps: [`Count the sides: ${n}.`, `A ${n}-sided polygon is a ${NGON[n]}.`] }); }
-  if (t === 1) {
-    const byAngle = r.bool();
-    if (byAngle) {
-      const kind = r.pick(['acute', 'right', 'obtuse']), A = kind === 'right' ? 90 : kind === 'obtuse' ? r.int(95, 150) : r.int(50, 85), B = r.int(10, Math.min(85, 180 - A - 10) ), C = 180 - A - B;
-      const big = Math.max(A, B, C), right = big === 90 ? 'right' : big > 90 ? 'obtuse' : 'acute';
-      return mc(r, `${right} triangle`, ['acute triangle', 'right triangle', 'obtuse triangle'].filter((x) => x !== `${right} triangle`), { q: `A triangle has angles ${A}°, ${B}° and ${C}°. What kind of triangle is it?`, steps: [`The largest angle is ${big}°.`, big === 90 ? 'It has a right angle, so it is a right triangle.' : big > 90 ? 'It has an angle over 90°, so it is obtuse.' : 'All angles are under 90°, so it is acute.'] });
-    }
-    const kind = r.pick(['equilateral', 'isosceles', 'scalene']), s = r.int(3, 12), sides = kind === 'equilateral' ? [s, s, s] : kind === 'isosceles' ? [s, s, r.int(Math.max(2, s - 4), s + 4) === s ? s + 1 : s + 2] : [s, s + 1, s + 3];
-    return mc(r, `${kind} triangle`, ['equilateral triangle', 'isosceles triangle', 'scalene triangle'].filter((x) => x !== `${kind} triangle`), { q: `A triangle has sides ${sides.join(' cm, ')} cm. What kind of triangle is it?`, steps: [kind === 'equilateral' ? 'All three sides are equal.' : kind === 'isosceles' ? 'Exactly two sides are equal.' : 'No two sides are equal.', `So it is ${kind}.`] });
-  }
-  const Q = [['4 equal sides and 4 right angles', 'square'], ['4 right angles, but the sides are not all equal', 'rectangle'], ['4 equal sides, but no right angles', 'rhombus'], ['exactly one pair of parallel sides', 'trapezoid'], ['two pairs of parallel sides, no right angles, sides not all equal', 'parallelogram'], ['two pairs of equal sides next to each other, and no parallel sides', 'kite']];
-  const [desc, right] = r.pick(Q);
-  return mc(r, right, r.shuffle(Q.map((q) => q[1]).filter((x) => x !== right)).slice(0, 3), { q: `A quadrilateral has ${desc}. What is the best name for it?`, steps: [`Match the clues: ${desc}.`, `That is a ${right}.`] });
-});
-skill('8-triangleangles', 8, 'Two-dimensional figures', 'Angles in triangles', ['The three angles of a triangle add to 180°.', 'An exterior angle equals the sum of the two far-away interior angles.'], (r) => {
-  const t = r.int(0, 3);
-  if (t === 0) { const A = r.int(20, 100), B = r.int(20, 160 - A - 0), C = 180 - A - B; return num(C, [St('The angles of a triangle add to 180°.', { type: 'poly', points: [[1, 1], [9, 1], [r.int(3, 7), 8]], labels: ['', '', ''] }), `${A} + ${B} = ${A + B}.`, `180 − ${A + B} = ${C}. The missing angle is ${C}°.`], { q: `A triangle has angles of ${A}° and ${B}°. What is the third angle?`, unit: '°', expr: `180-${A}-${B}` }); }
-  if (t === 1) {
-    const rs = r.pick([[1, 2, 3], [2, 3, 4], [1, 1, 2], [1, 2, 6], [2, 3, 5], [3, 4, 5], [1, 3, 5], [4, 5, 9]]), tot = sum(rs), k = 180 / tot, ask = r.int(0, 2);
-    return num(dec(rs[ask] * k), [`The ratio parts add to ${rs.join(' + ')} = ${tot}.`, `Each part is 180 ÷ ${tot} = ${dec(k)}°.`, `The ${['smallest', 'middle', 'largest'][ask]} angle is ${rs[ask]} × ${dec(k)} = ${dec(rs[ask] * k)}°.`], { q: `The angles of a triangle are in the ratio ${rs.join(' : ')}. What is the ${['smallest', 'middle', 'largest'][ask]} angle?`, unit: '°', expr: `180/${tot}*${rs[ask]}` });
-  }
-  if (t === 2) { const A = r.int(25, 80), B = r.int(25, 80); return num(A + B, ['An exterior angle equals the sum of the two interior angles that are not next to it.', `${A} + ${B} = ${A + B}.`, `The exterior angle is ${A + B}°.`], { q: `In a triangle, two angles are ${A}° and ${B}°. What is the exterior angle next to the third angle?`, unit: '°', expr: `${A}+${B}` }); }
-  const top = 2 * r.int(10, 70), base = (180 - top) / 2;
-  return num(base, ['An isosceles triangle has two equal base angles.', `180 − ${top} = ${180 - top}, shared by two angles.`, `${180 - top} ÷ 2 = ${base}. Each base angle is ${base}°.`], { q: `An isosceles triangle has a top angle of ${top}°. What is each base angle?`, unit: '°', expr: `(180-${top})/2` });
-});
-skill('8-polyangles', 8, 'Two-dimensional figures', 'Angles in polygons and circles', ['A polygon with n sides has angles that add to (n − 2) × 180°. A quadrilateral\'s add to 360°.', 'A central angle and its arc have the same measure. A circle has 360° around its centre.'], (r) => {
-  const t = r.int(0, 4);
-  if (t === 0) { const A = r.int(70, 110), B = r.int(70, 110), C = r.int(70, 110), D = 360 - A - B - C; return num(D, [St('The angles of a quadrilateral add to 360°.', { type: 'poly', points: [[1, 1], [8, 1], [9, 7], [2, 8]] }), `${A} + ${B} + ${C} = ${A + B + C}.`, `360 − ${A + B + C} = ${D}. The fourth angle is ${D}°.`], { q: `Three angles of a quadrilateral are ${A}°, ${B}° and ${C}°. What is the fourth angle?`, unit: '°', expr: `360-${A}-${B}-${C}` }); }
-  const n = r.int(5, 12);
-  if (t === 1) return num((n - 2) * 180, [`Sum = (n − 2) × 180° with n = ${n}.`, `(${n} − 2) × 180 = ${n - 2} × 180 = ${(n - 2) * 180}.`, `The angles add to ${(n - 2) * 180}°.`], { q: `What is the sum of the interior angles of a polygon with ${n} sides${NGON[n] ? ` (a ${NGON[n]})` : ''}?`, unit: '°', expr: `(${n}-2)*180` });
-  if (t === 2) { const m = r.pick([5, 6, 8, 9, 10, 12]), each = (m - 2) * 180 / m; return num(each, [`Sum = (${m} − 2) × 180 = ${(m - 2) * 180}°.`, `A regular polygon has equal angles: ${(m - 2) * 180} ÷ ${m} = ${each}.`, `Each angle is ${each}°.`], { q: `What is each interior angle of a regular polygon with ${m} sides?`, unit: '°', expr: `(${m}-2)*180/${m}` }); }
-  if (t === 3) {
-    const parts = [['the distance from the centre to the circle', 'radius'], ['a segment through the centre with both ends on the circle', 'diameter'], ['a segment with both ends on the circle (not through the centre)', 'chord'], ['part of the circle between two points', 'arc']];
-    const [d, right] = r.pick(parts);
-    return mc(r, right, parts.map((p) => p[1]).filter((p) => p !== right), { q: `What part of a circle is ${d}?`, steps: [`${d[0].toUpperCase() + d.slice(1)}: that is a ${right}.`, `So the answer is ${right}.`] });
-  }
-  const a = r.int(20, 160), b = r.int(20, 340 - a - 20 > 160 ? 160 : 340 - a - 20), c = 360 - a - b;
-  return num(c, ['The central angles around a circle add to 360°.', `360 − ${a} − ${b} = ${c}.`, `So the third arc measures ${c}°.`], { q: `A circle is split into three arcs by three radii. Two of the central angles are ${a}° and ${b}°. What is the measure of the third arc?`, unit: '°', expr: `360-${a}-${b}` });
-});
+skill('8-classify2d', 8, 'Two-dimensional figures', 'Classify polygons, triangles and quadrilaterals', GEO8.LESSONS.classify2d, GEO8.classify2d);
+skill('8-triangleangles', 8, 'Two-dimensional figures', 'Angles in triangles', GEO8.LESSONS.triangleAngles, GEO8.triangleAngles);
+skill('8-polyangles', 8, 'Two-dimensional figures', 'Angles in polygons and circles', GEO8.LESSONS.polyAngles, GEO8.polyAngles);
 
 // ───────────── 22. Transformations and congruence ─────────────
 const ROT = { '90° clockwise': (x, y) => [y, -x], '90° counterclockwise': (x, y) => [-y, x], '180°': (x, y) => [-x, -y] };
@@ -864,143 +793,27 @@ skill('8-transcoords', 8, 'Transformations', 'Translations, reflections and rota
   else { ans = [x + 2, -y]; desc = 'reflected in the x-axis and then translated 2 units right'; how = `Reflect: ${pt(x, -y)}. Then add 2 to x.`; }
   return mc(r, pt(...ans), [pt(-ans[0], ans[1]), pt(ans[0], -ans[1]), pt(ans[1], ans[0]), pt(-ans[0], -ans[1]), pt(ans[0] + 1, ans[1]), pt(x, y)].filter((p) => p !== pt(...ans)), { q: `Point A is at ${pt(x, y)}. It is ${desc}. Where is A'?`, visual: { type: 'plane', points: [[x, y, 'A']] }, steps: [how, St(`So A' is at ${pt(...ans)}.`, { type: 'plane', points: [[x, y, 'A'], [ans[0], ans[1], "A'"]], range: 10 })] });
 });
-skill('8-transid', 8, 'Transformations', 'Name transformations and symmetry', ['Compare the old and new points to see what happened.', 'A line of symmetry folds a shape onto itself.'], (r) => {
-  const t = r.int(0, 1);
-  if (t === 0) {
-    const kinds = [['translation', (x, y) => [x + 3, y - 2]], ['reflection in the y-axis', (x, y) => [-x, y]], ['reflection in the x-axis', (x, y) => [x, -y]], ['rotation of 180° about the origin', (x, y) => [-x, -y]], ['dilation by a scale factor of 2', (x, y) => [2 * x, 2 * y]]];
-    const [right, f] = r.pick(kinds), ox = r.int(0, 2), oy = r.int(0, 2), P = [[1, 1], [4, 1], [1, 3]].map(([a, b]) => [a + ox, b + oy]), Q = P.map(([a, b]) => f(a, b));
-    return mc(r, right, r.shuffle(kinds.map((k) => k[0]).filter((k) => k !== right)).slice(0, 3), { q: `Triangle ${P.map(([a, b]) => pt(a, b)).join(', ')} is moved to ${Q.map(([a, b]) => pt(a, b)).join(', ')}. Which transformation is this?`, steps: [`Compare: ${pt(...P[0])} → ${pt(...Q[0])}.`, `Every point follows the same rule, so it is a ${right}.`] });
-  }
-  const shapes = [['a square', 4], ['an equilateral triangle', 3], ['a regular hexagon', 6], ['a rectangle that is not a square', 2], ['a regular pentagon', 5], ['an isosceles triangle that is not equilateral', 1], ['a parallelogram with no right angles and unequal sides', 0], ['a rhombus that is not a square', 2]];
-  const [s, n] = r.pick(shapes);
-  return num(n, [n ? `Try each fold that matches one half onto the other.` : 'No fold makes the two halves match.', `So ${s} has ${n} line${n === 1 ? '' : 's'} of symmetry.`], { q: `How many lines of symmetry does ${s} have?`, expr: `${n}` });
-});
-skill('8-congruent', 8, 'Transformations', 'Congruent figures', ['Congruent figures have the same size and shape: one can be moved onto the other by slides, flips and turns.', 'In △ABC ≅ △DEF, the letters match in order: A ↔ D, B ↔ E, C ↔ F.'], (r) => {
-  const t = r.int(0, 3), L = r.shuffle(['A', 'B', 'C']), M = ['D', 'E', 'F'];
-  const name1 = L.join(''), match = (s) => M[L.indexOf(s)];
-  if (t === 0) {
-    const [p, q] = r.shuffle(['A', 'B', 'C']).slice(0, 2), right = [match(p), match(q)].join('');
-    return mc(r, right, ['DE', 'EF', 'DF', 'ED', 'FE', 'FD'].filter((x) => x !== right && x !== [...right].reverse().join('')).slice(0, 3), { q: `△${name1} ≅ △DEF. Which side matches side ${p}${q}?`, steps: [`Match the letters in order: ${L.map((l, i) => `${l} ↔ ${M[i]}`).join(', ')}.`, `${p} ↔ ${match(p)} and ${q} ↔ ${match(q)}, so ${p}${q} matches ${right}.`] });
-  }
-  if (t === 1) { const v = r.pick(['A', 'B', 'C']), deg = r.int(25, 110); return num(deg, [`Letters match in order, so ∠${v} ↔ ∠${match(v)}.`, `Corresponding angles of congruent figures are equal.`, `∠${match(v)} = ${deg}°.`], { q: `△${name1} ≅ △DEF and ∠${v} = ${deg}°. What is ∠${match(v)}?`, unit: '°', expr: `${deg}` }); }
-  if (t === 2) { const [p, q] = r.shuffle(['A', 'B', 'C']).slice(0, 2), len = r.int(3, 25); return num(len, [`${p}${q} matches ${match(p)}${match(q)}.`, 'Corresponding sides of congruent figures are equal.', `${match(p)}${match(q)} = ${len} cm.`], { q: `△${name1} ≅ △DEF and ${p}${q} = ${len} cm. How long is ${match(p)}${match(q)}?`, unit: 'cm', expr: `${len}` }); }
-  const right = r.pick(['a dilation by a scale factor of 3', 'a dilation by a scale factor of 1/2']);
-  return mc(r, right, ['a translation', 'a reflection', 'a rotation of 90°'], { q: 'Which move does NOT always give a figure congruent to the original?', steps: ['Translations, reflections and rotations keep size and shape.', `${right[0].toUpperCase() + right.slice(1)} changes the size, so the image is not congruent.`] });
-});
+skill('8-transid', 8, 'Transformations', 'Name transformations and symmetry', GEO8.LESSONS.transId, GEO8.transId);
+skill('8-congruent', 8, 'Transformations', 'Congruent figures', GEO8.LESSONS.congruent, GEO8.congruent);
 
 // ───────────── 23. Transformations and similarity ─────────────
-skill('8-dilation', 8, 'Similarity', 'Dilations and scale factors', ['A dilation about the origin by scale factor k sends (x, y) to (kx, ky).', 'k > 1 makes the figure bigger; 0 < k < 1 makes it smaller. The scale factor is new length ÷ old length.'], (r) => {
-  const t = r.int(0, 2);
-  if (t === 0) {
-    const k = r.pick([2, 3, 0.5]), x = (k === 0.5 ? 2 : 1) * r.nonzero(-4, 4), y = (k === 0.5 ? 2 : 1) * r.nonzero(-3, 3), ans = [x * k, y * k];
-    return mc(r, pt(...ans), [pt(x + k, y + k), pt(x * k, y), pt(y * k, x * k)].filter((p) => p !== pt(...ans)), { q: `Point P ${pt(x, y)} is dilated about the origin by a scale factor of ${k === 0.5 ? '1/2' : k}. Where is P'?`, steps: [`Multiply each coordinate by ${k === 0.5 ? '1/2' : k}.`, `${neg(x)} × ${k === 0.5 ? '1/2' : k} = ${neg(ans[0])} and ${neg(y)} × ${k === 0.5 ? '1/2' : k} = ${neg(ans[1])}.`, `P' is at ${pt(...ans)}.`] });
-  }
-  if (t === 1) {
-    const [p, q] = r.pick([[2, 1], [3, 1], [4, 1], [1, 2], [1, 3], [3, 2], [2, 3], [5, 2], [1, 4]]), old = q * r.int(2, 6), nw = old * p / q;
-    return num(frac(p, q), [`Scale factor = new length ÷ old length.`, `${nw} ÷ ${old} = ${frac(nw, old)}.`, `The scale factor is ${frac(p, q)}${p < q ? ', so the image is smaller' : ''}.`], { q: `A side of ${old} cm becomes ${nw} cm after a dilation. What is the scale factor?`, expr: `${nw}/${old}` });
-  }
-  const sim = r.bool(), k = r.int(2, 4), a = r.int(2, 6), b = a + r.int(1, 4);
-  return mc(r, sim ? 'Yes, they are similar' : 'No, they are not similar', [sim ? 'No, they are not similar' : 'Yes, they are similar'], { q: `Rectangle A is ${a} cm by ${b} cm. Rectangle B is ${a * k} cm by ${sim ? b * k : b * k + 1} cm. Are they similar?`, steps: [`Compare the ratios: ${a * k} ÷ ${a} = ${k} and ${sim ? b * k : b * k + 1} ÷ ${b} = ${dec((sim ? b * k : b * k + 1) / b, 2)}.`, sim ? 'Both sides grew by the same factor, so they are similar.' : 'The factors are different, so they are not similar.'] });
-});
-skill('8-similar', 8, 'Similarity', 'Similar figures', ['Similar figures have equal angles and proportional sides.', 'Find the scale factor, then multiply or divide to find a missing side.'], (r) => {
-  const t = r.int(0, 2);
-  if (t === 0) {
-    const [a, b] = [r.int(3, 9), r.int(4, 12)], k = r.pick([2, 3, 1.5, 2.5]), A = a * k, B = b * k;
-    return num(dec(B), [`Scale factor: ${dec(A)} ÷ ${a} = ${k}.`, `Missing side: ${b} × ${k} = ${dec(B)}.`, `The missing side is ${dec(B)} cm.`], { q: `Two triangles are similar. In the small one, two sides are ${a} cm and ${b} cm. In the large one, the side that matches ${a} cm is ${dec(A)} cm. How long is the side that matches ${b} cm?`, unit: 'cm', expr: `${b}*${A}/${a}` });
-  }
-  if (t === 1) { const d = r.int(25, 120); return num(d, ['Similar figures have equal corresponding angles.', `The scale factor changes lengths, not angles.`, `So the matching angle is ${d}°.`], { q: `Quadrilateral PQRS is similar to WXYZ, with a scale factor of ${r.int(2, 5)}. ∠Q = ${d}°. What is ∠X?`, unit: '°', expr: `${d}` }); }
-  const A = r.int(30, 80), B = r.int(30, 90), C = 180 - A - B, sim = r.bool(), B2 = sim ? B : B + r.pick([-6, 5, 8]);
-  return mc(r, sim ? 'Yes' : 'No', [sim ? 'No' : 'Yes'], { q: `Triangle 1 has angles ${A}° and ${B}°. Triangle 2 has angles ${A}° and ${B2}°. Are the triangles similar?`, steps: [`Third angles: 180 − ${A} − ${B} = ${C}° and 180 − ${A} − ${B2} = ${180 - A - B2}°.`, sim ? 'All three angles match, so yes, they are similar.' : 'The angles do not all match, so no, they are not similar.'] });
-});
+skill('8-dilation', 8, 'Similarity', 'Dilations and scale factors', GEO8.LESSONS.dilation, GEO8.dilation);
+skill('8-similar', 8, 'Similarity', 'Similar figures', GEO8.LESSONS.similar, GEO8.similar);
 
 // ───────────── 24. Pythagorean theorem ─────────────
-skill('8-pythapply', 8, 'Pythagorean theorem', 'Use the Pythagorean theorem', ['In a right triangle, a^2 + b^2 = c^2, where c is the hypotenuse.', 'If a^2 + b^2 = c^2 for three sides, the triangle has a right angle (the converse).'], (r) => {
-  const t = r.int(0, 3), [a, b, c] = r.pick(TRIPLES8.concat([[7, 24, 25], [12, 16, 20], [20, 21, 29]]));
-  if (t === 0) {
-    const yes = r.bool(), C = yes ? c : c + r.pick([-1, 1]);
-    return mc(r, yes ? 'Yes' : 'No', [yes ? 'No' : 'Yes'], { q: `A triangle has sides ${a}, ${b} and ${C}. Is it a right triangle?`, steps: [`Check a^2 + b^2 = c^2 with the longest side as c.`, `${a}^2 + ${b}^2 = ${a * a + b * b} and ${C}^2 = ${C * C}.`, yes ? 'They are equal, so yes, it is a right triangle.' : 'They are not equal, so no, it is not a right triangle.'] });
-  }
-  if (t === 1) return num(b, [St(`The ladder is the hypotenuse: ${c}^2 = ${a}^2 + h^2.`, { type: 'righttri', a: `${a} m`, b: 'h', c: `${c} m` }), `h^2 = ${c * c} − ${a * a} = ${b * b}.`, `h = √${b * b} = ${b}. The ladder reaches ${b} m up the wall.`], { q: `A ${c} m ladder leans against a wall. Its foot is ${a} m from the wall. How high up the wall does it reach?`, unit: 'm', expr: `Math.sqrt(${c}**2-${a}**2)` });
-  if (t === 2) return num(a + b + c, [St(`Find the hypotenuse: √(${a}^2 + ${b}^2) = √${c * c} = ${c}.`, { type: 'righttri', a, b, c: '?' }), `Perimeter = ${a} + ${b} + ${c}.`, `= ${a + b + c} cm.`], { q: `A right triangle has legs ${a} cm and ${b} cm. What is its perimeter?`, unit: 'cm', expr: `${a}+${b}+Math.hypot(${a},${b})` });
-  return num(c, [`The diagonal cuts the rectangle into two right triangles with legs ${a} and ${b}.`, `d^2 = ${a * a} + ${b * b} = ${c * c}.`, `d = ${c}. The diagonal is ${c} m.`], { q: `A rectangular field is ${a} m by ${b} m. How long is the path straight across from corner to corner?`, visual: { type: 'righttri', a: `${a} m`, b: `${b} m`, c: '?' }, unit: 'm', expr: `Math.hypot(${a},${b})` });
-});
+skill('8-pythapply', 8, 'Pythagorean theorem', 'Use the Pythagorean theorem', GEO8.LESSONS.pythApply, GEO8.pythApply);
 
 // ───────────── 25. Three-dimensional figures ─────────────
-const SOLIDS = [['cube', 6, 12, 8], ['rectangular prism', 6, 12, 8], ['triangular prism', 5, 9, 6], ['square pyramid', 5, 8, 5], ['triangular pyramid', 4, 6, 4], ['pentagonal prism', 7, 15, 10], ['hexagonal prism', 8, 18, 12], ['pentagonal pyramid', 6, 10, 6]];
-skill('8-solids', 8, 'Three-dimensional figures', 'Faces, nets and views of solids', ['A solid has faces (flat surfaces), edges (where faces meet) and vertices (corners).', 'A net is a flat pattern that folds into the solid.'], (r) => {
-  const t = r.int(0, 3);
-  if (t === 0) {
-    const [s, F, E, V] = r.pick(SOLIDS), ask = r.int(0, 2), ans = [F, E, V][ask], w = ['faces', 'edges', 'vertices'][ask];
-    return num(ans, [s.includes('prism') || s === 'cube' ? 'A prism has two matching bases joined by rectangles.' : 'A pyramid has one base, with triangles meeting at a top point.', `Count the ${w}: ${ans}.`, `A ${s} has ${ans} ${w}.`], { q: `How many ${w} does a ${s} have?`, expr: `${ans}` });
-  }
-  if (t === 1) {
-    const nets = [['2 triangles and 3 rectangles', 'triangular prism'], ['1 square and 4 triangles', 'square pyramid'], ['6 squares', 'cube'], ['2 circles and 1 rectangle', 'cylinder'], ['4 triangles', 'triangular pyramid'], ['1 circle and a curved sector', 'cone']];
-    const [d, right] = r.pick(nets);
-    return mc(r, right, r.shuffle(nets.map((n) => n[1]).filter((x) => x !== right)).slice(0, 3), { q: `A net is made of ${d}. What solid does it fold into?`, steps: [`Look at the bases and the sides: ${d}.`, `That folds into a ${right}.`] });
-  }
-  if (t === 2) {
-    const views = [['a circle', 'a rectangle', 'cylinder'], ['a circle (with a point in the centre)', 'a triangle', 'cone'], ['a square', 'a square', 'cube'], ['a square (with lines to the centre)', 'a triangle', 'square pyramid'], ['a circle', 'a circle', 'sphere']];
-    const [top, front, right] = r.pick(views);
-    return mc(r, right, r.shuffle(views.map((v) => v[2]).filter((x) => x !== right)).slice(0, 3), { q: `A solid looks like ${top} from the top and ${front} from the front. What is it?`, steps: [`Top view: ${top}. Front view: ${front}.`, `That is a ${right}.`] });
-  }
-  const k = r.pick([2, 3, 1.5]), h = r.int(4, 12), w = r.int(2, 8);
-  return num(dec(w * k), [`Similar solids grow by the same scale factor in every direction.`, `Scale factor: ${dec(h * k)} ÷ ${h} = ${k}.`, `Width: ${w} × ${k} = ${dec(w * k)} cm.`], { q: `Two boxes are similar. The small one is ${h} cm tall and ${w} cm wide. The large one is ${dec(h * k)} cm tall. How wide is the large one?`, unit: 'cm', expr: `${w}*${h * k}/${h}` });
-});
+skill('8-solids', 8, 'Three-dimensional figures', 'Faces, nets and views of solids', GEO8.LESSONS.solids, GEO8.solids);
 
 // ───────────── 26. Perimeter and area ─────────────
-skill('8-areas', 8, 'Perimeter and area', 'Area and perimeter of polygons', ['Parallelogram: A = b × h. Triangle: A = b × h ÷ 2. Trapezoid: A = (a + b) ÷ 2 × h.', 'If every length is multiplied by k, the perimeter is multiplied by k and the area by k^2.'], (r) => {
-  const t = r.int(0, 3);
-  if (t === 0) {
-    const kind = r.pick(['parallelogram', 'trapezoid', 'triangle']), b = r.int(4, 9), h = r.int(2, 8), a = r.int(1, b - 1);
-    if (kind === 'parallelogram') return num(b * h, [St('A = base × height.', { type: 'poly', points: [[1, 1], [1 + b, 1], [2 + b, 1 + h], [2, 1 + h]], labels: [`${b} m`, '', '', ''], grid: true }), `${b} × ${h} = ${b * h}.`, `The area is ${b * h} m².`], { q: `A parallelogram has base ${b} m and height ${h} m. What is its area?`, unit: 'm²', expr: `${b}*${h}` });
-    if (kind === 'triangle') return num(dec(b * h / 2), ['A = base × height ÷ 2.', `${b} × ${h} ÷ 2 = ${dec(b * h / 2)}.`, `The area is ${dec(b * h / 2)} m².`], { q: `A triangle has base ${b} m and height ${h} m. What is its area?`, visual: { type: 'poly', points: [[1, 1], [1 + b, 1], [2, 1 + h]], labels: [`${b} m`, '', ''], grid: true }, unit: 'm²', expr: `${b}*${h}/2` });
-    return num(dec((a + b) * h / 2), ['A = (a + b) ÷ 2 × h.', `(${a} + ${b}) ÷ 2 = ${dec((a + b) / 2)}, then × ${h}.`, `The area is ${dec((a + b) * h / 2)} m².`], { q: `A trapezoid has parallel sides ${a} m and ${b} m, and height ${h} m. What is its area?`, visual: { type: 'poly', points: [[1, 1], [1 + b, 1], [1 + a, 1 + h], [1, 1 + h]], labels: [`${b} m`, '', `${a} m`, `${h} m`], grid: true }, unit: 'm²', expr: `(${a}+${b})/2*${h}` });
-  }
-  if (t === 1) {
-    const sides = Array.from({ length: r.int(4, 6) }, () => r.int(3, 20)), P = sum(sides);
-    return num(P, ['Perimeter is the distance all the way around.', `${sides.join(' + ')} = ${P}.`, `The perimeter is ${P} cm.`], { q: `A ${NGON[sides.length]} has sides ${sides.join(' cm, ')} cm. What is its perimeter?`, unit: 'cm', expr: sides.join('+') });
-  }
-  if (t === 2) {
-    const L = r.int(8, 20), W = r.int(6, 14), s = r.int(2, Math.min(L, W) - 2);
-    return num(L * W - s * s, [`Big rectangle: ${L} × ${W} = ${L * W} m².`, `Square pool: ${s} × ${s} = ${s * s} m².`, `Grass: ${L * W} − ${s * s} = ${L * W - s * s} m².`], { q: `A ${L} m by ${W} m yard has a ${s} m by ${s} m square pool. What area of the yard is not pool?`, unit: 'm²', expr: `${L}*${W}-${s}*${s}` });
-  }
-  const k = r.pick([2, 3, 4]), A = r.int(5, 40), area = r.bool();
-  return num(area ? A * k * k : A * k, [`Every length is multiplied by ${k}.`, area ? `Area is multiplied by ${k}^2 = ${k * k}: ${A} × ${k * k} = ${A * k * k}.` : `Perimeter is multiplied by ${k}: ${A} × ${k} = ${A * k}.`, `The new ${area ? 'area' : 'perimeter'} is ${area ? A * k * k : A * k} ${area ? 'cm²' : 'cm'}.`], { q: `A shape has ${area ? `area ${A} cm²` : `perimeter ${A} cm`}. Every side is made ${k} times as long. What is the new ${area ? 'area' : 'perimeter'}?`, unit: area ? 'cm²' : 'cm', expr: area ? `${A}*${k}**2` : `${A}*${k}` });
-});
-skill('8-circles', 8, 'Perimeter and area', 'Circles, semicircles and quarter circles', ['Circumference C = 2 × π × r = π × d. Area A = π × r^2.', 'A semicircle is half a circle; a quarter circle is a quarter. Use π ≈ 3.14.'], (r) => {
-  const t = r.int(0, 3), rad = r.int(2, 15);
-  if (t === 0) { const useD = r.bool(), C = 2 * 3.14 * rad; return num(dec(C, 2), [useD ? `C = π × d = 3.14 × ${2 * rad}.` : `C = 2 × π × r = 2 × 3.14 × ${rad}.`, `= ${dec(C, 2)}.`, `The circumference is ${dec(C, 2)} cm.`], { tol: 0.01, q: `A circle has ${useD ? `diameter ${2 * rad}` : `radius ${rad}`} cm. Using π ≈ 3.14, what is its circumference? Round to the nearest hundredth.`, unit: 'cm', expr: `2*3.14*${rad}` }); }
-  if (t === 1) { const A = 3.14 * rad * rad, useD = r.bool(); return num(dec(A, 2), [useD ? `The radius is half the diameter: ${2 * rad} ÷ 2 = ${rad}.` : `r = ${rad}.`, `A = 3.14 × ${rad}^2 = 3.14 × ${rad * rad} = ${dec(A, 2)}.`, `The area is ${dec(A, 2)} cm².`], { tol: 0.01, q: `A circle has ${useD ? `diameter ${2 * rad}` : `radius ${rad}`} cm. Using π ≈ 3.14, what is its area? Round to the nearest hundredth.`, unit: 'cm²', expr: `3.14*${rad}**2` }); }
-  if (t === 2) { const d = r.int(50, 80), turns = r.int(10, 100), dist = 3.14 * d * turns / 100; return num(dec(dist, 2), [`One turn rolls one circumference: 3.14 × ${d} = ${dec(3.14 * d, 2)} cm.`, `${turns} turns: ${dec(3.14 * d, 2)} × ${turns} = ${dec(3.14 * d * turns, 2)} cm.`, `In metres: ÷ 100 = ${dec(dist, 2)} m.`], { tol: 0.01, q: `A bike wheel has a diameter of ${d} cm. How many metres does the bike travel when the wheel turns ${turns} times? (π ≈ 3.14; round to the nearest hundredth)`, unit: 'm', expr: `3.14*${d}*${turns}/100` }); }
-  const half = r.bool(), part = half ? 2 : 4, A = 3.14 * rad * rad / part, perim = r.bool();
-  if (perim) { const P = 2 * 3.14 * rad / part + (half ? 2 * rad : 2 * rad); return num(dec(P, 2), [`Curved part: 2 × 3.14 × ${rad} ÷ ${part} = ${dec(2 * 3.14 * rad / part, 2)}.`, half ? `Add the straight side, the diameter: ${2 * rad}.` : `Add the two straight radii: ${rad} + ${rad} = ${2 * rad}.`, `Perimeter = ${dec(P, 2)} cm.`], { tol: 0.01, q: `A ${half ? 'semicircle' : 'quarter circle'} has radius ${rad} cm. Using π ≈ 3.14, what is its perimeter (curved part plus straight sides)? Round to the nearest hundredth.`, unit: 'cm', expr: `2*3.14*${rad}/${part}+2*${rad}` }); }
-  return num(dec(A, 2), [`A full circle: 3.14 × ${rad}^2 = ${dec(3.14 * rad * rad, 2)}.`, `${half ? 'Half' : 'A quarter'} of it: ÷ ${part} = ${dec(A, 2)}.`, `The area is ${dec(A, 2)} cm².`], { tol: 0.01, q: `A ${half ? 'semicircle' : 'quarter circle'} has radius ${rad} cm. Using π ≈ 3.14, what is its area? Round to the nearest hundredth.`, unit: 'cm²', expr: `3.14*${rad}**2/${part}` });
-});
-skill('8-compound', 8, 'Perimeter and area', 'Area of compound figures', ['Split a compound figure into shapes you know.', 'Add the areas of the parts, or subtract a part that is cut out.'], (r) => {
-  const t = r.int(0, 2), w = 2 * r.int(2, 5), L = r.int(5, 12);
-  if (t === 0) { const rad = w / 2, A = L * w + 3.14 * rad * rad / 2; return num(dec(A, 2), [`Rectangle: ${L} × ${w} = ${L * w} m².`, `Semicircle on the ${w} m side: radius ${rad}, area 3.14 × ${rad}^2 ÷ 2 = ${dec(3.14 * rad * rad / 2, 2)} m².`, `Total: ${L * w} + ${dec(3.14 * rad * rad / 2, 2)} = ${dec(A, 2)} m².`], { tol: 0.01, q: `A garden is a ${L} m by ${w} m rectangle with a semicircle on one ${w} m end. Using π ≈ 3.14, what is its area? Round to the nearest hundredth.`, unit: 'm²', expr: `${L}*${w}+3.14*${rad}**2/2` }); }
-  if (t === 1) { const h = r.int(2, 8), A = L * w + L * h / 2; return num(dec(A), [St(`Rectangle: ${L} × ${w} = ${L * w}.`, { type: 'poly', points: [[0, 0], [L > 10 ? 10 : L, 0], [L > 10 ? 10 : L, Math.min(5, w / 2)], [(L > 10 ? 10 : L) / 2, Math.min(5, w / 2) + Math.min(4, h / 2)], [0, Math.min(5, w / 2)]] }), `Triangle on top: ${L} × ${h} ÷ 2 = ${dec(L * h / 2)}.`, `Total: ${L * w} + ${dec(L * h / 2)} = ${dec(A)} m².`], { tol: 0.01, q: `The front of a shed is a ${L} m wide, ${w} m tall rectangle with a triangle roof on top that is ${h} m tall. What is the area of the front?`, unit: 'm²', expr: `${L}*${w}+${L}*${h}/2` }); }
-  const s = r.int(4, 12), A = s * s - 3.14 * s * s / 4;
-  return num(dec(A, 2), [`Square: ${s} × ${s} = ${s * s}.`, `Quarter circle of radius ${s}: 3.14 × ${s}^2 ÷ 4 = ${dec(3.14 * s * s / 4, 2)}.`, `Left over: ${s * s} − ${dec(3.14 * s * s / 4, 2)} = ${dec(A, 2)} cm².`], { tol: 0.01, q: `A square tile has sides of ${s} cm. A quarter circle of radius ${s} cm, centred on one corner, is cut out. Using π ≈ 3.14, what area of the tile is left? Round to the nearest hundredth.`, unit: 'cm²', expr: `${s}**2-3.14*${s}**2/4` });
-});
+skill('8-areas', 8, 'Perimeter and area', 'Area and perimeter of polygons', GEO8.LESSONS.areas, GEO8.areas);
+skill('8-circles', 8, 'Perimeter and area', 'Circles, semicircles and quarter circles', GEO8.LESSONS.circles, GEO8.circles);
+skill('8-compound', 8, 'Perimeter and area', 'Area of compound figures', GEO8.LESSONS.compound, GEO8.compound);
 
 // ───────────── 27. Surface area and volume ─────────────
-skill('8-volume', 8, 'Surface area and volume', 'Volume of prisms and compound solids', ['Volume of a prism = area of the base × height.', 'For a compound solid, add the volumes of the parts.'], (r) => {
-  const t = r.int(0, 3), l = r.int(2, 12), w = r.int(2, 10), h = r.int(2, 10);
-  if (t === 0) return num(l * w * h, [`Base area: ${l} × ${w} = ${l * w}.`, `× height ${h}: ${l * w} × ${h} = ${l * w * h}.`, `The volume is ${l * w * h} cm³.`], { q: `A box is ${l} cm long, ${w} cm wide and ${h} cm high. What is its volume?`, unit: 'cm³', expr: `${l}*${w}*${h}` });
-  if (t === 1) { const b = 2 * r.int(1, 6), th = r.int(2, 9), len = r.int(3, 15), B = b * th / 2; return num(B * len, [`The base is a triangle: ${b} × ${th} ÷ 2 = ${B} cm².`, `× length ${len}: ${B} × ${len} = ${B * len}.`, `The volume is ${B * len} cm³.`], { q: `A triangular prism has a triangle base with base ${b} cm and height ${th} cm. The prism is ${len} cm long. What is its volume?`, unit: 'cm³', expr: `${b}*${th}/2*${len}` }); }
-  if (t === 2) { const l2 = r.int(2, l), h2 = r.int(2, 8); return num(l * w * h + l2 * w * h2, [`First box: ${l} × ${w} × ${h} = ${l * w * h}.`, `Second box: ${l2} × ${w} × ${h2} = ${l2 * w * h2}.`, `Total: ${l * w * h + l2 * w * h2} m³.`], { q: `A building is made of two boxes: one ${l} m × ${w} m × ${h} m, and on top of it one ${l2} m × ${w} m × ${h2} m. What is the total volume?`, unit: 'm³', expr: `${l}*${w}*${h}+${l2}*${w}*${h2}` }); }
-  const L = r.int(4, 12) * 10, W = r.int(3, 6) * 10, H = r.int(3, 6) * 10, V = L * W * H;
-  return num(V / 1000, [`Volume: ${L} × ${W} × ${H} = ${comma(V)} cm³.`, `1000 cm³ = 1 L, so ÷ 1000.`, `The tank holds ${V / 1000} L.`], { q: `An aquarium is ${L} cm long, ${W} cm wide and ${H} cm high. How many litres of water does it hold when full?`, unit: 'L', expr: `${L}*${W}*${H}/1000` });
-});
-skill('8-surface', 8, 'Surface area and volume', 'Surface area', ['Surface area is the total area of all the faces. A net helps you count them all.', 'Cylinder: SA = 2 × π × r^2 + 2 × π × r × h. If lengths grow by k, surface area grows by k^2 and volume by k^3.'], (r) => {
-  const t = r.int(0, 3);
-  if (t === 0) { const l = r.int(2, 12), w = r.int(2, 10), h = r.int(2, 10), SA = 2 * (l * w + l * h + w * h); return num(SA, [`Three pairs of faces: ${l} × ${w} = ${l * w}, ${l} × ${h} = ${l * h}, ${w} × ${h} = ${w * h}.`, `Add them and double: 2 × (${l * w} + ${l * h} + ${w * h}) = ${SA}.`, `The surface area is ${SA} cm².`], { q: `What is the surface area of a box ${l} cm by ${w} cm by ${h} cm?`, unit: 'cm²', expr: `2*(${l}*${w}+${l}*${h}+${w}*${h})` }); }
-  if (t === 1) { const rad = r.int(1, 8), h = r.int(2, 15), SA = 2 * 3.14 * rad * rad + 2 * 3.14 * rad * h; return num(dec(SA, 2), [`Two circles: 2 × 3.14 × ${rad}^2 = ${dec(2 * 3.14 * rad * rad, 2)}.`, `Curved side: 2 × 3.14 × ${rad} × ${h} = ${dec(2 * 3.14 * rad * h, 2)}.`, `Total: ${dec(SA, 2)} cm².`], { q: `A cylinder has radius ${rad} cm and height ${h} cm. Using π ≈ 3.14, what is its surface area?`, unit: 'cm²', expr: `2*3.14*${rad}**2+2*3.14*${rad}*${h}` }); }
-  if (t === 2) { const b = r.int(2, 12), s = r.int(3, 15), SA = b * b + 4 * (b * s / 2); return num(SA, [`Square base: ${b} × ${b} = ${b * b}.`, `Four triangles: 4 × (${b} × ${s} ÷ 2) = ${4 * b * s / 2}.`, `Total: ${b * b} + ${4 * b * s / 2} = ${SA} cm².`], { q: `A square pyramid has base edges of ${b} cm. Each triangle face has a height (slant height) of ${s} cm. What is the surface area?`, unit: 'cm²', expr: `${b}**2+2*${b}*${s}` }); }
-  const k = r.pick([2, 3]), v = r.bool(), x = r.int(5, 40);
-  return num(v ? x * k ** 3 : x * k * k, [`Each length is multiplied by ${k}.`, v ? `Volume is multiplied by ${k}^3 = ${k ** 3}: ${x} × ${k ** 3} = ${x * k ** 3}.` : `Surface area is multiplied by ${k}^2 = ${k * k}: ${x} × ${k * k} = ${x * k * k}.`, `The answer is ${v ? x * k ** 3 : x * k * k} ${v ? 'cm³' : 'cm²'}.`], { q: `A small cube-shaped box has ${v ? `volume ${x} cm³` : `surface area ${x} cm²`}. A similar box has edges ${k} times as long. What is its ${v ? 'volume' : 'surface area'}?`, unit: v ? 'cm³' : 'cm²', expr: v ? `${x}*${k}**3` : `${x}*${k}**2` });
-});
+skill('8-volume', 8, 'Surface area and volume', 'Volume of prisms and compound solids', GEO8.LESSONS.volume, GEO8.volume);
+skill('8-surface', 8, 'Surface area and volume', 'Surface area', GEO8.LESSONS.surface, GEO8.surface);
 
 // ───────────── 28. Proportional relationships ─────────────
 const KS = [0.5, 1.5, 2, 2.5, 3, 4, 5, 6, 8, 12];

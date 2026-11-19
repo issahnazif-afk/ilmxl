@@ -23,12 +23,19 @@ export function question(item, opts = {}) {
   // what the teacher may say about this question, made by the natural voice while the learner thinks
   const rightAnswer = item.kind === 'mc' ? item.choices[item.a] : item.answer;
   const wrongWord = retry(), wrongLead = `${wrongWord} The answer is ${speakable(rightAnswer)}.`;
-  prepare([...(opts.speak ? [spoken] : []), wrongLead, ...(item.steps ?? []).map(stepSay)], teacher);
+  if (!opts.exam) prepare([...(opts.speak ? [spoken] : []), wrongLead, ...(item.steps ?? []).map(stepSay)], teacher);
   let answered = false;
 
   const finish = (given) => {
     if (answered) return; answered = true;
     const res = mark(item, given);
+    // in an exam: no marking on screen, no sounds, no working; the answer is kept for the results
+    if (opts.exam) {
+      box.classList.add('is-answered');
+      box.querySelectorAll('button.choice, .q-input input, .q-input button, .keypad button').forEach((b) => (b.disabled = true));
+      opts.onDone?.(res.right, given);
+      return;
+    }
     box.classList.add(res.right ? 'is-right' : 'is-wrong');
     chime(res.right);
     const right = item.kind === 'mc' ? item.choices[item.a] : item.answer;
@@ -57,7 +64,7 @@ export function question(item, opts = {}) {
   if (item.kind === 'mc') {
     const shapes = item.shapeChoices, swatches = item.swatches;
     box.append(el('div', { class: `choices ${shapes || swatches ? 'choices-pics' : ''} ${item.choices.length > 3 || item.choices.some((c) => c.length > 28) ? '' : 'choices-row'}` },
-      ...item.choices.map((c, i) => el('button', { type: 'button', class: 'choice', 'aria-label': c, onclick: (e) => { e.currentTarget.classList.add('picked'); box.querySelectorAll('.choice')[item.a].classList.add('correct'); finish(i); } },
+      ...item.choices.map((c, i) => el('button', { type: 'button', class: 'choice', 'aria-label': c, onclick: (e) => { e.currentTarget.classList.add('picked'); if (!opts.exam) box.querySelectorAll('.choice')[item.a].classList.add('correct'); finish(i); } },
         shapes ? el('span', { class: 'shape-pic', html: `<svg viewBox="0 0 100 100"><g fill="#F4C430" stroke="#B88A00" stroke-width="3">${SHAPE_SVG[c]}</g></svg>` })
           : swatches ? el('span', { class: 'swatch', style: `background:${COLOURS[c]}` })
             : el('span', { class: item.big ? 'big' : '' }, mathText(c))))));

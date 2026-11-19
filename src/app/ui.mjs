@@ -1,3 +1,4 @@
+import { figSvg } from './figure.mjs';
 // Small DOM helpers, the icon set (our own line drawings), the question pictures, and feedback sounds.
 export function el(tag, attrs = {}, ...kids) {
   const e = document.createElement(tag);
@@ -133,6 +134,8 @@ export function visual(v) {
   else if (v.type === 'poly') svg = polySvg(v);
   else if (v.type === 'angle') svg = angleSvg(v);
   else if (v.type === 'plane') svg = planeSvg(v);
+  else if (v.type === 'fig') svg = figSvg(v);
+  else if (v.type === 'figs') return el('div', { class: 'pic pic-figs' }, ...v.figs.map((f, i) => el('figure', { class: 'pic-fig' }, el('span', { html: figSvg(f) }), v.captions?.[i] ? el('figcaption', {}, v.captions[i]) : null)));
   else if (v.type === 'eqn') return el('div', { class: 'pic pic-eqn' }, ...v.lines.map((ln, i) => el('div', { class: `eq-line${i === v.lines.length - 1 ? ' now' : ''}` }, el('span', { class: 'eq' }, mathText(ln.eq)), ln.note ? el('span', { class: 'eq-note' }, mathText(ln.note)) : null)));
   return svg ? el('div', { class: `pic pic-${v.type}`, html: svg }) : null;
 }

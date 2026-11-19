@@ -3,7 +3,8 @@
 // viewed by topic (every grade's skills on one topic), and has the Fluency Zone (timed fact sprints).
 // Visitors who are not signed in can browse; practising asks them to sign in.
 import { el, icon } from '../app/ui.mjs';
-import { current, skillOf } from '../app/store.mjs';
+import { current, skillOf, examOf } from '../app/store.mjs';
+import { examKey } from '../app/exams.mjs';
 import { SUBJECTS, SKILLS, skillsFor, gradesWith, gradeShort, gradeLabel, PROVINCES } from '../app/curriculum.mjs';
 import { TOPICS, TOPIC, topicsOf } from '../app/topics.mjs';
 import { me } from '../app/account.mjs';
@@ -45,6 +46,14 @@ export default function (main, { args, go }) {
     );
   };
   const total = SKILLS.filter((s) => s.subject === sub.id).length;
+  // a unit's (or the grade's) exam and printable worksheet, with the best score so far
+  const unitLinks = (g, code, label) => {
+    if (sub.id === 'activities' || sub.id === 'coding') return null;
+    const best = l ? examOf(l, examKey(sub.id, g, code)) : null;
+    return el('div', { class: 'cat-exam' },
+      el('a', { class: 'cat-exam-go', href: signedIn ? `#/exam/${sub.id}/${g}/${code}` : '#/signup' }, icon('timer'), label, best ? el('span', { class: `cat-best ${best.best >= 80 ? 'good' : ''}` }, `best ${best.best}%`) : null),
+      el('a', { class: 'cat-exam-ws', href: `#/worksheet/${sub.id}/${g}/${code}`, title: 'Printable worksheet with answer key' }, icon('pencil'), 'Worksheet'));
+  };
   const viewbar = sub.id === 'math' ? el('div', { class: 'viewbar', role: 'tablist', 'aria-label': 'View by' },
     el('span', { class: 'muted' }, 'View by:'),
     el('a', { role: 'tab', 'aria-selected': String(!byTopic), class: byTopic ? '' : 'on', href: `#/subject/math/${byTopic ? (mine ?? 1) : args[1] ?? mine ?? 1}` }, 'Grades'),
@@ -84,13 +93,15 @@ export default function (main, { args, go }) {
       el('div', { class: 'cat-stats' },
         el('span', { class: 'stat-chip' }, el('b', {}, String(n)), ' skills'),
         el('span', { class: 'stat-chip' }, el('b', {}, String(cats.length)), ' categories'),
-        l ? el('span', { class: 'stat-chip' }, el('b', {}, String(done)), ' mastered') : null)),
+        l ? el('span', { class: 'stat-chip' }, el('b', {}, String(done)), ' mastered') : null,
+        unitLinks(g, 'all', 'Grade exam'))),
     viewbar,
     el('div', { class: 'cat-layout' },
       el('nav', { class: 'grade-rail', 'aria-label': 'Grades' }, ...grades.map((x) => el('a', { href: `#/subject/${sub.id}/${x}`, class: `${x === g ? 'on' : ''} ${x === mine ? 'mine' : ''}`, style: `--gh:${GRADE_HUE[x]}`, title: gradeLabel(x), 'aria-current': x === g ? 'page' : null }, gradeShort(x)))),
       el('div', { class: 'cat-cols' }, ...cats.map((c) => el('section', { class: 'cat', style: `--gh:${GRADE_HUE[g]}` },
         el('h2', { class: 'cat-h' }, el('span', { class: 'cat-code' }, `${c.code}.`), ' ', c.name),
-        el('ol', { class: 'cat-list' }, ...c.skills.map((s, k) => skillLink(s, String(k + 1)))))),
+        el('ol', { class: 'cat-list' }, ...c.skills.map((s, k) => skillLink(s, String(k + 1)))),
+        unitLinks(g, c.code, 'Unit exam'))),
         cats.length ? null : el('p', { class: 'empty' }, 'No skills here yet.')),
     ),
   );

@@ -1,5 +1,6 @@
 // Grade 11 maths: more skills, one or more for each topic of the grade (see src/math/kit.mjs for the helpers).
 import { grade, mc, near, num, txt, OBJ, plural, NAMES, comma, par, gcd, lcm, simplify, frac, isPrime, dec, sgn, neg, St, columnAdd, columnSub, columnMul, longDivision, numberLine, fractionBars, eqnLines, areaModel, multiplesOf, PLACE } from '../kit.mjs';
+import * as GEO from './geo-g1112.mjs';
 const { skill, list } = grade();
 
 // ── small helpers for this grade ──
@@ -481,330 +482,39 @@ skill('11-expfunc', 11, 'Exponential functions', 'Exponential functions and inte
   return num(ans, [cont ? `A = Pe^(rt) = ${P} × e^(${rt / 100} × ${yrs}).` : `A = P(1 + r/n)^(nt) = ${P}(1 + ${rt / 100}/${n})^(${n * yrs}).`, `A ≈ $${ans}.`], { q: `$${comma(P)} is invested at ${rt}% a year, compounded ${cont ? 'continuously' : how}. How much is it worth after ${yrs} years? Round to the nearest cent.`, tol: 0.011, expr: cont ? `${P}*Math.exp(${rt}/100*${yrs})` : `${P}*(1+${rt}/100/${n})**(${n}*${yrs})` });
 });
 
+// ───────── 15–22. Geometry and trigonometry, taught with pictures (generators and lessons in geo-g1112.mjs) ─────────
 // ───────── 15. Angle measures ─────────
-skill('11-angles', 11, 'Angle measures', 'Quadrants, coterminal and reference angles', ['Coterminal angles differ by a multiple of 360°.', 'The reference angle is the acute angle between the terminal arm and the x-axis.'], (r) => {
-  const t = r.int(0, 3); let th = r.int(-720, 720); while (th % 90 === 0) th = r.int(-720, 720);
-  const n = ((th % 360) + 360) % 360, quad = Math.floor(n / 90), Q = ['I', 'II', 'III', 'IV'][quad], ref = [n, 180 - n, n - 180, 360 - n][quad];
-  const s1 = th === n ? `${th}° is already between 0° and 360°.` : `Add or subtract 360° until it is between 0° and 360°: ${n}°.`;
-  if (t === 0) return mc(r, `Quadrant ${Q}`, ['I', 'II', 'III', 'IV'].map((x) => `Quadrant ${x}`), { q: `In which quadrant does the terminal arm of ${neg(th)}° lie (in standard position)?`, steps: [s1, `${n}° is between ${quad * 90}° and ${quad * 90 + 90}°, so Quadrant ${Q}.`] });
-  if (t === 1) return num(n, [s1, `The coterminal angle is ${n}°.`], { q: `Find the angle between 0° and 360° that is coterminal with ${neg(th)}°.`, expr: `((${th}%360)+360)%360` });
-  if (t === 2) return num(ref, [s1, `${n}° is in Quadrant ${Q}, so the reference angle is ${[`${n}°`, `180° − ${n}°`, `${n}° − 180°`, `360° − ${n}°`][quad]} = ${ref}°.`], { q: `What is the reference angle of ${neg(th)}°?` });
-  const k = r.pick([-2, -1, 1, 2]), right = `${neg(th + 360 * k)}°`;
-  return mc(r, right, [`${neg(th + 180)}°`, `${neg(-th)}°`, `${neg(th + 90)}°`], { q: `Which angle is coterminal with ${neg(th)}°?`, steps: ['Coterminal angles differ by a multiple of 360°.', `${neg(th)}° ${k > 0 ? '+' : '−'} ${Math.abs(k) * 360}° = ${right}.`] });
-});
+skill('11-angles', 11, 'Angle measures', 'Quadrants, coterminal and reference angles', GEO.LESSONS11.angles, GEO.angles);
 
 // ───────── 16. Right triangles ─────────
-export const TRIPLES = [[3, 4, 5], [5, 12, 13], [8, 15, 17], [7, 24, 25], [20, 21, 29]];
-skill('11-righttri', 11, 'Right triangles', 'Pythagorean theorem and special triangles', ['In a right triangle, a² + b² = c², where c is the hypotenuse.', 'If c² > a² + b² the triangle is obtuse; if c² < a² + b² it is acute.', '45-45-90 sides: 1, 1, √2. 30-60-90 sides: 1, √3, 2.'], (r) => {
-  const t = r.int(0, 3);
-  if (t === 0) {
-    const [p, q, h] = r.pick(TRIPLES), k = r.int(1, 3), a = p * k, b = q * k, c = h * k, findC = r.bool();
-    return findC ? num(c, [`c² = ${a}² + ${b}² = ${a * a} + ${b * b} = ${c * c}.`, `c = √${c * c} = ${c}.`], { q: 'Find the hypotenuse.', visual: { type: 'righttri', a, b, c: '?' }, expr: `Math.hypot(${a},${b})` })
-      : num(b, [`b² = ${c}² − ${a}² = ${c * c} − ${a * a} = ${b * b}.`, `b = √${b * b} = ${b}.`], { q: 'Find the missing leg.', visual: { type: 'righttri', a, b: '?', c }, expr: `Math.sqrt(${c}**2-${a}**2)` });
-  }
-  if (t === 1) {
-    let a, b, c; if (r.bool(0.35)) { const [p, q, h] = r.pick(TRIPLES), k = r.int(1, 3); [a, b, c] = [p * k, q * k, h * k]; } else { a = r.int(3, 12); b = r.int(a, 15); c = r.int(b + 1, a + b - 1); }
-    const s = a * a + b * b, right = c * c === s ? 'Right' : c * c > s ? 'Obtuse' : 'Acute';
-    return mc(r, right, ['Acute', 'Right', 'Obtuse'], { q: `A triangle has sides ${a}, ${b} and ${c}. Is it acute, right or obtuse?`, steps: [`Compare the longest side squared with the sum of the other two squared: ${c}² = ${c * c} and ${a}² + ${b}² = ${s}.`, `${c * c} ${c * c === s ? '=' : c * c > s ? '>' : '<'} ${s}, so it is ${right.toLowerCase()}.`] });
-  }
-  if (t === 2) {
-    const n = r.int(2, 12);
-    if (r.bool()) return mc(r, `${n}√2`, [`${n}√3`, `${2 * n}`, `${n}`], { q: `A 45-45-90 triangle has legs of length ${n}. How long is the hypotenuse?`, steps: ['In a 45-45-90 triangle the hypotenuse is √2 times a leg.', `${n} × √2 = ${n}√2.`] });
-    return num(n, ['The hypotenuse is √2 times a leg.', `So each leg is ${n}√2 ÷ √2 = ${n}.`], { q: `A 45-45-90 triangle has hypotenuse ${n}√2. How long is each leg?` });
-  }
-  const s = r.int(2, 12);
-  if (r.bool()) return num(2 * s, ['In a 30-60-90 triangle the hypotenuse is twice the short leg.', `2 × ${s} = ${2 * s}.`], { q: `In a 30-60-90 triangle the short leg (opposite 30°) is ${s}. How long is the hypotenuse?`, expr: `2*${s}` });
-  return mc(r, `${s}√3`, [`${s}√2`, `${2 * s}`, `${s * 3}`], { q: `In a 30-60-90 triangle the short leg is ${s}. How long is the long leg (opposite 60°)?`, steps: ['The long leg is √3 times the short leg.', `${s} × √3 = ${s}√3.`] });
-});
+export const TRIPLES = GEO.TRIPLES;
+skill('11-righttri', 11, 'Right triangles', 'Pythagorean theorem and special triangles', GEO.LESSONS11.righttri, GEO.righttri);
 
 // ───────── 17. Trigonometry ─────────
-export const TRIG_DEF = { sin: ['opposite', 'hypotenuse'], cos: ['adjacent', 'hypotenuse'], tan: ['opposite', 'adjacent'], csc: ['hypotenuse', 'opposite'], sec: ['hypotenuse', 'adjacent'], cot: ['adjacent', 'opposite'] };
-export const SPECIAL = { sin: { 30: '1/2', 45: '√2/2', 60: '√3/2' }, cos: { 30: '√3/2', 45: '√2/2', 60: '1/2' }, tan: { 30: '√3/3', 45: '1', 60: '√3' }, csc: { 30: '2', 45: '√2', 60: '2√3/3' }, sec: { 30: '2√3/3', 45: '√2', 60: '2' }, cot: { 30: '√3', 45: '1', 60: '√3/3' } };
-const TFN = { sin: Math.sin, cos: Math.cos, tan: Math.tan, csc: (x) => 1 / Math.sin(x), sec: (x) => 1 / Math.cos(x), cot: (x) => 1 / Math.tan(x) };
-const TEXPR = { sin: (d) => `Math.sin(${d}*Math.PI/180)`, cos: (d) => `Math.cos(${d}*Math.PI/180)`, tan: (d) => `Math.tan(${d}*Math.PI/180)`, csc: (d) => `1/Math.sin(${d}*Math.PI/180)`, sec: (d) => `1/Math.cos(${d}*Math.PI/180)`, cot: (d) => `1/Math.tan(${d}*Math.PI/180)` };
-skill('11-trigratio', 11, 'Trigonometry', 'The six trigonometric ratios', ['SOH CAH TOA: sin = opposite/hypotenuse, cos = adjacent/hypotenuse, tan = opposite/adjacent.', 'csc, sec and cot are the reciprocals of sin, cos and tan.'], (r) => {
-  const t = r.int(0, 3);
-  if (t === 0) {
-    const [p, q, h] = r.pick(TRIPLES), k = r.int(1, 2), a = p * k, b = q * k, c = h * k, f = r.pick(Object.keys(TRIG_DEF)), side = { opposite: b, adjacent: a, hypotenuse: c }, [top, bot] = TRIG_DEF[f];
-    return num(frac(side[top], side[bot]), [`From θ: opposite = ${b}, adjacent = ${a}, hypotenuse = ${c}.`, `${f} θ = ${top} ÷ ${bot} = ${side[top]}/${side[bot]} = ${frac(side[top], side[bot])}.`], { q: `θ is the angle at the bottom left of the right triangle. What is ${f} θ?`, visual: { type: 'righttri', a, b, c }, expr: `${side[top]}/${side[bot]}` });
-  }
-  if (t === 1) {
-    const f = r.pick(Object.keys(SPECIAL)), d = r.pick([30, 45, 60]), right = SPECIAL[f][d];
-    const pool = r.shuffle(['1/2', '√2/2', '√3/2', '1', '√3', '√3/3', '2', '2√3/3', '√2'].filter((x) => x !== right));
-    return mc(r, right, pool.slice(0, 3), { q: `What is the exact value of ${f} ${d}°?`, steps: [d === 45 ? 'A 45-45-90 triangle has sides 1, 1, √2.' : 'A 30-60-90 triangle has sides 1 (opposite 30°), √3 (opposite 60°) and 2.', `${f} ${d}° = ${TRIG_DEF[f][0]} ÷ ${TRIG_DEF[f][1]} = ${right}.`] });
-  }
-  if (t === 2) {
-    const f = r.pick(['sin', 'cos', 'tan', 'csc', 'sec', 'cot']), d = r.int(5, 85), v = TFN[f](d * RAD), ans = dec(v, 4);
-    return num(ans, [f === 'sin' || f === 'cos' || f === 'tan' ? 'Make sure the calculator is in degree mode.' : `${f} ${d}° = 1 ÷ ${{ csc: 'sin', sec: 'cos', cot: 'tan' }[f]} ${d}°.`, `${f} ${d}° ≈ ${ans}.`], { q: `Use a calculator: find ${f} ${d}°, rounded to 4 decimal places.`, tol: 0.00006, expr: TEXPR[f](d) });
-  }
-  const f = r.pick(['sin', 'cos', 'tan']), v = f === 'tan' ? r.int(10, 300) / 100 : r.int(10, 95) / 100, A = { sin: Math.asin, cos: Math.acos, tan: Math.atan }[f](v) / RAD, ans = Math.round(A);
-  return num(ans, [`A = ${f}⁻¹(${v}).`, `A ≈ ${A.toFixed(2)}°, which rounds to ${ans}°.`], { q: `${f} A = ${v}, and A is acute. Find A to the nearest degree.`, tol: 0.51, expr: `Math.a${f}(${v})*180/Math.PI` });
-});
-const TRIG_EQ = [['sin x = 1/2', [30, 150]], ['cos x = 1/2', [60, 300]], ['tan x = 1', [45, 225]], ['sin x = −1/2', [210, 330]], ['cos x = −√3/2', [150, 210]], ['sin x = √2/2', [45, 135]], ['tan x = −1', [135, 315]], ['cos x = 0', [90, 270]], ['sin x = √3/2', [60, 120]], ['cos x = −1/2', [120, 240]], ['tan x = √3', [60, 240]]];
-skill('11-trigsolve', 11, 'Trigonometry', 'Solve right triangles and trig equations', ['Choose the ratio that links the side you know to the side you want.', 'Use an inverse ratio (sin⁻¹, cos⁻¹, tan⁻¹) to find an angle.'], (r) => {
-  const t = r.int(0, 3);
-  if (t === 0) {
-    const th = r.int(20, 70), H = r.int(5, 30), opp = r.bool(), v = opp ? H * Math.sin(th * RAD) : H * Math.cos(th * RAD), ans = dec(v, 1);
-    return num(ans, [`The ${opp ? 'opposite' : 'adjacent'} side uses ${opp ? 'sin' : 'cos'}: side = ${H} × ${opp ? 'sin' : 'cos'} ${th}°.`, `${H} × ${dec(opp ? Math.sin(th * RAD) : Math.cos(th * RAD), 4)} ≈ ${ans}.`], { q: `A right triangle has hypotenuse ${H} cm and an angle of ${th}°. How long is the side ${opp ? 'opposite' : 'next to (adjacent to)'} that angle? Round to 1 decimal place.`, tol: 0.051, expr: `${H}*Math.${opp ? 'sin' : 'cos'}(${th}*Math.PI/180)` });
-  }
-  if (t === 1) {
-    const o = r.int(2, 20), a = r.int(2, 20), A = Math.atan(o / a) / RAD, ans = Math.round(A);
-    return num(ans, [`tan θ = opposite ÷ adjacent = ${o}/${a}.`, `θ = tan⁻¹(${o}/${a}) ≈ ${A.toFixed(2)}°, so about ${ans}°.`], { q: `A right triangle has legs ${o} cm (opposite θ) and ${a} cm (next to θ). Find θ to the nearest degree.`, tol: 0.51, expr: `Math.atan(${o}/${a})*180/Math.PI` });
-  }
-  if (t === 2) {
-    if (r.bool()) {
-      const L = r.int(3, 9), th = r.int(55, 80), v = L * Math.sin(th * RAD), ans = dec(v, 1);
-      return num(ans, ['The ladder is the hypotenuse; the height up the wall is opposite the angle.', `height = ${L} × sin ${th}° ≈ ${ans} m.`], { q: `A ${L} m ladder leans against a wall, making a ${th}° angle with the ground. How high up the wall does it reach? Round to 1 decimal place.`, tol: 0.051, expr: `${L}*Math.sin(${th}*Math.PI/180)` });
-    }
-    const d = r.int(20, 80), th = r.int(15, 60), v = d * Math.tan(th * RAD), ans = dec(v, 1);
-    return num(ans, ['The height is opposite the angle of elevation; the distance is adjacent.', `height = ${d} × tan ${th}° ≈ ${ans} m.`], { q: `From ${d} m away on level ground, the angle of elevation to the top of a tower is ${th}°. How tall is the tower? Round to 1 decimal place.`, tol: 0.051, expr: `${d}*Math.tan(${th}*Math.PI/180)` });
-  }
-  const [eq, sols] = r.pick(TRIG_EQ);
-  return txt(`x = ${sols[0]}° or x = ${sols[1]}°`, ['Find the reference angle from the special values, then the quadrants where the sign matches.', `x = ${sols[0]}° or x = ${sols[1]}°.`], { q: `Solve ${eq} for 0° ≤ x < 360°. Give both angles.`, numbers: sols });
-});
-skill('11-triglaws', 11, 'Trigonometry', 'Sine Law, Cosine Law and triangle area', ['Sine Law: a/sin A = b/sin B = c/sin C.', 'Cosine Law: c² = a² + b² − 2ab cos C.', 'Area = ½ab sin C.'], (r) => {
-  const t = r.int(0, 3);
-  if (t === 0) {
-    const A = r.int(30, 80), B = r.int(30, 80), a = r.int(5, 20), v = (a * Math.sin(B * RAD)) / Math.sin(A * RAD), ans = dec(v, 1);
-    return num(ans, [`Sine Law: b/sin ${B}° = ${a}/sin ${A}°.`, `b = ${a} × sin ${B}° ÷ sin ${A}° ≈ ${ans}.`], { q: `In triangle ABC, ∠A = ${A}°, ∠B = ${B}° and a = ${a} cm. Find b, rounded to 1 decimal place.`, tol: 0.051, expr: `${a}*Math.sin(${B}*Math.PI/180)/Math.sin(${A}*Math.PI/180)` });
-  }
-  if (t === 1) {
-    const a = r.int(4, 20), b = r.int(4, 20), C = r.int(25, 140), v = Math.sqrt(a * a + b * b - 2 * a * b * Math.cos(C * RAD)), ans = dec(v, 1);
-    return num(ans, [`c² = ${a}² + ${b}² − 2(${a})(${b})cos ${C}° ≈ ${dec(v * v, 2)}.`, `c ≈ ${ans}.`], { q: `In triangle ABC, a = ${a} cm, b = ${b} cm and ∠C = ${C}°. Find c, rounded to 1 decimal place.`, tol: 0.051, expr: `Math.sqrt(${a}**2+${b}**2-2*${a}*${b}*Math.cos(${C}*Math.PI/180))` });
-  }
-  if (t === 2) {
-    let a, b, c; do { a = r.int(4, 15); b = r.int(4, 15); c = r.int(Math.max(a, b), a + b - 1); } while (c <= Math.max(a, b));
-    const C = Math.acos((a * a + b * b - c * c) / (2 * a * b)) / RAD, ans = Math.round(C);
-    return num(ans, [`cos C = (a² + b² − c²) ÷ 2ab = (${a * a} + ${b * b} − ${c * c}) ÷ ${2 * a * b}.`, `C ≈ ${C.toFixed(2)}°, so about ${ans}°.`], { q: `A triangle has sides a = ${a}, b = ${b} and c = ${c}. Find ∠C (opposite c) to the nearest degree.`, tol: 0.51, expr: `Math.acos((${a}**2+${b}**2-${c}**2)/(2*${a}*${b}))*180/Math.PI` });
-  }
-  const a = r.int(4, 20), b = r.int(4, 20), C = r.int(20, 150), v = 0.5 * a * b * Math.sin(C * RAD), ans = dec(v, 1);
-  return num(ans, ['Area = ½ab sin C.', `½ × ${a} × ${b} × sin ${C}° ≈ ${ans} cm².`], { q: `Two sides of a triangle are ${a} cm and ${b} cm, and the angle between them is ${C}°. Find the area, rounded to 1 decimal place.`, tol: 0.051, expr: `0.5*${a}*${b}*Math.sin(${C}*Math.PI/180)` });
-});
+export const TRIG_DEF = GEO.TRIG_DEF;
+export const SPECIAL = GEO.SPECIAL;
+skill('11-trigratio', 11, 'Trigonometry', 'The six trigonometric ratios', GEO.LESSONS11.trigratio, GEO.trigratio);
+skill('11-trigsolve', 11, 'Trigonometry', 'Solve right triangles and trig equations', GEO.LESSONS11.trigsolve, GEO.trigsolve);
+skill('11-triglaws', 11, 'Trigonometry', 'Sine Law, Cosine Law and triangle area', GEO.LESSONS11.triglaws, GEO.triglaws);
 
 // ───────── 18. Two-dimensional figures ─────────
-const PNAME = { 3: 'triangle', 4: 'quadrilateral', 5: 'pentagon', 6: 'hexagon', 7: 'heptagon', 8: 'octagon', 9: 'nonagon', 10: 'decagon', 12: 'dodecagon' };
-skill('11-polygons', 11, 'Two-dimensional figures', 'Polygons and quadrilaterals', ['The interior angles of an n-gon add to (n − 2) × 180°.', 'A parallelogram has opposite sides parallel; its opposite angles are equal and its next-door angles add to 180°.'], (r) => {
-  const t = r.int(0, 3);
-  if (t === 0) {
-    const n = r.pick([5, 6, 7, 8, 9, 10, 12]), right = PNAME[n];
-    return mc(r, right, r.shuffle(Object.values(PNAME).filter((x) => x !== right)).slice(0, 3), { q: `What is a polygon with ${n} sides called?`, steps: [`Count the sides: ${n}.`, `A ${n}-sided polygon is a ${right}.`] });
-  }
-  if (t === 1) {
-    const n = r.pick([5, 6, 8, 9, 10, 12, 15, 18, 20]), sum = (n - 2) * 180, each = sum / n, ask = r.int(0, 2);
-    if (ask === 0) return num(sum, ['Sum = (n − 2) × 180°.', `(${n} − 2) × 180° = ${sum}°.`], { q: `What is the sum of the interior angles of a polygon with ${n} sides?`, expr: `(${n}-2)*180` });
-    if (ask === 1) return num(each, [`Sum = (${n} − 2) × 180° = ${sum}°.`, `Each angle = ${sum}° ÷ ${n} = ${each}°.`], { q: `What is each interior angle of a regular polygon with ${n} sides?`, expr: `(${n}-2)*180/${n}` });
-    return num(n, [`Each exterior angle is 180° − ${each}° = ${180 - each}°, and they add to 360°.`, `n = 360 ÷ ${180 - each} = ${n}.`], { q: `Each interior angle of a regular polygon is ${each}°. How many sides does it have?`, expr: `360/(180-${each})` });
-  }
-  if (t === 2) {
-    const Q = [['four equal sides and four right angles', 'Square'], ['four right angles, but not all sides equal', 'Rectangle'], ['four equal sides, but no right angles', 'Rhombus'], ['exactly one pair of parallel sides', 'Trapezoid'], ['two pairs of parallel sides, no right angles and not all sides equal', 'Parallelogram'], ['two pairs of equal sides next to each other, and no parallel sides', 'Kite']];
-    const [d, right] = r.pick(Q);
-    return mc(r, right, r.shuffle(Q.map((x) => x[1]).filter((x) => x !== right)).slice(0, 3), { q: `A quadrilateral has ${d}. What is the most exact name for it?`, steps: [`It has ${d}.`, `That makes it a ${right.toLowerCase()}.`] });
-  }
-  if (r.bool()) {
-    const a = r.pick([r.int(40, 85), r.int(95, 140)]), opp = r.bool(), v = opp ? a : 180 - a;
-    return num(v, [opp ? 'Opposite angles of a parallelogram are equal.' : 'Next-door angles of a parallelogram add to 180°.', opp ? `So it is ${v}°.` : `180° − ${a}° = ${v}°.`], { q: `In parallelogram ABCD, ∠A = ${a}°. What is ∠${opp ? 'C' : 'B'}?`, expr: opp ? `${a}` : `180-${a}` });
-  }
-  const d = r.int(4, 20) * 2;
-  return num(d / 2, ['The diagonals of a parallelogram bisect each other.', `So AE = ${d} ÷ 2 = ${d / 2}.`], { q: `In parallelogram ABCD, the diagonals meet at E. Diagonal AC is ${d} cm. How long is AE, in cm?`, expr: `${d}/2` });
-});
-skill('11-area2d', 11, 'Two-dimensional figures', 'Area and perimeter', ['Triangle: ½bh. Trapezoid: ½(a + b)h. Circle: A = πr², C = 2πr.', 'For similar figures with scale factor k, areas scale by k².'], (r) => {
-  const t = r.int(0, 4);
-  if (t === 0) {
-    const k = r.int(0, 2), b = r.int(3, 20), h = r.int(2, 15), a2 = r.int(2, 20);
-    if (k === 0) return num(dec(b * h / 2), ['Area = ½ × base × height.', `½ × ${b} × ${h} = ${dec(b * h / 2)} cm².`], { q: `A triangle has base ${b} cm and height ${h} cm. What is its area, in cm²?`, expr: `${b}*${h}/2` });
-    if (k === 1) return num(dec((a2 + b) * h / 2), ['Area = ½ × (sum of the parallel sides) × height.', `½ × (${a2} + ${b}) × ${h} = ${dec((a2 + b) * h / 2)} cm².`], { q: `A trapezoid has parallel sides ${a2} cm and ${b} cm and height ${h} cm. What is its area, in cm²?`, expr: `(${a2}+${b})*${h}/2` });
-    return num(b * h, ['Area = base × height.', `${b} × ${h} = ${b * h} cm².`], { q: `A parallelogram has base ${b} cm and height ${h} cm. What is its area, in cm²?`, expr: `${b}*${h}` });
-  }
-  if (t === 1) {
-    const rr = r.int(2, 15), dia = r.bool(), area = r.bool(), v = area ? Math.PI * rr * rr : 2 * Math.PI * rr, ans = dec(v, 1);
-    return num(ans, [dia ? `The radius is half the diameter: ${2 * rr} ÷ 2 = ${rr} cm.` : `The radius is ${rr} cm.`, area ? `A = π × ${rr}² ≈ ${ans} cm².` : `C = 2 × π × ${rr} ≈ ${ans} cm.`], { q: `A circle has ${dia ? `diameter ${2 * rr}` : `radius ${rr}`} cm. Find its ${area ? 'area' : 'circumference'}, rounded to 1 decimal place.`, tol: 0.051, expr: area ? `Math.PI*${rr}**2` : `2*Math.PI*${rr}` });
-  }
-  if (t === 2) {
-    const x1 = r.int(0, 4), y1 = r.int(0, 4), x2 = x1 + r.int(2, 6), y2 = y1 + r.int(2, 6), w = x2 - x1, h = y2 - y1;
-    if (r.bool()) {
-      const per = r.bool(), v = per ? 2 * (w + h) : w * h;
-      return num(v, [`Width = ${x2} − ${x1} = ${w}; height = ${y2} − ${y1} = ${h}.`, per ? `Perimeter = 2(${w} + ${h}) = ${v} units.` : `Area = ${w} × ${h} = ${v} square units.`], { q: `A rectangle has vertices ${pt(x1, y1)}, ${pt(x2, y1)}, ${pt(x2, y2)} and ${pt(x1, y2)}. What is its ${per ? 'perimeter' : 'area'}?`, visual: { type: 'poly', points: [[x1, y1], [x2, y1], [x2, y2], [x1, y2]], grid: true }, expr: per ? `2*(${w}+${h})` : `${w}*${h}` });
-    }
-    const ax = r.int(x1, x2);
-    return num(dec(w * h / 2), [`The base runs from x = ${x1} to x = ${x2}: ${w} units. The height is ${y2} − ${y1} = ${h}.`, `Area = ½ × ${w} × ${h} = ${dec(w * h / 2)} square units.`], { q: `A triangle has vertices ${pt(x1, y1)}, ${pt(x2, y1)} and ${pt(ax, y2)}. What is its area?`, visual: { type: 'poly', points: [[x1, y1], [x2, y1], [ax, y2]], grid: true }, expr: `${w}*${h}/2` });
-  }
-  if (t === 3) {
-    if (r.bool()) {
-      const a = r.int(5, 10), b = r.int(5, 10), c = r.int(1, Math.min(a, b) - 2), per = r.bool(), v = per ? 2 * (a + b) : a * b - c * c;
-      return num(v, [per ? 'Cutting a square from a corner moves two edges inward but keeps their lengths.' : `Whole rectangle: ${a} × ${b} = ${a * b} cm². Square cut out: ${c} × ${c} = ${c * c} cm².`, per ? `Perimeter = 2(${a} + ${b}) = ${v} cm.` : `${a * b} − ${c * c} = ${v} cm².`], { q: `A ${a} cm by ${b} cm rectangle has a ${c} cm by ${c} cm square cut from one corner. What is the ${per ? 'perimeter' : 'area'} of the shape that is left?`, visual: { type: 'poly', points: [[0, 0], [a, 0], [a, b - c], [a - c, b - c], [a - c, b], [0, b]], labels: [`${a} cm`, '', `${c} cm`, `${c} cm`, '', `${b} cm`] }, expr: per ? `2*(${a}+${b})` : `${a}*${b}-${c}**2` });
-    }
-    const rr = r.int(2, 10), v = 4 * rr * rr - Math.PI * rr * rr, ans = dec(v, 1);
-    return num(ans, [`Square: ${2 * rr} × ${2 * rr} = ${4 * rr * rr} cm². Circle: π × ${rr}² ≈ ${dec(Math.PI * rr * rr, 2)} cm².`, `${4 * rr * rr} − ${dec(Math.PI * rr * rr, 2)} ≈ ${ans} cm².`], { q: `A circle of radius ${rr} cm fits exactly inside a square. What is the area inside the square but outside the circle? Round to 1 decimal place.`, tol: 0.051, expr: `4*${rr}**2-Math.PI*${rr}**2` });
-  }
-  const k = r.pick([2, 3, 4]), A = r.int(2, 30), per = r.bool(), v = per ? A * k : A * k * k;
-  return num(v, [`The scale factor is ${k}, so ${per ? 'perimeters scale by ' + k : `areas scale by ${k}² = ${k * k}`}.`, `${A} × ${per ? k : k * k} = ${v}.`], { q: `Two similar figures have matching sides of 5 cm and ${5 * k} cm. The smaller one has ${per ? `perimeter ${A} cm` : `area ${A} cm²`}. What is the ${per ? 'perimeter (cm)' : 'area (cm²)'} of the larger one?`, expr: per ? `${A}*${5 * k}/5` : `${A}*(${5 * k}/5)**2` });
-});
+skill('11-polygons', 11, 'Two-dimensional figures', 'Polygons and quadrilaterals', GEO.LESSONS11.polygons, GEO.polygons);
+skill('11-area2d', 11, 'Two-dimensional figures', 'Area and perimeter', GEO.LESSONS11.area2d, GEO.area2d);
 
 // ───────── 19. Three-dimensional figures ─────────
-const BASES = { 3: 'triangular', 4: 'rectangular', 5: 'pentagonal', 6: 'hexagonal', 8: 'octagonal' };
-skill('11-solids', 11, 'Three-dimensional figures', 'Parts of solids, nets and cross-sections', ['A prism with an n-sided base has n + 2 faces, 3n edges and 2n vertices.', 'Euler: faces + vertices − edges = 2.'], (r) => {
-  const t = r.int(0, 4);
-  if (t === 0) {
-    const n = r.pick([3, 4, 5, 6, 8]), prism = r.bool(), ask = r.int(0, 2), F = prism ? n + 2 : n + 1, E = prism ? 3 * n : 2 * n, V = prism ? 2 * n : n + 1, v = [F, E, V][ask], what = ['faces', 'edges', 'vertices'][ask];
-    return num(v, [prism ? `A prism has 2 bases and ${n} side faces; each base has ${n} edges and ${n} vertices.` : `A pyramid has 1 base and ${n} triangular faces meeting at the apex.`, `So it has ${v} ${what}.`], { q: `How many ${what} does a ${BASES[n]} ${prism ? 'prism' : 'pyramid'} have?` });
-  }
-  if (t === 1) {
-    const n = r.pick([3, 4, 5, 6, 8]), prism = r.bool(), F = prism ? n + 2 : n + 1, E = prism ? 3 * n : 2 * n, V = prism ? 2 * n : n + 1, ask = r.int(0, 2), v = [F, E, V][ask];
-    const known = [['faces', F], ['edges', E], ['vertices', V]].filter((_, i) => i !== ask).map(([w, x]) => `${x} ${w}`).join(' and ');
-    return num(v, ['Euler’s formula: F + V − E = 2.', ask === 0 ? `F = 2 − ${V} + ${E} = ${v}.` : ask === 1 ? `E = ${F} + ${V} − 2 = ${v}.` : `V = 2 − ${F} + ${E} = ${v}.`], { q: `A polyhedron has ${known}. How many ${['faces', 'edges', 'vertices'][ask]} does it have?`, expr: ask === 1 ? `${F}+${V}-2` : ask === 0 ? `2-${V}+${E}` : `2-${F}+${E}` });
-  }
-  const pickWrong = (right, pool) => r.shuffle(pool.filter((x) => x !== right)).slice(0, 3);
-  if (t === 2) {
-    const [d, right] = r.pick([['A cylinder is cut parallel to its base.', 'Circle'], ['A cylinder is cut straight down through the centres of both bases.', 'Rectangle'], ['A cone is cut parallel to its base.', 'Circle'], ['A cone is cut straight down through its apex and the centre of its base.', 'Triangle'], ['A cube is cut parallel to one face.', 'Square'], ['A sphere is cut by a flat plane.', 'Circle'], ['A square pyramid is cut parallel to its base.', 'Square']]);
-    return mc(r, right, pickWrong(right, ['Circle', 'Rectangle', 'Triangle', 'Square']), { q: `${d} What shape is the cross-section?`, steps: ['Picture the flat face left by the cut.', `It is a ${right.toLowerCase()}.`] });
-  }
-  if (t === 3) {
-    const [d, right] = r.pick([['A rectangle is spun around one of its sides.', 'Cylinder'], ['A right triangle is spun around one of its legs.', 'Cone'], ['A semicircle is spun around its diameter.', 'Sphere']]);
-    return mc(r, right, pickWrong(right, ['Cylinder', 'Cone', 'Sphere', 'Cube']), { q: `${d} What solid does it make?`, steps: ['Picture the shape sweeping all the way around the line.', `It makes a ${right.toLowerCase()}.`] });
-  }
-  const [d, right] = r.pick([['6 squares', 'Cube'], ['2 circles and a rectangle', 'Cylinder'], ['1 square and 4 triangles', 'Square pyramid'], ['2 triangles and 3 rectangles', 'Triangular prism'], ['a circle and a sector of a larger circle', 'Cone']]);
-  return mc(r, right, pickWrong(right, ['Cube', 'Cylinder', 'Square pyramid', 'Triangular prism', 'Cone']), { q: `A net is made of ${d}. What solid does it fold into?`, steps: ['Match each flat piece to a face of a solid.', `${d[0].toUpperCase() + d.slice(1)} fold into a ${right.toLowerCase()}.`] });
-});
-skill('11-volume', 11, 'Three-dimensional figures', 'Surface area and volume', ['Prism or cylinder: V = base area × height. Pyramid or cone: V = ⅓ × base area × height.', 'Sphere: V = 4/3 πr³ and SA = 4πr².', 'For similar solids with scale factor k, surface areas scale by k² and volumes by k³.'], (r) => {
-  const t = r.int(0, 2);
-  if (t === 0) {
-    const s = r.int(0, 4), a = r.int(2, 12), b = r.int(2, 12), h = r.int(2, 15);
-    if (s === 0) return num(a * b * h, ['V = length × width × height.', `${a} × ${b} × ${h} = ${a * b * h} cm³.`], { q: `Find the volume of a rectangular prism ${a} cm by ${b} cm by ${h} cm, in cm³.`, expr: `${a}*${b}*${h}` });
-    const V = [0, Math.PI * a * a * h, Math.PI * a * a * h / 3, a * a * h / 3, 4 / 3 * Math.PI * a ** 3][s], ans = dec(V, 1);
-    const name = ['', `cylinder with radius ${a} cm and height ${h} cm`, `cone with radius ${a} cm and height ${h} cm`, `square pyramid with base ${a} cm by ${a} cm and height ${h} cm`, `sphere with radius ${a} cm`][s];
-    const f = ['', `V = π × ${a}² × ${h}`, `V = ⅓ × π × ${a}² × ${h}`, `V = ⅓ × ${a}² × ${h}`, `V = 4/3 × π × ${a}³`][s];
-    return num(ans, [`${f}.`, `V ≈ ${ans} cm³.`], { q: `Find the volume of a ${name}, in cm³. Round to 1 decimal place.`, tol: 0.051, expr: [0, `Math.PI*${a}**2*${h}`, `Math.PI*${a}**2*${h}/3`, `${a}**2*${h}/3`, `4/3*Math.PI*${a}**3`][s] });
-  }
-  if (t === 1) {
-    const s = r.int(0, 3), a = r.int(2, 12), b = r.int(2, 12), h = r.int(2, 15);
-    if (s === 0) { const v = 2 * (a * b + a * h + b * h); return num(v, [`SA = 2(lw + lh + wh) = 2(${a * b} + ${a * h} + ${b * h}).`, `= ${v} cm².`], { q: `Find the surface area of a rectangular prism ${a} cm by ${b} cm by ${h} cm, in cm².`, expr: `2*(${a}*${b}+${a}*${h}+${b}*${h})` }); }
-    if (s === 3) { const l = r.int(a, a + 10), v = a * a + 2 * a * l; return num(v, [`Base: ${a}² = ${a * a}. Four triangles: 4 × ½ × ${a} × ${l} = ${2 * a * l}.`, `SA = ${a * a} + ${2 * a * l} = ${v} cm².`], { q: `A square pyramid has base edges ${a} cm and slant height ${l} cm. Find its surface area, in cm².`, expr: `${a}**2+2*${a}*${l}` }); }
-    const V = s === 1 ? 2 * Math.PI * a * a + 2 * Math.PI * a * h : 4 * Math.PI * a * a, ans = dec(V, 1);
-    return num(ans, [s === 1 ? `SA = 2πr² + 2πrh = 2π(${a})² + 2π(${a})(${h}).` : `SA = 4πr² = 4π(${a})².`, `SA ≈ ${ans} cm².`], { q: `Find the surface area of a ${s === 1 ? `cylinder with radius ${a} cm and height ${h} cm` : `sphere with radius ${a} cm`}, in cm². Round to 1 decimal place.`, tol: 0.051, expr: s === 1 ? `2*Math.PI*${a}**2+2*Math.PI*${a}*${h}` : `4*Math.PI*${a}**2` });
-  }
-  const k = r.pick([2, 3]), small = r.int(2, 6), vol = r.bool(), A = r.int(5, 60), v = vol ? A * k ** 3 : A * k * k, shape = r.pick(['cylinders', 'cones', 'prisms']);
-  return num(v, [`Scale factor k = ${small * k} ÷ ${small} = ${k}, so ${vol ? `volumes scale by ${k}³ = ${k ** 3}` : `surface areas scale by ${k}² = ${k * k}`}.`, `${A} × ${vol ? k ** 3 : k * k} = ${v}.`], { q: `Two similar ${shape} have heights ${small} cm and ${small * k} cm. The smaller one has ${vol ? `volume ${A} cm³` : `surface area ${A} cm²`}. What is the ${vol ? 'volume (cm³)' : 'surface area (cm²)'} of the larger one?`, expr: vol ? `${A}*(${small * k}/${small})**3` : `${A}*(${small * k}/${small})**2` });
-});
+skill('11-solids', 11, 'Three-dimensional figures', 'Parts of solids, nets and cross-sections', GEO.LESSONS11.solids, GEO.solids);
+skill('11-volume', 11, 'Three-dimensional figures', 'Surface area and volume', GEO.LESSONS11.volume, GEO.volume);
 
 // ───────── 20. Congruent figures ─────────
-const TRI2 = ['DEF', 'PQR', 'XYZ', 'LMN'];
-const CONG = [['All three pairs of sides are equal.', 'SSS'], ['Two pairs of sides are equal, and so are the angles between them.', 'SAS'], ['Two pairs of angles are equal, and so are the sides between them.', 'ASA'], ['Two pairs of angles are equal, and a pair of sides that are not between those angles are equal.', 'AAS'], ['Both are right triangles with equal hypotenuses and one pair of equal legs.', 'HL'], ['All three pairs of angles are equal, but no side lengths are known.', 'Not enough information'], ['Two pairs of sides are equal, and a pair of angles that are not between those sides are equal.', 'Not enough information']];
-skill('11-congruent', 11, 'Congruent figures', 'Congruent triangles', ['In △ABC ≅ △DEF, the letters match in order: A ↔ D, B ↔ E, C ↔ F.', 'Triangles are congruent by SSS, SAS, ASA, AAS, or HL for right triangles. SSA and AAA do not prove it.'], (r) => {
-  const t = r.int(0, 3), T2 = r.pick(TRI2), perm = r.shuffle([0, 1, 2]), A = 'ABC', s1 = perm.map((i) => A[i]).join(''), s2 = perm.map((i) => T2[i]).join(''), map = (ch) => T2[A.indexOf(ch)];
-  if (t === 0) {
-    if (r.bool()) {
-      const [i, j] = r.shuffle([0, 1, 2]).slice(0, 2), side = A[i] + A[j], right = map(A[i]) + map(A[j]);
-      const others = [[0, 1], [1, 2], [0, 2]].filter(([x, y]) => !((x === i && y === j) || (x === j && y === i))).map(([x, y]) => T2[x] + T2[y]);
-      return mc(r, right, others, { q: `△${s1} ≅ △${s2}. Which side matches ${side}?`, steps: [`Match letters in order: ${s1.split('').map((c, k) => `${c} ↔ ${s2[k]}`).join(', ')}.`, `${side[0]} ↔ ${right[0]} and ${side[1]} ↔ ${right[1]}, so ${side} matches ${right}.`] });
-    }
-    const ch = r.pick(A.split('')), right = `∠${map(ch)}`;
-    return mc(r, right, T2.split('').filter((c) => c !== map(ch)).map((c) => `∠${c}`), { q: `△${s1} ≅ △${s2}. Which angle matches ∠${ch}?`, steps: [`Match letters in order: ${s1.split('').map((c, k) => `${c} ↔ ${s2[k]}`).join(', ')}.`, `So ∠${ch} matches ${right}.`] });
-  }
-  if (t === 1) {
-    const x0 = r.int(2, 12), a = r.int(2, 5), b = r.int(-5, 9), v = a * x0 + b, side = s1.slice(0, 2), m = s2.slice(0, 2);
-    return num(x0, [`Matching sides of congruent triangles are equal: ${poly([a, b])} = ${v}.`, `${a}x = ${v - b}, so x = ${x0}.`], { q: `△${s1} ≅ △${s2}. ${side} = ${poly([a, b])} and ${m} = ${v}. Find x.`, expr: `(${v}-(${b}))/${a}` });
-  }
-  if (t === 2) {
-    const [d, right] = r.pick(CONG);
-    return mc(r, right, r.shuffle([...new Set(CONG.map((x) => x[1]))].filter((x) => x !== right)).slice(0, 3), { q: `Two triangles have this in common: ${d} Which rule proves they are congruent?`, steps: ['Look at what is known and where the angles sit.', right === 'Not enough information' ? 'That pattern does not prove congruence: not enough information.' : `That is the ${right} rule.`] });
-  }
-  if (r.bool()) {
-    const v = r.int(10, 80) * 2, b = (180 - v) / 2;
-    return num(b, ['The base angles of an isosceles triangle are equal, and all three angles add to 180°.', `(180° − ${v}°) ÷ 2 = ${b}°.`], { q: `An isosceles triangle has a vertex angle of ${v}°. What is each base angle?`, expr: `(180-${v})/2` });
-  }
-  const b = r.int(20, 85), v = 180 - 2 * b;
-  return num(v, ['The two base angles are equal, and all three angles add to 180°.', `180° − 2 × ${b}° = ${v}°.`], { q: `Each base angle of an isosceles triangle is ${b}°. What is the vertex angle?`, expr: `180-2*${b}` });
-});
-const REASONS = [['∠1 and ∠2 are opposite each other where two lines cross. Why is ∠1 = ∠2?', 'Vertical angles are equal'], ['∠1 and ∠2 sit side by side on a straight line. Why do they add to 180°?', 'Angles on a straight line add to 180°'], ['Two parallel lines are cut by a transversal. ∠1 and ∠2 are between the parallel lines, on opposite sides of the transversal. Why is ∠1 = ∠2?', 'Alternate interior angles are equal'], ['Two parallel lines are cut by a transversal. ∠1 and ∠2 are in matching positions at the two crossings. Why is ∠1 = ∠2?', 'Corresponding angles are equal'], ['Two parallel lines are cut by a transversal. ∠1 and ∠2 are between the parallel lines, on the same side of the transversal. Why do they add to 180°?', 'Same-side interior angles add to 180°'], ['In △ABC, AB = AC. Why is ∠B = ∠C?', 'Base angles of an isosceles triangle are equal']];
-skill('11-angleproof', 11, 'Congruent figures', 'Angle reasons for proofs', ['Vertical angles are equal; angles on a straight line add to 180°.', 'With parallel lines: corresponding and alternate interior angles are equal; same-side interior angles add to 180°.'], (r) => {
-  const t = r.int(0, 3);
-  if (t === 0) {
-    const a = r.int(25, 155), vert = r.bool(), v = vert ? a : 180 - a;
-    return num(v, [vert ? 'Vertical angles are equal.' : 'Angles in a linear pair add to 180°.', vert ? `So the angle is ${v}°.` : `180° − ${a}° = ${v}°.`], { q: `Two lines cross. One angle is ${a}°. What is the angle ${vert ? 'vertically opposite it' : 'next to it on the same straight line'}?`, expr: vert ? `${a}` : `180-${a}` });
-  }
-  if (t === 1) {
-    const a = r.int(25, 155), [rel, same] = r.pick([['corresponding', true], ['alternate interior', true], ['same-side interior', false], ['alternate exterior', true]]), v = same ? a : 180 - a;
-    return num(v, [same ? `${rel[0].toUpperCase() + rel.slice(1)} angles are equal.` : 'Same-side interior angles add to 180°.', same ? `So it is ${v}°.` : `180° − ${a}° = ${v}°.`], { q: `Two parallel lines are cut by a transversal. One angle is ${a}°. What is its ${rel} angle?`, expr: same ? `${a}` : `180-${a}` });
-  }
-  if (t === 2) {
-    const [d, right] = r.pick(REASONS);
-    return mc(r, right, r.shuffle(REASONS.map((x) => x[1]).filter((x) => x !== right)).slice(0, 3), { q: d, steps: ['Look at where the two angles sit.', `Reason: ${right}.`] });
-  }
-  const x0 = r.int(5, 25), p = r.int(2, 4), q = p + r.int(1, 3), c1 = r.int(5, 40), c2 = (p - q) * x0 + c1, ang = p * x0 + c1, kind = r.pick(['vertical angles', 'alternate interior angles', 'corresponding angles']);
-  return num(x0, [`${kind[0].toUpperCase() + kind.slice(1)} are equal: ${poly([p, c1])} = ${poly([q, c2])}.`, `${c1 - c2} = ${q - p}x, so x = ${x0} (each angle is ${ang}°).`], { q: `Two angles are ${kind}${kind === 'vertical angles' ? '' : ' formed by parallel lines'}. One is (${poly([p, c1])})° and the other is (${poly([q, c2])})°. Find x.`, expr: `(${c1}-(${c2}))/(${q}-${p})` });
-});
+skill('11-congruent', 11, 'Congruent figures', 'Congruent triangles', GEO.LESSONS11.congruent, GEO.congruent);
+skill('11-angleproof', 11, 'Congruent figures', 'Angle reasons for proofs', GEO.LESSONS11.angleproof, GEO.angleproof);
 
 // ───────── 21. Triangles ─────────
-skill('11-triangles', 11, 'Triangles', 'Triangle angles, sides and segments', ['The angles of a triangle add to 180°; an exterior angle equals the sum of the two far interior angles.', 'Any two sides must add to more than the third side.', 'A midsegment is half as long as the side it is parallel to.'], (r) => {
-  const t = r.int(0, 4);
-  if (t === 0) {
-    if (r.bool()) {
-      const k = r.int(0, 2), a = r.int(3, 12), sides = [[a, a, a], [a, a, a + r.pick([-2, -1, 1, 2, 3])], [a, a + 1, a + 2]][k], right = ['Equilateral', 'Isosceles', 'Scalene'][k];
-      return mc(r, right, ['Equilateral', 'Isosceles', 'Scalene'], { q: `A triangle has sides ${sides.join(' cm, ')} cm. Classify it by its sides.`, steps: [['All three sides are equal.', 'Exactly two sides are equal.', 'No sides are equal.'][k], `It is ${right.toLowerCase()}.`] });
-    }
-    const A = r.int(20, 80), B = r.pick([r.int(20, 160 - A), 90 - A]), C = 180 - A - B, big = Math.max(A, B, C), right = big === 90 ? 'Right' : big > 90 ? 'Obtuse' : 'Acute';
-    return mc(r, right, ['Acute', 'Right', 'Obtuse'], { q: `Two angles of a triangle are ${A}° and ${B}°. Classify the triangle by its angles.`, steps: [`The third angle is 180° − ${A}° − ${B}° = ${C}°.`, `The largest angle is ${big}°, so it is ${right.toLowerCase()}.`] });
-  }
-  if (t === 1) {
-    const A = r.int(20, 90), B = r.int(20, 160 - A), ext = r.bool();
-    return ext ? num(A + B, ['An exterior angle equals the sum of the two interior angles far from it.', `${A}° + ${B}° = ${A + B}°.`], { q: `Two interior angles of a triangle are ${A}° and ${B}°. What is the exterior angle at the third vertex?`, expr: `${A}+${B}` })
-      : num(180 - A - B, ['The angles of a triangle add to 180°.', `180° − ${A}° − ${B}° = ${180 - A - B}°.`], { q: `Two angles of a triangle are ${A}° and ${B}°. What is the third angle?`, expr: `180-${A}-${B}` });
-  }
-  if (t === 2) {
-    const m = r.int(3, 20), half = r.bool();
-    return half ? num(m, ['The midsegment is half the side it is parallel to.', `${2 * m} ÷ 2 = ${m}.`], { q: `In △ABC, D and E are the midpoints of AB and AC. BC = ${2 * m} cm. How long is DE, in cm?`, expr: `${2 * m}/2` })
-      : num(2 * m, ['The midsegment is half the side it is parallel to, so that side is twice as long.', `2 × ${m} = ${2 * m}.`], { q: `In △ABC, D and E are the midpoints of AB and AC. DE = ${m} cm. How long is BC, in cm?`, expr: `2*${m}` });
-  }
-  if (t === 3) {
-    const a = r.int(3, 15), b = r.int(3, 15), big = r.bool(), v = big ? a + b - 1 : Math.abs(a - b) + 1;
-    return num(v, [`The third side must be more than ${Math.abs(a - b)} (the difference) and less than ${a + b} (the sum).`, `The ${big ? 'greatest' : 'least'} whole number that works is ${v}.`], { q: `Two sides of a triangle are ${a} cm and ${b} cm. What is the ${big ? 'greatest' : 'least'} whole-number length the third side can have?`, expr: big ? `${a}+${b}-1` : `Math.abs(${a}-${b})+1` });
-  }
-  if (r.bool()) {
-    let s; do { s = [r.int(4, 15), r.int(4, 15), r.int(4, 15)]; } while (new Set(s).size < 3 || Math.max(...s) * 2 >= s[0] + s[1] + s[2]);
-    const [ab, bc, ca] = s, i = s.indexOf(Math.max(...s)), right = ['∠C', '∠A', '∠B'][i];
-    return mc(r, right, ['∠A', '∠B', '∠C'], { q: `In △ABC, AB = ${ab}, BC = ${bc} and CA = ${ca}. Which angle is the largest?`, steps: [`The longest side is ${['AB', 'BC', 'CA'][i]} = ${Math.max(...s)}.`, `The largest angle is opposite it: ${right}.`] });
-  }
-  const V = [['goes from a vertex to the midpoint of the opposite side', 'Median'], ['goes from a vertex and meets the opposite side at a right angle', 'Altitude'], ['splits an angle of the triangle into two equal angles', 'Angle bisector'], ['passes through the midpoint of a side at a right angle to it', 'Perpendicular bisector']];
-  const [d, right] = r.pick(V);
-  return mc(r, right, V.map((x) => x[1]), { q: `A segment in a triangle ${d}. What is it called?`, steps: [`It ${d}.`, `That is a${right[0] === 'A' ? 'n' : ''} ${right.toLowerCase()}.`] });
-});
+skill('11-triangles', 11, 'Triangles', 'Triangle angles, sides and segments', GEO.LESSONS11.triangles, GEO.triangles);
 
 // ───────── 22. Similarity ─────────
-skill('11-similar', 11, 'Similarity', 'Similar figures and indirect measurement', ['Similar figures have equal angles and sides in the same ratio.', 'Find the scale factor from a pair of matching sides, then multiply.'], (r) => {
-  const t = r.int(0, 3);
-  if (t === 0) {
-    const [p, q] = r.pick([[2, 1], [3, 1], [3, 2], [5, 2], [4, 3]]), u = r.int(1, 5), v = r.int(1, 6), AB = q * u, DE = p * u, BC = q * v + (v === u ? q : 0), EF = BC * p / q;
-    return num(EF, [`Scale factor = DE ÷ AB = ${DE} ÷ ${AB} = ${frac(p, q)}.`, `EF = ${BC} × ${frac(p, q)} = ${EF}.`], { q: `△ABC ~ △DEF. AB = ${AB} cm, DE = ${DE} cm and BC = ${BC} cm. How long is EF, in cm?`, expr: `${BC}*${DE}/${AB}` });
-  }
-  if (t === 1) {
-    const h = r.pick([1.5, 1.6, 1.7, 1.8]), s = r.int(2, 4), S = r.int(6, 30), v = h * S / s, ans = dec(v, 1);
-    return num(ans, ['The person and the tree make similar triangles with their shadows: height ÷ shadow is the same.', `tree = ${h} × ${S} ÷ ${s} ≈ ${ans} m.`], { q: `A person ${h} m tall casts a ${s} m shadow. At the same time a tree casts a ${S} m shadow. How tall is the tree? Round to 1 decimal place.`, tol: 0.051, expr: `${h}*${S}/${s}` });
-  }
-  if (t === 2) {
-    const k = r.pick([2, 3, 4]), P = r.int(8, 40), smallSide = r.int(2, 9), up = r.bool(), v = up ? P * k : P;
-    return num(v, [`Scale factor = ${smallSide * k} ÷ ${smallSide} = ${k}.`, up ? `Perimeters scale by the same factor: ${P} × ${k} = ${v} cm.` : `Perimeters scale by the same factor: ${P * k} ÷ ${k} = ${v} cm.`], { q: `Two similar polygons have matching sides ${smallSide} cm and ${smallSide * k} cm. The ${up ? 'smaller' : 'larger'} one has perimeter ${up ? P : P * k} cm. What is the perimeter of the ${up ? 'larger' : 'smaller'} one, in cm?`, expr: up ? `${P}*${k}` : `${P * k}/${k}` });
-  }
-  const a = r.int(2, 8), b = r.int(a + 1, 12), k = r.pick([2, 3, 1.5]), sim = r.bool(), c = a * k, d = sim ? b * k : b * k + r.pick([1, 2, -1]);
-  return yn(r, sim, { q: `Is a rectangle ${a} cm by ${b} cm similar to a rectangle ${dec(c)} cm by ${dec(d)} cm?`, steps: [`Compare the ratios: ${dec(c)} ÷ ${a} = ${dec(c / a, 3)} and ${dec(d)} ÷ ${b} = ${dec(d / b, 3)}.`, sim ? 'The ratios are equal, so yes.' : 'The ratios are different, so no.'] });
-});
-const SIMRULE = [['Two pairs of angles are equal.', 'AA'], ['All three pairs of sides are in the same ratio.', 'SSS similarity'], ['Two pairs of sides are in the same ratio, and the angles between them are equal.', 'SAS similarity'], ['One pair of angles is equal.', 'Not enough information']];
-skill('11-similar2', 11, 'Similarity', 'Similar triangles: areas, proportions and rules', ['If the scale factor is k, areas are multiplied by k².', 'A line parallel to one side of a triangle cuts the other two sides in the same ratio.', 'Triangles are similar by AA, SSS similarity or SAS similarity.'], (r) => {
-  const t = r.int(0, 3);
-  if (t === 0) {
-    const [p, q] = r.pick([[2, 1], [3, 1], [3, 2], [4, 3], [5, 2]]), A = q * q * r.int(1, 8), v = A * p * p / (q * q);
-    return num(v, [`Scale factor = ${p * 3}/${q * 3} = ${frac(p, q)}, so areas scale by (${frac(p, q)})² = ${frac(p * p, q * q)}.`, `${A} × ${frac(p * p, q * q)} = ${v} cm².`], { q: `Two similar triangles have matching sides ${q * 3} cm and ${p * 3} cm. The smaller has area ${A} cm². What is the area of the larger, in cm²?`, expr: `${A}*(${p * 3}/${q * 3})**2` });
-  }
-  if (t === 1) {
-    const p = r.int(1, 5), q = r.int(1, 5), m = r.int(1, 4), n = r.int(1, 4), AD = m * p, DB = m * q, AE = n * p, EC = n * q;
-    return num(EC, [`DE ∥ BC, so AD/DB = AE/EC: ${AD}/${DB} = ${AE}/EC.`, `EC = ${AE} × ${DB} ÷ ${AD} = ${EC}.`], { q: `In △ABC, D is on AB and E is on AC with DE ∥ BC. AD = ${AD}, DB = ${DB} and AE = ${AE}. Find EC.`, expr: `${AE}*${DB}/${AD}` });
-  }
-  if (t === 2) {
-    const [d, right] = r.pick(SIMRULE);
-    return mc(r, right, SIMRULE.map((x) => x[1]), { q: `Two triangles have this in common: ${d} Which rule shows they are similar?`, steps: ['Check angles first, then side ratios.', right === 'Not enough information' ? 'One angle is not enough: not enough information.' : `That is ${right}.`] });
-  }
-  const r1 = r.int(1, 6); let r2 = r.int(2, 9); while (r2 === r1) r2 = r.int(2, 9); const area = r.bool();
-  return num(frac(area ? r1 * r1 : r1, area ? r2 * r2 : r2), ['All circles are similar; the scale factor is the ratio of the radii.', area ? `Areas: (${r1}/${r2})² = ${frac(r1 * r1, r2 * r2)}.` : `Circumferences: ${r1}/${r2} = ${frac(r1, r2)}.`], { q: `Two circles have radii ${r1} cm and ${r2} cm. What is the ratio of their ${area ? 'areas' : 'circumferences'} (first : second), as a fraction?`, expr: area ? `${r1 * r1}/${r2 * r2}` : `${r1}/${r2}` });
-});
+skill('11-similar', 11, 'Similarity', 'Similar figures and indirect measurement', GEO.LESSONS11.similar, GEO.similar);
+skill('11-similar2', 11, 'Similarity', 'Similar triangles: areas, proportions and rules', GEO.LESSONS11.similar2, GEO.similar2);
 
 // ───────── 23. Logic ─────────
 export const CONDS = [['n is divisible by 6', 'n is divisible by 3', 'n is not divisible by 6', 'n is not divisible by 3'], ['ABCD is a square', 'ABCD has four right angles', 'ABCD is not a square', 'ABCD does not have four right angles'], ['Sam lives in Halifax', 'Sam lives in Nova Scotia', 'Sam does not live in Halifax', 'Sam does not live in Nova Scotia'], ['∠A measures 30°', '∠A is acute', '∠A does not measure 30°', '∠A is not acute'], ['△PQR is equilateral', '△PQR is isosceles', '△PQR is not equilateral', '△PQR is not isosceles'], ['x = 4', 'x² = 16', 'x ≠ 4', 'x² ≠ 16'], ['it is raining', 'the ground is wet', 'it is not raining', 'the ground is not wet']];
